@@ -112,7 +112,7 @@ describe("the threats at a session's opening (T-168)", () => {
 });
 
 describe("the notes of the outputs (D-532)", () => {
-    const peak = "After a peak, give a quiet scene the player can fill: a meal, rain, a talk. Judge a challenge by what it cost, not by whether it was won: "
+    const peak = "After a peak, let a quiet moment follow, in this scene or the next, that the player can fill: a meal, rain, a talk. Judge a challenge by what it cost, not by whether it was won: "
         + "after two that cost nothing, let the next rise, within what the difficulty allows.";
 
     it("scene close of a fight or a challenge says once in a chat what comes after a peak; another scene, or the command line, never", async () => {

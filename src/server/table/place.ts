@@ -76,6 +76,25 @@ export function writeTableFile(home: string, file: string, content: unknown): vo
     writeDataFile(file, content);
 }
 
+/** Writes why a campaign's table could not start, beside its place, for the launcher that started it apart and sees none of its words. */
+export function writeRefusal(home: string, root: string, refusal: string): void
+{
+    writeTableFile(home, refusalFile(home, root), { refused: refusal });
+}
+
+/** Why a campaign's table last could not start; undefined where none says so, or the file does not read. */
+export function readRefusal(home: string, root: string): string | undefined
+{
+    const read = readDataFile(refusalFile(home, root)) as { refused?: unknown; } | null | undefined;
+    return typeof read?.refused === "string" ? read.refused : undefined;
+}
+
+/** Takes away why a campaign's table could not start: before a new start, and once a table serves. */
+export function removeRefusal(home: string, root: string): void
+{
+    removeDataFile(refusalFile(home, root));
+}
+
 /** Makes the tables' folder, the player's alone where the system has modes: a table's socket lives there off Windows, so it is there before the table listens. */
 export function makeTablesFolder(home: string): void
 {
@@ -141,6 +160,11 @@ function tablesFolder(home: string): string
 function placeFile(home: string, root: string): string
 {
     return tableFile(home, root, ".json");
+}
+
+function refusalFile(home: string, root: string): string
+{
+    return tableFile(home, root, ".refused.json");
 }
 
 /**

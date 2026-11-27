@@ -232,8 +232,10 @@ export function openSceneLog(root: string, scene: Scene): string
             lines.push(`Round ${String(round)}:`);
         }
 
-        // The first order of turns starts round 1 with its first, who acts before any turn passes (SCN-6).
-        if (entry.type === "scene-changed" && Array.isArray(entry.data.order) && round === undefined) {
+        // The first order of turns starts round 1 with its first, who acts before any turn passes (SCN-6); an empty one ends the turns, and the next starts again (D-593).
+        if (entry.type === "scene-changed" && Array.isArray(entry.data.order) && entry.data.order.length === 0) {
+            round = undefined;
+        } else if (entry.type === "scene-changed" && Array.isArray(entry.data.order) && round === undefined) {
             round = 1;
             lines.push("Round 1:");
         }
@@ -388,7 +390,7 @@ function sceneChangeLine(data: Record<string, unknown>): string
     };
 
     if (Array.isArray(data.order)) {
-        return `order: ${data.order.map(String).join(" · ")}`;
+        return data.order.length === 0 ? "turns ended" : `order: ${data.order.map(String).join(" · ")}`;
     }
 
     if (Array.isArray(data.left)) {

@@ -1,7 +1,7 @@
 // A campaign opened from the launcher: its table, started apart when none answers, looked for through its place until it serves its page.
 import { startApart } from "../../core/process.ts";
 import { lookUntil } from "../../core/wait.ts";
-import { type Probed, probeTable, readPlace, type TablePlace } from "../table/index.ts";
+import { type Probed, probeTable, readPlace, readRefusal, removeRefusal, type TablePlace } from "../table/index.ts";
 import { holdsCampaign } from "./campaigns.ts";
 
 /** What opening a campaign does outside this process: start its table, ask a table whether it is there, wait; the tests give their own. */
@@ -13,6 +13,8 @@ export interface TableStarter
     /** Starts `rpg table` in the campaign's folder, apart from this process. */
     start?: (root: string) => void;
     probe?: (place: TablePlace) => Promise<Probed>;
+    /** Why the table started could not, as it writes it beside its place; undefined until it says so. */
+    refused?: (root: string) => string | undefined;
     now?: () => number;
     wait?: (milliseconds: number) => Promise<void>;
     /** Whether the launcher is quitting: it stops looking then. */
@@ -29,7 +31,8 @@ const probeWait = 1000;
 
 /**
  * The link of the page of the campaign at `root`, its table started apart first where none answers; a refusal where it holds no campaign or cannot be read,
- * where its table runs another engine or does not answer, where it did not start in time, or once the launcher quits. A table is never ended from here.
+ * where its table runs another engine or does not answer, where the table started says why it could not, where it did not start in time, or once the
+ * launcher quits. A table is never ended from here.
  */
 export async function openCampaign(root: string, starter: TableStarter): Promise<Reached>
 {
@@ -40,11 +43,19 @@ export async function openCampaign(root: string, starter: TableStarter): Promise
     }
 
     const probe = starter.probe ?? ((place: TablePlace) => probeTable(place, starter.version, probeWait));
+    const refused = starter.refused ?? ((campaign: string) => readRefusal(starter.home, campaign));
     let started = false;
 
     const look = async (): Promise<Reached | undefined> => {
         if (starter.quitting?.() === true) {
             return { error: "RPG Engine's launcher is closing: open your campaigns again with rpg open, then this one." };
+        }
+
+        // The table started could not: why, at once, in its own words.
+        const refusal = started ? refused(root) : undefined;
+
+        if (refusal !== undefined) {
+            return { error: refusal.replace(/^rpg table: /, "") };
         }
 
         const place = readPlace(starter.home, root);
@@ -66,6 +77,7 @@ export async function openCampaign(root: string, starter: TableStarter): Promise
         // None there, or a stale place, which the table started takes away; a table ending is let end first.
         if (probed === "nobody" && !started) {
             started = true;
+            removeRefusal(starter.home, root);
             (starter.start ?? startTable)(root);
         }
 

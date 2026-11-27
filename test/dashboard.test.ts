@@ -28,6 +28,7 @@ import type { ShownChoices as ServerChoices } from "../src/server/dashboard/choi
 import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/server/dashboard/index.ts";
 import { dashboardOpener } from "../src/server/dashboard/opener.ts";
 import { createMcpServer } from "../src/server/mcp.ts";
+import { answers } from "../src/server/page/index.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
@@ -79,6 +80,30 @@ async function ok(...args: string[]): Promise<string>
     const result = await runCommandLine(args, context);
     expect(result.exitCode, result.output).toBe(0);
     return result.output;
+}
+
+/** A POST to a dashboard of the test, with the origin given if any. */
+function post(port: number, path: string, origin?: string): Promise<{ status: number; body: string; }>
+{
+    return new Promise((done, fail) => {
+        const headers = { "content-type": "application/json", ...(origin === undefined ? {} : { origin }) };
+        request({ host: "127.0.0.1", port, path, method: "POST", headers, agent: false }, (response) => {
+            let body = "";
+            response.setEncoding("utf8");
+            response.on("data", (chunk: string) => (body += chunk));
+            response.on("end", () => done({ status: response.statusCode ?? 0, body }));
+        }).on("error", fail).end("{}");
+    });
+}
+
+/** A port free a moment ago. */
+async function freePort(): Promise<number>
+{
+    const free = createServer();
+    await new Promise<void>((done) => free.listen(0, "127.0.0.1", done));
+    const port = (free.address() as { port: number; }).port;
+    await new Promise((done) => free.close(done));
+    return port;
 }
 
 describe("view as data (VIEW-1, D-272)", () => {
@@ -946,6 +971,83 @@ describe("the dashboard's server (D-270, D-272)", () => {
                 await chat.opener.close();
                 chat.files.close();
             }
+        }
+    });
+
+    it("gives the page to the campaign's table only where its chat was told how, once, and closes it then; never without the page's origin", async () => {
+        expect(await post(port, "/api/yield")).toEqual({ status: 405, body: expect.any(String) });
+        const refused = await post(port, "/api/yield", `http://127.0.0.1:${port}`);
+        expect(refused.status).toBe(409);
+        expect(JSON.parse(refused.body).error).toContain("Close that chat's app");
+
+        const other = new SessionStore({ systemFolders: context.systemFolders });
+        let given = 0;
+        let giving: Dashboard | undefined;
+        giving = await startDashboard({ ...context, files: other }, other, { ports: [0], giveWay: () => (given++, void giving?.close()) });
+        const at = Number(new URL(giving?.url ?? "").port);
+
+        try {
+            expect(await post(at, "/api/yield")).toMatchObject({ status: 405 });
+            expect(given).toBe(0);
+            expect(await post(at, "/api/yield", `http://127.0.0.1:${at}`)).toEqual({ status: 200, body: JSON.stringify({ yielded: true }) });
+            await expect.poll(() => answers(at), { timeout: 3000, interval: 50 }).toBe(false);
+            expect(given).toBe(1);
+        } finally {
+            await giving?.close();
+            other.close();
+        }
+    });
+
+    it("lets the campaign's table take the page a chat serves, at its port: the chat keeps the link, and serves it again once the table ends", async () => {
+        const at = await freePort();
+        const files = new SessionStore({ systemFolders: context.systemFolders });
+        const served: Context = { ...context, files };
+        const opener = dashboardOpener(served, files, [at, 0]);
+        const tableFiles = new SessionStore({ systemFolders: context.systemFolders });
+        let table: Dashboard | undefined;
+
+        try {
+            await opener.open();
+            expect([served.dashboard, served.dashboardHeld, served.news]).toEqual([`http://127.0.0.1:${at}`, false, expect.any(Function)]);
+            table = await startDashboard({ ...context, files: tableFiles }, tableFiles, { ports: [at, 0], takeOver: true });
+            expect(table?.url).toBe(`http://127.0.0.1:${at}`);
+            await expect.poll(() => served.dashboardHeld, { timeout: 5000, interval: 100 }).toBe(true);
+            expect([served.dashboard, served.news]).toEqual([`http://127.0.0.1:${at}`, undefined]);
+            // Another table of the campaign takes nothing from a table.
+            const second = await startDashboard({ ...context, files: tableFiles }, tableFiles, { ports: [at], takeOver: true });
+            expect(second).toBeUndefined();
+            await table?.close();
+            await expect.poll(() => served.news, { timeout: 8000, interval: 200 }).toBeDefined();
+            expect([served.dashboard, served.dashboardHeld]).toEqual([`http://127.0.0.1:${at}`, false]);
+        } finally {
+            await table?.close();
+            await opener.close();
+            files.close();
+            tableFiles.close();
+        }
+    }, 20_000);
+
+    it("serves nothing again while the page is given, as a call opens it meanwhile, nor once its chat closed", async () => {
+        const at = await freePort();
+        const files = new SessionStore({ systemFolders: context.systemFolders });
+        const served: Context = { ...context, files };
+        const opener = dashboardOpener(served, files, [at, 0]);
+
+        try {
+            await opener.open();
+            expect((await post(at, "/api/yield", `http://127.0.0.1:${at}`)).status).toBe(200);
+            await opener.open();
+            await expect.poll(() => answers(at), { timeout: 3000, interval: 50 }).toBe(false);
+            await opener.open();
+            expect([served.dashboard, served.dashboardHeld, served.news]).toEqual([`http://127.0.0.1:${at}`, true, undefined]);
+            await new Promise((done) => setTimeout(done, 1200));
+            expect(await answers(at)).toBe(false);
+            await opener.close();
+            await new Promise((done) => setTimeout(done, 1200));
+            expect(await answers(at)).toBe(false);
+        } finally {
+            await opener.close();
+            files.close();
         }
     });
 

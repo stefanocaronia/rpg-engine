@@ -1,6 +1,6 @@
 // What every route of a server of the player's pages uses to read a request and to send its answer, and whether a port of this machine is taken.
 import { createHash } from "node:crypto";
-import type { IncomingMessage, ServerResponse } from "node:http";
+import { type IncomingMessage, request, type ServerResponse } from "node:http";
 import { connect } from "node:net";
 
 export const securityHeaders = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'self'" };
@@ -83,6 +83,39 @@ export function decoded(part: string): string | undefined
     } catch {
         return undefined;
     }
+}
+
+/**
+ * A request to a server of the player's pages, as its own page sends it, a write with the page's origin: its status and body; refused where nothing listens
+ * at the address, or it does not read; undefined where it does not answer within `wait` ms.
+ */
+export function askPage(url: string, method: "GET" | "POST", path: string, body?: unknown, wait = 1000): Promise<{ status: number; body: string; } | "refused" | undefined>
+{
+    return new Promise((done) => {
+        const address = URL.parse(path, url);
+
+        if (address === null) {
+            done("refused");
+            return;
+        }
+
+        const sent = body === undefined ? undefined : JSON.stringify(body);
+        const headers: Record<string, string> = sent === undefined ? {} : { "Origin": address.origin, "Content-Type": "application/json" };
+        // A connection of its own, closed once answered: one kept open would keep the asked server from closing, as a chat that gives its page.
+        const asked = request(address, { method, headers, timeout: wait, agent: false }, (response) => {
+            let text = "";
+            response.setEncoding("utf8");
+            response.on("data", (chunk: string) => (text += chunk));
+            response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+            response.on("error", () => done(undefined));
+        });
+        asked.on("timeout", () => {
+            done(undefined);
+            asked.destroy();
+        });
+        asked.on("error", (error: NodeJS.ErrnoException) => done(error.code === "ECONNREFUSED" ? "refused" : undefined));
+        asked.end(sent);
+    });
 }
 
 /** Whether a program answers at a port of this machine, on 127.0.0.1 or on ::1. */

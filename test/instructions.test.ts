@@ -148,4 +148,14 @@ describe("a part of the instructions in a chat (D-97)", () => {
             await host.close();
         }
     });
+
+    it("gives the fight's part too in a scene of another type with turns, as a fight broke out in it (D-593)", async () => {
+        await ok("init", "--name", "Rocca", "--system", "fake");
+        inPlay(folder);
+        await ok("write", "Lupo", "--type", "creature");
+        await ok("scene", "open", "--title", "Cena", "--type", "social", "--creatures", "Lupo");
+        expect(await ok("instructions")).not.toContain(fightGuidance);
+        await ok("scene", "order", "--order", "Lupo 1");
+        expect(await ok("instructions")).toContain(fightGuidance);
+    });
 });

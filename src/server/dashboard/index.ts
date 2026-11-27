@@ -12,11 +12,12 @@ import { themesFolder } from "../../commands/shared/packages/unpacked.ts";
 import type { Context, Player, SystemTexts } from "../../core/context.ts";
 import type { SessionStore } from "../../core/session-store.ts";
 import { withFiles } from "../../core/store.ts";
+import { lookUntil } from "../../core/wait.ts";
 import { helperCommand, queueInCodex } from "../../helpers/index.ts";
 import { samePath } from "../../library/index.ts";
 import { loadSystemCode } from "../../systems/index.ts";
 import { folderPrint, linkedThemeFolders } from "../../themes/index.ts";
-import { answers, builtPage, send } from "../page/index.ts";
+import { answers, askPage, builtPage, send } from "../page/index.ts";
 import { type Acts, newActs } from "../player-acts.ts";
 import { choicesNews } from "./choices.ts";
 import type { EngineAsked } from "./engine.ts";
@@ -83,6 +84,10 @@ export interface DashboardOptions
     homeAddresses?: () => string[];
     /** The tests' look at the state the page is served with. */
     served?: (served: Served) => void;
+    /** A chat's own server: what it does as the campaign's table asks for the page, which it gives once this answer is sent. */
+    giveWay?: () => void;
+    /** A campaign's table: the page another chat of the campaign serves is asked for, and served at its port once given. */
+    takeOver?: boolean;
 }
 
 /**
@@ -121,9 +126,15 @@ const importLookEvery = 2000;
 // How often the server looks at the folders of the themes linked for their authors, for the pages to show each change (one second).
 const themesLookEvery = 1000;
 
+// How long a table waits for a chat to say it gives the page, then for its port to go free, and how often it looks.
+const yieldAskWait = 5000;
+const yieldWait = 3000;
+const yieldLookEvery = 100;
+
 /**
  * Serves the dashboard of the campaign of context.folder, on 127.0.0.1 only, at the first of the ports that is free, which campaign.yaml then keeps; undefined
- * when none is, or when another chat of the campaign serves its page already: one page for each campaign (D-577).
+ * when none is, or when another chat of the campaign serves its page already: one page for each campaign (D-577). A table with `takeOver` asks that chat
+ * for the page first, and serves it at the same port once given.
  */
 export async function startDashboard(context: Context, session: SessionStore, options: DashboardOptions = {}): Promise<Dashboard | undefined>
 {
@@ -139,19 +150,26 @@ export async function startDashboard(context: Context, session: SessionStore, op
         // A port another program answers at, even on ::1 or on every address, is its: a browser asking localhost could reach it instead (D-277). The
         // campaign's own page, which another chat serves, is the page: no second one at another port (D-577).
         if (port !== 0 && await answers(port)) {
-            if (campaign !== undefined && await campaignServes(port, campaign, saved)) {
-                return undefined;
+            if (campaign === undefined || !await campaignServes(port, campaign, saved)) {
+                continue;
             }
 
-            continue;
+            // A table asks that chat for it, and serves it at the same port once given; a chat leaves it there.
+            if (!await pageTaken(port, options)) {
+                return undefined;
+            }
         }
 
         const server = createServer();
-        const listening = await listen(server, port);
+        let listening = await listen(server, port);
 
         // Another chat of the campaign that started with this one may have taken the port a moment before: its page, then (D-577).
         if (listening === undefined && port !== 0 && campaign !== undefined && await campaignServes(port, campaign, saved)) {
-            return undefined;
+            if (!await pageTaken(port, options)) {
+                return undefined;
+            }
+
+            listening = await listen(server, port);
         }
 
         if (listening !== undefined) {
@@ -189,6 +207,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 homeAddresses: options.homeAddresses ?? homeAddresses,
                 ...(options.master === undefined ? {} : { master: options.master }),
                 ...(options.launcher === undefined ? {} : { launcher: options.launcher }),
+                ...(options.giveWay === undefined ? {} : { giveWay: options.giveWay }),
             };
             options.served?.(served);
             return serve(server, served);
@@ -225,6 +244,27 @@ async function campaignServes(port: number, root: string, saved?: number): Promi
     }
 
     return false;
+}
+
+/**
+ * For a table alone: whether the chat that serves the campaign's page at a port gave it, and the port went free within a few seconds; never where it says
+ * no or does not know how, as a chat of an older engine.
+ */
+async function pageTaken(port: number, options: DashboardOptions): Promise<boolean>
+{
+    if (options.takeOver !== true) {
+        return false;
+    }
+
+    // A chat busy with its world answers late: it is given the time a table's start can spare.
+    const asked = await askPage(`http://127.0.0.1:${port}`, "POST", "/api/yield", {}, yieldAskWait);
+
+    if (asked === undefined || (asked !== "refused" && asked.status !== 200)) {
+        return false;
+    }
+
+    const free = async (): Promise<true | undefined> => (await answers(port) ? undefined : true);
+    return lookUntil(free, () => false, { within: yieldWait, every: yieldLookEvery });
 }
 
 /** Whether what answers at a port is the page of this campaign. */
@@ -308,6 +348,8 @@ export interface Served
     phone?: PhoneDoor;
     /** The computer's addresses on the home network now. */
     homeAddresses(): string[];
+    /** A chat's own server: how it gives the page to the campaign's table, once. */
+    giveWay?: () => void;
 }
 
 /** What the page keeps of the chat it serves, all of it: a campaign's table forgets it as that chat leaves (D-582). */

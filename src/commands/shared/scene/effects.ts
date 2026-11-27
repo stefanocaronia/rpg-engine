@@ -115,7 +115,13 @@ export function endedByTurn(effect: Effect, round: number, turn: string, order: 
 /** Whether an effect ends with the scene: counted in rounds, which exist only in it, or lasting until it ends (EFF-9). */
 export function endsWithScene(effect: Effect): boolean
 {
-    return effect.end !== undefined && ("round" in effect.end || "scene" in effect.end);
+    return countedInRounds(effect) || (effect.end !== undefined && "scene" in effect.end);
+}
+
+/** Whether an effect is counted in rounds, which end with the turns (D-593). */
+export function countedInRounds(effect: Effect): boolean
+{
+    return effect.end !== undefined && "round" in effect.end;
 }
 
 /** Whether someone keeps an effect alive (D-138). */

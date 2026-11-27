@@ -1,9 +1,9 @@
 // The launcher found where its place says it is, asked to quit, or started apart from this process: what `rpg open` and a campaign's table do to reach it.
-import { request } from "node:http";
 import { homedir } from "node:os";
 import { isRunning, startApart } from "../../core/process.ts";
 import { lookUntil } from "../../core/wait.ts";
 import { oneWindowAtATime, openWindow, type WindowOpener } from "../../desktop/index.ts";
+import { askPage } from "../page/index.ts";
 import { type LauncherPlace, readLauncher, removeLauncher } from "./place.ts";
 
 /**
@@ -25,10 +25,9 @@ export interface LauncherStarter
     wait?: (milliseconds: number) => Promise<void>;
 }
 
-// A launcher answers within ten seconds of its start, one of another engine quitting first, looked for every tenth of a second. A probe waits a second.
+// A launcher answers within ten seconds of its start, one of another engine quitting first, looked for every tenth of a second; a probe waits a second.
 const startWait = 10_000;
 const every = 100;
-const askWait = 1000;
 
 /**
  * The launcher at its place, of any engine, and whether it answered; undefined where there is none, or where nothing listens there any more, its stale place
@@ -115,7 +114,7 @@ export async function probeLauncher(place: LauncherPlace): Promise<LauncherProbe
         return "gone";
     }
 
-    const answer = await call(place.url, "GET", "/api/ping");
+    const answer = await askPage(place.url, "GET", "/api/ping");
 
     if (answer === "refused") {
         return "gone";
@@ -132,7 +131,7 @@ export async function probeLauncher(place: LauncherPlace): Promise<LauncherProbe
 /** Asks the launcher at a place to quit, with its token, as its own page would. */
 export async function askToQuit(place: LauncherPlace): Promise<void>
 {
-    await call(place.url, "POST", "/api/launcher", { quit: { token: place.token } });
+    await askPage(place.url, "POST", "/api/launcher", { quit: { token: place.token } });
 }
 
 /** Starts `rpg launcher` apart from this process, in the player's home: the same Node and script as this one. */
@@ -151,38 +150,6 @@ function notReached(there: LauncherThere | undefined): string
     return there.answered === undefined
         ? `RPG Engine's launcher, at ${there.url}, is there but does not answer: end its process, ${there.pid}, then try again.`
         : `The launcher of RPG Engine ${there.answered}, at ${there.url}, did not quit: end its process, ${there.pid}, then try again.`;
-}
-
-/**
- * A request to the launcher, as its own page sends it: its status and body; refused where nothing listens at the address, or it does not read; undefined
- * where it does not answer within a second.
- */
-function call(url: string, method: "GET" | "POST", path: string, body?: unknown): Promise<{ status: number; body: string; } | "refused" | undefined>
-{
-    return new Promise((done) => {
-        const address = URL.parse(path, url);
-
-        if (address === null) {
-            done("refused");
-            return;
-        }
-
-        const sent = body === undefined ? undefined : JSON.stringify(body);
-        const headers: Record<string, string> = sent === undefined ? {} : { "Origin": address.origin, "Content-Type": "application/json" };
-        const asked = request(address, { method, headers, timeout: askWait }, (response) => {
-            let text = "";
-            response.setEncoding("utf8");
-            response.on("data", (chunk: string) => (text += chunk));
-            response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
-            response.on("error", () => done(undefined));
-        });
-        asked.on("timeout", () => {
-            done(undefined);
-            asked.destroy();
-        });
-        asked.on("error", (error: NodeJS.ErrnoException) => done(error.code === "ECONNREFUSED" ? "refused" : undefined));
-        asked.end(sent);
-    });
 }
 
 function parsed(text: string): unknown

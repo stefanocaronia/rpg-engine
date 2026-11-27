@@ -72,7 +72,7 @@ function requestedPart(context: Context): string
 
 /**
  * The part of the open scene's type, such as combat, for a chat that starts in the middle of a scene, where scene open will not give it (MOD-5, D-266); then it
- * counts as told. None without a scene, or with one that does not read.
+ * counts as told; with turns in a scene of another type, the fight's too (D-593). None without a scene, or with one that does not read.
  */
 function sceneText(folder: string, context: Context): string
 {
@@ -84,7 +84,9 @@ function sceneText(folder: string, context: Context): string
     }
 
     try {
-        return situationPart(scene.type, context, campaignSystem(root, context));
+        const system = campaignSystem(root, context);
+        const fight = scene.order !== undefined && scene.type !== "combat" ? situationPart("combat", context, system) : "";
+        return [situationPart(scene.type, context, system), fight].filter((part) => part !== "").join("\n\n");
     } catch {
         return "";
     }

@@ -242,7 +242,7 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
         // The round only where the game has rounds (D-314 (3)): Ironsworn has none.
         ...(scene.round === undefined || campaignSystem(sight.root, sight.context)?.roundSeconds === undefined ? {} : { round: scene.round }),
         ...(marks.length === 0 ? {} : { marks }),
-        ...(scene.type === "combat" ? { fighters: fightersOf(sight, scene) } : {}),
+        ...(inFight(scene) ? { fighters: fightersOf(sight, scene) } : {}),
     };
 }
 
@@ -410,6 +410,12 @@ function reachOf(sight: PlaceSight, rules: GridRules, measures: Measures, scene:
     return left <= 0 ? [] : reachable(grid, self.square, left + 1e-9, rules).filter((one) => one.cost > 0).map((one) => squareName(one.square));
 }
 
+/** Whether the open scene is a fight: of type combat, or with turns or someone hostile, as one breaks out in a scene of another type (D-593). */
+function inFight(scene: Scene): boolean
+{
+    return scene.type === "combat" || scene.order !== undefined || (scene.hostile ?? []).length > 0;
+}
+
 /** Everyone in a fight, in the order of the turns when there is one, else the characters then the copies; those the view cannot name are left out. */
 function fightersOf(sight: PlaceSight, scene: Scene): Fighter[]
 {
@@ -421,7 +427,7 @@ function fightersOf(sight: PlaceSight, scene: Scene): Fighter[]
 }
 
 /** One in the fight (D-314): a copy as the character knows its creature, a character as it knows them; the party in full, the others by what anyone sees. */
-function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "with" | "copies" | "gone" | "hostile" | "seen">, name: string): Fighter | undefined
+function fighterOf(sight: PlaceSight, scene: Pick<Scene, "with" | "copies" | "gone" | "hostile" | "seen">, name: string): Fighter | undefined
 {
     const system = campaignSystem(sight.root, sight.context);
     const copy = Object.entries(scene.copies).find(([copyName]) => comparableText(copyName) === comparableText(name));
@@ -536,10 +542,10 @@ function healthIndex(count: number, value: number, most: number | undefined): nu
     return 1 + Math.min(between - 1, Math.floor(((most - value) * between) / most));
 }
 
-/** The mark of one the master says attacks the party, in a fight (D-415); nothing for anyone else, or outside a fight. */
-function hostileMark(scene: Pick<Scene, "type" | "hostile"> | undefined, name: string): { hostile?: true; }
+/** The mark of one the master says attacks the party (D-415), in a scene of any type (D-593); nothing for anyone else. */
+function hostileMark(scene: Pick<Scene, "hostile"> | undefined, name: string): { hostile?: true; }
 {
-    const hostile = scene?.type === "combat" && (scene.hostile ?? []).some((one) => comparableText(one) === comparableText(parsePageReference(name).name));
+    const hostile = (scene?.hostile ?? []).some((one) => comparableText(one) === comparableText(parsePageReference(name).name));
     return hostile ? { hostile: true } : {};
 }
 

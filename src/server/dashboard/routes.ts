@@ -130,6 +130,8 @@ const routes: Record<string, Route> = {
     },
     "/api/phone/code": { get: ({ request, response, served }) => sendPhoneCode(request, response, served) },
     "/api/catalog": { get: ({ response, served, url }) => catalogNow(response, served, url.searchParams.get("fresh") === "true") },
+    // The campaign's table asks a chat's own server for the page, from this computer: one page for each campaign.
+    "/api/yield": { post: ({ request, response, served }) => yieldPage(request, response, served) },
 };
 
 /** The page's API, address by address, with what each takes: for the tests. */
@@ -211,6 +213,24 @@ function askedNow(response: ServerResponse, served: Served): void
                 ...(spend === undefined ? {} : { who: spend.who, spend }),
             },
     });
+}
+
+/**
+ * Gives the page to the campaign's table that asks for it, once this answer is sent: only a chat's own server that was told how, once; never a table's,
+ * nor from the phone.
+ */
+function yieldPage(request: IncomingMessage, response: ServerResponse, served: Served): void
+{
+    const giveWay = served.giveWay;
+
+    if (fromPhone(request, served) || served.master !== undefined || giveWay === undefined) {
+        sendJson(response, 409, { error: "This page stays here: it is a table's, or its chat cannot give it away. Close that chat's app, then open the campaign again." });
+        return;
+    }
+
+    served.giveWay = undefined;
+    response.once("finish", giveWay);
+    sendJson(response, 200, { yielded: true });
 }
 
 /** The page code of the campaign's packages, as the page loads it; none without a campaign. */

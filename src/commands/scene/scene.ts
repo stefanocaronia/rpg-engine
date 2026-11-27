@@ -45,6 +45,8 @@ type GivenInput = Omit<SceneInput, "with" | "creatures" | "who" | "order" | "see
 export const scene = defineCommand({
     name: "scene",
     description: "Open, run and close a scene of the story. "
+        + "A scene is one stretch of play around one question, typed by what it mainly is: a threat or a fight that breaks out in it stays in it, by turns with order; "
+        + "close it when its question is settled for good or the story cuts to another place or time, never when its mood or kind changes. "
         + "Creatures come as numbered copies, such as Annegato 1: a copy holds only what changes, the rest is read from the creature. "
         + "At open, whoever of the party is elsewhere moves to the scene's place, except in a travel scene. "
         + "order sets who takes turns, after rolling for it if the game does; next passes the turn; use marks what one uses of a turn: the engine counts the uses the game declares and refuses one too many. "
@@ -65,7 +67,7 @@ export const scene = defineCommand({
         who: textList.optional().describe("leave: who leaves the scene; hostile, calm: who attacks the party, or stops; use: who uses it; characters or copies, such as Annegato 2"),
         uses: z.string().optional().describe("use: what of a turn, by the game's names, such as {{uses}}"),
         by: z.string().optional().describe("use: what gives one more, or lets it in another's turn, such as a feature"),
-        order: textList.optional().describe("order: who takes turns, in order; those left out (fallen, fled) take none"),
+        order: textList.optional().describe("order: who takes turns, in order; those left out (fallen, fled) take none; none given ends the turns, and the scene goes on"),
         now: z.string().optional().describe('open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see'),
         summary: z.string().optional().describe("close: what happened, in one or two sentences, as the player saw it"),
         seen: z.union([textList, z.record(z.string(), z.string())]).optional().describe(
@@ -143,8 +145,13 @@ export const scene = defineCommand({
                 return `${left.join(", ")} left the scene.${turns}${actingText(result.acting)}${endedText(result.ended)}`;
             }
 
-            case "order":
-                return `Order: ${result.order.join(" · ")}.${result.noTurn.length === 0 ? "" : ` No turn: ${result.noTurn.join(", ")}.`}\n${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
+            case "order": {
+                const noTurn = result.noTurn.length === 0 ? "" : ` No turn: ${result.noTurn.join(", ")}.`;
+                return `Order: ${result.order.join(" · ")}.${noTurn}\n${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}${lineOf(result.part)}`;
+            }
+
+            case "order-ended":
+                return turnsEndedText(result);
             case "next":
                 return `${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
             // Who is in it, so that the master sees a scene the story has left (playtest 19): another place or other people make a new one.
@@ -208,15 +215,11 @@ function tellNow(root: string, now: string, context: Context, current: Scene): S
 }
 
 /**
- * Marks who attacks the party, or takes the mark off (D-415): only in a fight, and only who is in the scene. The player's dashboard shows it, so that a token
- * changes only when the master says so.
+ * Marks who attacks the party, or takes the mark off (D-415), in a scene of any type, as a fight breaks out in it (D-593); only who is in the scene. The player's
+ * dashboard shows it, so that a token changes only when the master says so.
  */
 function markHostile(root: string, who: string[], hostile: boolean, context: Context, current: Scene): SceneResult
 {
-    if (current.type !== "combat") {
-        throw new Error(`${current.title} is a ${current.type} scene: hostile and calm mark who fights in a combat scene. When a fight breaks out, close this one and open one of type combat.`);
-    }
-
     if (who.length === 0) {
         throw new Error(`Give who ${hostile ? "attacks the party" : "stops attacking"}, such as who "Annegato 2".`);
     }
@@ -245,6 +248,13 @@ function markedText(result: { action: "hostile" | "calm"; marked: string[]; host
 {
     const now = result.hostile.length === 0 ? "No one is hostile now." : `Hostile now: ${result.hostile.join(", ")}.`;
     return `${result.action === "hostile" ? "Marked hostile" : "Calm"}: ${result.marked.join(", ")}. ${now}`;
+}
+
+/** "Turns ended in Cena da Bertoldo: the scene goes on. Still hostile: Brigante 1, until calm takes the mark off." (D-593). */
+function turnsEndedText(result: { title: string; hostile: string[]; ended: string[]; }): string
+{
+    const hostile = result.hostile.length === 0 ? "" : ` Still hostile: ${result.hostile.join(", ")}, until calm takes the mark off.`;
+    return `Turns ended in ${result.title}: the scene goes on, until its question is settled or the story cuts to another place or time.${hostile}${endedText(result.ended)}`;
 }
 
 /** "\nMoved into Ossario: Ennio, Lena.", with what that set off, or nothing when no one moved (CON-6). */

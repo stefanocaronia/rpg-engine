@@ -390,7 +390,7 @@ Read-only: no. Positional parameters: `action`.
 - `who` (`string | string[]`, optional): leave: who leaves the scene; hostile, calm: who attacks the party, or stops; use: who uses it; characters or copies, such as Annegato 2
 - `uses` (`string`, optional): use: what of a turn, by the game's names, such as action, move, reaction
 - `by` (`string`, optional): use: what gives one more, or lets it in another's turn, such as a feature
-- `order` (`string | string[]`, optional): order: who takes turns, in order; those left out (fallen, fled) take none
+- `order` (`string | string[]`, optional): order: who takes turns, in order; those left out (fallen, fled) take none; none given ends the turns, and the scene goes on
 - `now` (`string`, optional): open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see
 - `summary` (`string`, optional): close: what happened, in one or two sentences, as the player saw it
 - `seen` (`string | string[] | { [key]: string }`, optional): open, add: what the character sees of someone in the scene, by its page or creature, in two or three words, never its kind when that is a secret; the player sees it instead of the name: Bandito=brigante incappucciato, or through MCP an object such as {"Varro": "il mugnaio"}

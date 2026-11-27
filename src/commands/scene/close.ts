@@ -173,7 +173,7 @@ function rewardLines(world: World, system: GameSystem | undefined, scene: Scene)
 }
 
 /** What a fight or a challenge that ends asks of the master, once in a chat, as play's rules left the instructions for it (D-532). */
-const afterPeak = "After a peak, give a quiet scene the player can fill: a meal, rain, a talk. Judge a challenge by what it cost, not by whether it was won: "
+const afterPeak = "After a peak, let a quiet moment follow, in this scene or the next, that the player can fill: a meal, rain, a talk. Judge a challenge by what it cost, not by whether it was won: "
     + "after two that cost nothing, let the next rise, within what the difficulty allows.";
 
 /** Whether a scene of this type is a peak: a fight or a challenge. */

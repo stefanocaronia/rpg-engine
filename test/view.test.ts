@@ -418,7 +418,7 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(await around()).toContain("incontri: [[Guado#Incontri]]");
     });
 
-    it("marks who attacks the party only when the master says so, and only in a fight; who stops or leaves is calm again (D-415)", async () => {
+    it("marks who attacks the party only when the master says so; who stops or leaves is calm again (D-415)", async () => {
         await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Bran", "--creatures", "Lupo nero=2");
 
         const hostile = async (): Promise<string[]> => {
@@ -436,8 +436,21 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(JSON.parse(await ok("view", "--json")).openScene.fighters.some((one: { hostile?: true; }) => one.hostile)).toBe(false);
         expect((await rpg("scene", "hostile", "--who", "Oste")).output).toContain("Oste is not in the scene.");
         await ok("scene", "close", "--summary", "I lupi fuggono.");
-        await ok("scene", "open", "--title", "Al guado", "--type", "social", "--place", "Guado", "--with", "Kira");
-        expect((await rpg("scene", "hostile", "--who", "Kira")).output).toContain("Al guado is a social scene: hostile and calm mark who fights in a combat scene.");
+    });
+
+    it("shows a fight that breaks out in a scene of another type, from the first hostile mark or order to the last (D-593)", async () => {
+        await ok("scene", "open", "--title", "Al guado", "--type", "social", "--place", "Guado", "--with", "Kira", "--creatures", "Lupo nero=1");
+        const scene = async (): Promise<{ type: string; fighters?: { name: string; hostile?: true; }[]; }> => JSON.parse(await ok("view", "--json")).openScene;
+        expect((await scene()).fighters).toBeUndefined();
+        expect(await ok("scene", "hostile", "--who", "Lupo nero 1")).toBe("Marked hostile: Lupo nero 1. Hostile now: Lupo nero 1.");
+        expect((await scene()).fighters?.filter((one) => one.hostile === true).map((one) => one.name)).toEqual(["creature 1"]);
+        await ok("scene", "calm", "--who", "Lupo nero 1");
+        expect((await scene()).fighters).toBeUndefined();
+        await ok("scene", "order", "--order", "Lupo nero 1", "--order", "Kira");
+        expect((await scene()).fighters?.length).toBe(2);
+        await ok("scene", "order");
+        const after = await scene();
+        expect([after.type, after.fighters]).toEqual(["social", undefined]);
     });
 
     it("numbers two strangers seen alike as copies are, and marks whose turn it is among the fighters", async () => {

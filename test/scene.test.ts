@@ -234,6 +234,7 @@ describe("rpg scene", () => {
         const open: [string[], string][] = [
             [["scene", "open", "--title", "Altra", "--type", "social"], "A scene is open: Ossario. Close it first with scene close and a summary."],
             [["scene", "next"], "The scene has no order of turns: set it with scene order, after rolling for it if the game does."],
+            [["scene", "order"], "Give who takes turns, in order. In the scene: Ennio, Lena, Annegato 1."],
             [["scene", "order", "--order", "Ennio", "--order", "Varro"], "Varro is not in the scene. In it: Ennio, Lena, Annegato 1."],
             [["scene", "order", "--order", "Ennio", "--order", "ennio"], "Ennio is in the order twice: give each one once."],
             [["scene", "add", "--with", "Lena"], "Lena is already in the scene."],
@@ -282,6 +283,43 @@ describe("rpg scene", () => {
         expect(status).not.toContain("Last scenes");
         expect(status).toContain("1 problem in the campaign");
         expect(await ok("validate")).toContain("- log.jsonl: line 11 is not an entry: it needs id, at, type and data.");
+    });
+});
+
+describe("a fight that breaks out in a scene of another type (D-593)", () => {
+    it("marks who is hostile, gives how a fight is told at the first order, and ends the turns with the scene still open", async () => {
+        await ok("scene", "open", "--title", "Cena da Bertoldo", "--type", "social", "--creatures", "Lupo");
+        expect(await ok("scene", "hostile", "--who", "Lupo 1")).toBe("Marked hostile: Lupo 1. Hostile now: Lupo 1.");
+        const first = await ok("scene", "order", "--order", "Lupo 1", "--order", "Ennio");
+        expect(first.startsWith("Order: Lupo 1 · Ennio. No turn: Lena.\nRound 1 · now Lupo 1 (then Ennio).")).toBe(true);
+        expect(first.endsWith(`\n${fightGuidance}`)).toBe(true);
+        // Rounds exist only with turns: what is counted in them ends with them (EFF-9).
+        await ok("effect", "add", "Ennio", "Benedizione", "--for", "10 rounds");
+        expect(await ok("scene", "order", "--order", "Ennio", "--order", "Lupo 1")).not.toContain(fightGuidance);
+        await ok("scene", "next");
+        await ok("scene", "use", "--who", "Ennio", "--uses", "deed");
+        expect(await ok("scene", "order")).toBe(
+            "Turns ended in Cena da Bertoldo: the scene goes on, until its question is settled or the story cuts to another place or time. "
+                + "Still hostile: Lupo 1, until calm takes the mark off.\nEnded: Benedizione on Ennio.",
+        );
+        expect(stateFile()).not.toMatch(/order:|round:|turn:|used:/);
+        expect(await ok("status")).toContain("Cena da Bertoldo");
+        expect(await ok("show", "Cena da Bertoldo")).toContain("- order: Ennio · Lupo 1\nRound 2:\n- Ennio used deed\n- turns ended");
+        // A new fight in the same scene starts again at round 1, its log too.
+        expect(await ok("scene", "order", "--order", "Lupo 1")).toContain("Round 1 · now Lupo 1.");
+        expect(await ok("show", "Cena da Bertoldo")).toContain("- turns ended\n- Ennio: Benedizione ended (turns ended)\n- order: Lupo 1\nRound 1:\n");
+    });
+
+    it("gives the combat part once in a chat that keeps what it told, and never again at the first order of a combat scene", async () => {
+        const chat: Context = { ...context, told: new Set() };
+        const run = async (input: Record<string, unknown>): Promise<string> => scene.format(await scene.run(scene.input.parse(input), chat));
+        await run({ action: "open", title: "Cena da Bertoldo", type: "social", creatures: { Lupo: 1 } });
+        expect(await run({ action: "order", order: ["Lupo 1", "Ennio"] })).toContain(fightGuidance);
+        await run({ action: "order" });
+        expect(await run({ action: "order", order: ["Lupo 1", "Ennio"] })).not.toContain(fightGuidance);
+        await run({ action: "close", summary: "Il lupo fugge." });
+        await run({ action: "open", title: "Ossario", type: "combat", creatures: { Lupo: 1 } });
+        expect(await ok("scene", "order", "--order", "Lupo 1", "--order", "Ennio")).not.toContain(fightGuidance);
     });
 });
 

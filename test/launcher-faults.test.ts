@@ -31,7 +31,7 @@ import {
     windowsNameProblem,
     writeLauncher,
 } from "../src/server/launcher/index.ts";
-import type { Probed, TablePlace } from "../src/server/table/index.ts";
+import { type Probed, readRefusal, type TablePlace, writeRefusal } from "../src/server/table/index.ts";
 import { readPlace, writePlace } from "../src/server/table/place.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 import { makeTempFolder, testContext } from "./support.ts";
@@ -438,6 +438,25 @@ describe("the folder window and the launcher's end", () => {
         expect(await openCampaign(root, tables)).toEqual({ error: "RPG Engine's launcher is closing: open your campaigns again with rpg open, then this one." });
         expect(tables.starts).toEqual([root]);
         expect(tables.clock.now).toBeLessThan(1000);
+    });
+
+    it("gives at once why the table it started could not, as the table writes it, and none a table left from an earlier start", async () => {
+        const root = await campaignIn(join(makeTempFolder(), "Rocca"), "Rocca");
+        writeRefusal(home, root, "rpg table: an old refusal.");
+        const refusal = "rpg table: a chat of this campaign that is still open, started by an older RPG Engine, serves its page: close that chat's app.";
+        const tables = fakeTables({});
+
+        tables.start = (started) => {
+            tables.starts.push(started);
+            expect(readRefusal(home, started)).toBeUndefined();
+            writeRefusal(home, started, refusal);
+        };
+
+        expect(await openCampaign(root, tables)).toEqual({ error: refusal.replace("rpg table: ", "") });
+        expect(tables.starts).toEqual([root]);
+        expect(tables.clock.now).toBeLessThan(1000);
+        // And the tests' own reading.
+        expect(await openCampaign(root, { ...fakeTables({}), refused: () => "rpg table: no port is free." })).toEqual({ error: "no port is free." });
     });
 });
 

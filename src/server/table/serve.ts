@@ -14,11 +14,11 @@ import { lookUntil } from "../../core/wait.ts";
 import { hostCommand } from "../../helpers/index.ts";
 import { hostInstructions } from "../../instructions/index.ts";
 import { type ChatSide, servedContext } from "../context.ts";
-import { type Dashboard, type DashboardOptions, type LauncherWay, showPage, startDashboard } from "../dashboard/index.ts";
+import { campaignPageElsewhere, campaignPorts, type Dashboard, type DashboardOptions, type LauncherWay, showPage, startDashboard } from "../dashboard/index.ts";
 import { type TableChat, tableChat, type TableChatOptions } from "./chat.ts";
 import { type Door, welcome } from "./door.ts";
 import { probeTable } from "./hello.ts";
-import { knock, makeTablesFolder, newToken, readPlace, removePlace, removeSocketFile, type TablePlace, tableSocket, writePlace } from "./place.ts";
+import { knock, makeTablesFolder, newToken, readPlace, removePlace, removeRefusal, removeSocketFile, type TablePlace, tableSocket, writePlace, writeRefusal } from "./place.ts";
 import { type Seat, tableSeat } from "./seat.ts";
 import { programsWait, turnStopWait } from "./stop.ts";
 
@@ -113,6 +113,13 @@ export async function runTable(folder = process.cwd(), given: RunOptions = {}): 
 
     if ("refused" in opened) {
         options.log?.(opened.refused);
+        // And for the launcher, which started it apart and reads none of its words.
+        const root = findCampaign(folder);
+
+        if (root !== undefined) {
+            writeRefusal(options.home, root, opened.refused);
+        }
+
         return 1;
     }
 
@@ -243,19 +250,28 @@ async function openParts(options: TableOptions, root: string): Promise<Parts | {
     });
     // The way back to the campaigns: the launcher, started from the page where none answers.
     const launcher = options.launcher === undefined ? {} : { launcher: options.launcher };
-    dashboard = await startDashboard(context, session, { ...launcher, ...options.dashboard, master: chat });
+    // The page a chat of the campaign serves is asked for, and served here.
+    dashboard = await startDashboard(context, session, { ...launcher, ...options.dashboard, master: chat, takeOver: true });
 
     if (dashboard === undefined) {
         session.close();
-        return await tableAfterAll(options, root) ?? {
-            refused: "rpg table: the campaign's page is served already, by a chat of it that is still open, or no port is free. Close that chat, start the table, "
-                + "then open the chat again.",
-        };
+        return await tableAfterAll(options, root) ?? { refused: await pageRefusal(root, options) };
     }
 
     showPage(context, dashboard);
     seat = tableSeat(context, dashboard, options.chatFolders ?? ((environment) => hostChatFolders(environment, homedir())));
     return { root, context, session, dashboard, seat, chat };
+}
+
+/** Why the table has no page: a chat of the campaign that did not give it, as one of an older engine, or no port free; with what to do. */
+async function pageRefusal(root: string, options: TableOptions): Promise<string>
+{
+    if (await campaignPageElsewhere(root, options.dashboard?.ports ?? campaignPorts(root)) !== undefined) {
+        return "rpg table: a chat of this campaign that is still open serves its page and did not give it, as one started before RPG Engine was updated: close "
+            + "that chat's app (Claude Code, Codex, a terminal), or restart the computer, then open the campaign again.";
+    }
+
+    return `rpg table: no port is free for the page of ${root}: close the programs that serve pages on this computer, or restart it, then open the campaign again.`;
 }
 
 /** The table at work once its page serves: its socket listening and its place written, its door open, its watch for when to end. */
@@ -321,6 +337,7 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
 
     listener.on("error", () => undefined);
     writePlace(options.home, place);
+    removeRefusal(options.home, root);
     // The code of a package changed on disk since the table loaded it: the next start loads it, once no call and no turn of its own chat runs.
     context.codeOutdated = () => (outdated = true);
     // How long the table waits with no page: a moment once a page came and left, longer while its first has not come.

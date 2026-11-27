@@ -14,10 +14,11 @@ import { SessionStore } from "../src/core/session-store.ts";
 import { getVersion } from "../src/core/version.ts";
 import { type MasterChat, type MasterDriver, masterDriver, type MasterEvent, openMaster } from "../src/master/index.ts";
 import { type ChatSide, importEnvironment } from "../src/server/context.ts";
-import type { Served } from "../src/server/dashboard/index.ts";
+import { type Served, startDashboard } from "../src/server/dashboard/index.ts";
+import { dashboardOpener } from "../src/server/dashboard/opener.ts";
 import { subagentRefusal } from "../src/server/subagent.ts";
 import { chatEnvironmentNames } from "../src/server/table/hello.ts";
-import { openTable, pipeHere, pipeToTable, readPlace, runTable, runTableStop, stopTable, type Table, tableBusy, tableEnded, type TableOptions, type TablePlace } from "../src/server/table/index.ts";
+import { openTable, pipeHere, pipeToTable, readPlace, readRefusal, runTable, runTableStop, stopTable, type Table, tableBusy, tableEnded, type TableOptions, type TablePlace } from "../src/server/table/index.ts";
 import { tableSocket, writePlace } from "../src/server/table/place.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 import { type FakeHost, fakeHost, loadFlow, manualClock } from "./master/fake-host.ts";
@@ -375,6 +376,53 @@ describe("the table of a campaign", () => {
         const table = await open();
         expect(await openTable({ folder, home, platform: process.platform, version })).toEqual({ running: table.url });
     });
+
+    it("takes the page a chat of the campaign opened by hand serves, at its port; refuses saying so where that chat does not give it, as one of an older engine", async () => {
+        const at = await new Promise<number>((done) => {
+            const free = createServer().listen(0, "127.0.0.1", () => {
+                const address = free.address();
+                free.close(() => done(typeof address === "object" && address !== null ? address.port : 0));
+            });
+        });
+        const files = new SessionStore({ systemFolders: testSystemFolders });
+        const byHand: Context = { ...testContext(folder), files };
+        const opener = dashboardOpener(byHand, files, [at, 0]);
+
+        try {
+            await opener.open();
+            expect(byHand.dashboard).toBe(`http://127.0.0.1:${at}`);
+            const table = await open({ dashboard: { ports: [at, 0], page: pageFolder } });
+            expect(table.url).toBe(`http://127.0.0.1:${at}`);
+            expect((await get(table.url, "/api/view")).status).toBe(200);
+            await until(() => byHand.dashboardHeld === true && byHand.news === undefined, "the chat's page given");
+            await table.end("the next case");
+        } finally {
+            await opener.close();
+            files.close();
+        }
+
+        // A chat's server that does not know how to give it.
+        const older = new SessionStore({ systemFolders: testSystemFolders });
+        const page = await startDashboard({ ...testContext(folder), files: older }, older, { ports: [at], page: pageFolder });
+
+        try {
+            expect(page?.url).toBe(`http://127.0.0.1:${at}`);
+            expect(await openTable(tableOptions({ dashboard: { ports: [at], page: pageFolder } }))).toEqual({
+                refused: expect.stringContaining("a chat of this campaign that is still open serves its page and did not give it"),
+            });
+            expect((await get(page?.url ?? "", "/api/view")).status).toBe(200);
+            // rpg table writes it beside its place, for the launcher that started it apart.
+            expect(await runTable(folder, { ...tableOptions({ dashboard: { ports: [at], page: pageFolder }, log: () => undefined }), exit: vi.fn() })).toBe(1);
+            expect(readRefusal(home, folder)).toContain("close that chat's app");
+        } finally {
+            await page?.close();
+            older.close();
+        }
+
+        // A table that starts takes it away.
+        await open({ dashboard: { ports: [at, 0], page: pageFolder } });
+        expect(readRefusal(home, folder)).toBeUndefined();
+    }, 20_000);
 
     it("runs a chat's commands, its host the chat's and what it reads of its environment, with the page's link in its status and the asking tools there (D-279)", async () => {
         const table = await open();

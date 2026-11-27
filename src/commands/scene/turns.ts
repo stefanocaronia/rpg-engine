@@ -6,10 +6,11 @@ import type { Effect } from "../../effects/index.ts";
 import { concernsPlayer, findPage, isPlayerCharacter, type Page, parsePageReference, playerCharacters, type World, writePage } from "../../pages/index.ts";
 import { nextTurn, type Scene } from "../../scene/index.ts";
 import { newStateChecks } from "../shared/campaign/checks.ts";
+import { situationPart } from "../shared/campaign/parts.ts";
 import { campaignSystem, campaignSystemWords, campaignWorld } from "../shared/campaign/world.ts";
 import { packagesTurnStarted } from "../shared/packages/hooks.ts";
 import { clearCopies, placeGrid, standing } from "../shared/places/grids.ts";
-import { endedByTurn, endEffects, keptBy, systemNamed } from "../shared/scene/effects.ts";
+import { countedInRounds, endedByTurn, endEffects, keptBy, systemNamed } from "../shared/scene/effects.ts";
 import { turnEffectsNote } from "../shared/scene/reminders.ts";
 import { copyCounters, copyPage, readOpenScene, scenePlace, updateScene } from "../shared/scene/scene.ts";
 import { effectsOf } from "../shared/sheet/effect-layer.ts";
@@ -76,11 +77,19 @@ export function leave(root: string, world: World, who: string[], context: Contex
     return { action: "leave", left, turns, noTurns: current.order !== undefined && turns === undefined, ended };
 }
 
-/** Who takes turns, in order; those left out take none. A new order in a running scene keeps the round, and the turn if its owner is still in it. */
+/**
+ * Who takes turns, in order; those left out take none. A new order in a running scene keeps the round, and the turn if its owner is still in it; none ends the
+ * turns and the scene goes on (D-593). The first in a scene of another type than combat gives how a fight is told, as open does for one.
+ */
 export function setOrder(root: string, world: World, order: string[], context: Context, current: Scene): SceneResult
 {
     const members = memberNames(current);
     const inScene = members.length === 0 ? "no one yet" : members.join(", ");
+
+    if (order.length === 0) {
+        return endTurns(root, world, context, current, inScene);
+    }
+
     const named = order.map((name) => {
         const member = sameName(members, parsePageReference(name).name);
 
@@ -96,16 +105,27 @@ export function setOrder(root: string, world: World, order: string[], context: C
         throw new Error(`${repeated} is in the order twice: give each one once.`);
     }
 
-    if (named.length === 0) {
-        throw new Error(`Give who takes turns, in order. In the scene: ${inScene}.`);
-    }
-
     refuseOffMap(world, current, named);
     const { round, turn } = keptTurn(current, named);
     updateScene(root, [[["order"], named], [["round"], round], [["turn"], turn]]);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, order: named }));
     const ended = endEffects(root, context, world, current, (effect) => endedByTurn(effect, round, turn, named), "turn");
-    return { action: "order", order: named, round, turn, player: isPlayerTurn(world, turn), ...severalPlayers(world), noTurn: members.filter((name) => !named.includes(name)), ended };
+    const part = current.order === undefined && current.type !== "combat" ? situationPart("combat", context, campaignSystem(root, context)) : "";
+    const result = { action: "order" as const, order: named, round, turn, player: isPlayerTurn(world, turn), ...severalPlayers(world), noTurn: members.filter((name) => !named.includes(name)), ended };
+    return part === "" ? result : { ...result, part };
+}
+
+/** No more turns, the scene open (D-593): the order, round, turn and what was counted of them go, and the effects counted in rounds end, as they would at close. */
+function endTurns(root: string, world: World, context: Context, current: Scene, inScene: string): SceneResult
+{
+    if (current.order === undefined) {
+        throw new Error(`Give who takes turns, in order. In the scene: ${inScene}.`);
+    }
+
+    updateScene(root, [[["order"], undefined], [["round"], undefined], [["turn"], undefined], [["moved"], undefined], [["used"], undefined]]);
+    appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, order: [] }));
+    const ended = endEffects(root, context, world, current, countedInRounds, "turns ended");
+    return { action: "order-ended", title: current.title, hostile: current.hostile ?? [], ended };
 }
 
 /**
