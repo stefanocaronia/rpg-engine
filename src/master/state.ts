@@ -1,6 +1,7 @@
 // The state every driver's chat shares and what changes it: the turn and its end, the chat's end, the waits; and the chat the table holds, made from it.
 import { type LineProcess, startLineProcess } from "../core/process.ts";
-import { type EndCode, EventQueue, graceWait, isHostName, keepError, laterByTimer, letGo, type MasterChat, type MasterEvent, type MasterOptions, type ToolKind, warnFailed, withoutTrace } from "./chat.ts";
+import { EventQueue, type Failure, graceWait, isHostName, keepError, laterByTimer, letGo, type MasterChat, type MasterEvent, type MasterOptions, type ToolKind, warnFailed, withoutTrace } from "./chat.ts";
+import { notStopped, programEnded } from "./failures.ts";
 import { type Message, parsedLine } from "./lines.ts";
 import { tracedProcess, traceTo } from "./trace.ts";
 
@@ -17,7 +18,7 @@ export interface Turn
     filled: boolean;
     /** Asked to stop; and why it fails, as when the host runs another model or a tool the table does not allow. */
     interrupted: boolean;
-    failure?: string;
+    failure?: Failure;
     /** A turn the host began by itself: no answer of the host's ends it. */
     byHost?: true;
 }
@@ -142,27 +143,24 @@ export function askToStop<T extends Turn>(state: ChatState<T>, turn: T): void
             return;
         }
 
-        endChat(state, "the host did not stop its turn and was closed", turn.failure === undefined ? "interrupted" : "failed", turn.failure, "now");
+        endChat(state, notStopped(), turn.failure === undefined ? "interrupted" : "failed", turn.failure, "now");
     });
 }
 
-/** Ends the turn in course, the chat free for the next words, then tells it. */
-export function endTurn(state: ChatState, reason: "done" | "interrupted" | "failed", why?: string, code?: EndCode): void
+/** Ends the turn in course, the chat free for the next words, then tells it: one that failed, with why, its code and values. */
+export function endTurn(state: ChatState, reason: "done" | "interrupted" | "failed", failure?: Failure): void
 {
     state.turn = undefined;
     state.cancelInterruptWait?.();
     state.cancelInterruptWait = undefined;
-    tell(state, { type: "turnEnd", reason, ...(why === undefined ? {} : { why }), ...(code === undefined ? {} : { code }) });
+    tell(state, { type: "turnEnd", reason, ...failure });
 }
 
-/**
- * The chat cannot play: the turn held ends failed, and the chat ends, its process let go to end by itself, which still answers; `code` says why beside the
- * words, as a player not signed in.
- */
-export function refused(state: ChatState, why: string, code?: EndCode): void
+/** The chat cannot play: the turn held ends failed, and the chat ends, its process let go to end by itself, which still answers. */
+export function refused(state: ChatState, failure: Failure): void
 {
     if (!state.closed && !state.ended) {
-        endChat(state, why, "failed", why, "gently", code);
+        endChat(state, failure, "failed", failure, "gently");
     }
 }
 
@@ -189,9 +187,8 @@ export function processEnded(state: ChatState, reason: string): void
         return;
     }
 
-    const said = state.errors.length === 0 ? "" : `: ${state.errors.join(" | ")}`;
-    const why = `the host's program ended (${reason})${said}`;
-    endChat(state, why, "failed", why, "gone");
+    const failure = programEnded(reason, state.errors);
+    endChat(state, failure, "failed", failure, "gone");
 }
 
 export function tell(state: ChatState, event: MasterEvent): void
@@ -314,15 +311,15 @@ function letGoClosed(state: ChatState): void
 
 /**
  * The chat ends: its turn in course ends as given, its process is stopped at once, let go to end by itself (`gently`), or left as it is gone already; and
- * `ended` says why, with its code where it has one.
+ * `ended` says why, with its code and values.
  */
-function endChat(state: ChatState, why: string, reason: "interrupted" | "failed", turnWhy: string | undefined, stop: "now" | "gently" | "gone", code?: EndCode): void
+function endChat(state: ChatState, failure: Failure, reason: "interrupted" | "failed", turnFailure: Failure | undefined, stop: "now" | "gently" | "gone"): void
 {
     state.ended = true;
     cancelWaits(state);
 
     if (state.turn !== undefined) {
-        endTurn(state, reason, turnWhy, code);
+        endTurn(state, reason, turnFailure);
     }
 
     if (stop === "now") {
@@ -331,7 +328,7 @@ function endChat(state: ChatState, why: string, reason: "interrupted" | "failed"
         letGoClosed(state);
     }
 
-    tell(state, { type: "ended", why, ...(code === undefined ? {} : { code }) });
+    tell(state, { type: "ended", ...failure });
 }
 
 function cancelWaits(state: ChatState): void

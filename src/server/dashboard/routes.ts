@@ -6,6 +6,7 @@ import { findCampaign } from "../../campaign/index.ts";
 import type { PlayerSetting } from "../../commands/config/dashboard.ts";
 import { campaignWidgets, packageWidget } from "../../commands/shared/packages/widgets.ts";
 import { view } from "../../commands/view/view.ts";
+import { refusalWords } from "../../core/refusal.ts";
 import { type Command, isBoolean } from "../../core/registry.ts";
 import { withFiles } from "../../core/store.ts";
 import { notationParts } from "../../dice/index.ts";
@@ -91,7 +92,7 @@ const routes: Record<string, Route> = {
         get: ({ request, response, served }) => (fromPhone(request, served) ? sendJson(response, 200, { phone: true }) : homeNow(response, served)),
         post: ({ request, response, served }) =>
             fromPhone(request, served)
-                ? sendJson(response, 403, { error: "The campaigns open on the computer: go back to them there." })
+                ? sendJson(response, 403, refusalWords("The campaigns open on the computer: go back to them there.", "home-on-computer"))
                 : startHome(request, response, served),
     },
     // Claude Code's hook waits here for the player's next sentence, from this computer (D-495).

@@ -1189,7 +1189,8 @@
         white-space: nowrap;
     }
 
-    /* On a phone the notice says whose turn alone: the round is on the Scene; Go to the scene goes under it when the row cannot hold both. */
+    /* On a phone the notice says whose turn alone: the round is on the Scene. The master's question keeps its card, Go to the chat under its words when
+       the row cannot hold both. */
     @media (max-width: 600px) {
         .turn-notice {
             flex-wrap: wrap;
@@ -1197,6 +1198,42 @@
 
         .turn-notice-round {
             display: none;
+        }
+
+        /* The player's turn on a phone, in every section: one slim strip right under the top, as wide as the window, its words on one line. The room the
+           top keeps under it goes under the strip. */
+        .turn-notice:not(.asked-notice) {
+            flex-wrap: nowrap;
+            align-items: center;
+            min-height: var(--target);
+            margin: 0 calc(-1 * var(--gap)) 18px;
+            padding-block: 0;
+            padding-inline: 16px 8px;
+            border-radius: 0;
+            box-shadow: none;
+            font-size: 0.9rem;
+        }
+
+        .top-room:has(+ .top + .turn-notice:not(.asked-notice)) {
+            margin-block-end: 0;
+        }
+
+        .turn-notice:not(.asked-notice) svg.icon {
+            width: 18px;
+            height: 18px;
+            margin-block-start: 0;
+        }
+
+        .turn-notice:not(.asked-notice) > span:not(.turn-notice-go) {
+            min-width: 0;
+            padding-block: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .turn-notice:not(.asked-notice) .turn-notice-go {
+            font-size: 0.85rem;
         }
     }
 

@@ -1,6 +1,7 @@
 // The launcher found where its place says it is, asked to quit, or started apart from this process: what `rpg open` and a campaign's table do to reach it.
 import { homedir } from "node:os";
 import { isRunning, startApart } from "../../core/process.ts";
+import { type RefusalBody, refusalWords } from "../../core/refusal.ts";
 import { lookUntil } from "../../core/wait.ts";
 import { oneWindowAtATime, openWindow, type WindowOpener } from "../../desktop/index.ts";
 import { askPage } from "../page/index.ts";
@@ -53,10 +54,10 @@ export async function findLauncher(home: string, probe: (place: LauncherPlace) =
 
 /**
  * The link of the launcher of this engine, started apart first where none is there; one of another engine is asked to quit first, with its place's token;
- * one starting is asked again until it answers. A refusal in words where none answers within ten seconds, or where one is there and does not answer: never
- * a second one beside it.
+ * one starting is asked again until it answers. A refusal, in words with their code and values, where none answers within ten seconds, or where one is
+ * there and does not answer: never a second one beside it.
  */
-export async function reachLauncher(home: string, version: string, starter: LauncherStarter = {}): Promise<{ url: string; } | { error: string; }>
+export async function reachLauncher(home: string, version: string, starter: LauncherStarter = {}): Promise<{ url: string; } | RefusalBody>
 {
     const asked = new Set<string>();
     let started = false;
@@ -80,7 +81,7 @@ export async function reachLauncher(home: string, version: string, starter: Laun
         return undefined;
     };
 
-    return lookUntil(look, () => ({ error: notReached(there) }), { within: startWait, every, now: starter.now, wait: starter.wait });
+    return lookUntil(look, () => notReached(there), { within: startWait, every, now: starter.now, wait: starter.wait });
 }
 
 /**
@@ -91,7 +92,7 @@ export function launcherWay(
     home: string,
     version: string,
     opener: WindowOpener = async (url, kind) => (await openWindow(url, kind, process.platform)).opened === "window",
-): { find(): Promise<{ url: string; } | undefined>; reach(): Promise<{ url: string; } | { error: string; }>; open(url: string): Promise<boolean>; }
+): { find(): Promise<{ url: string; } | undefined>; reach(): Promise<{ url: string; } | RefusalBody>; open(url: string): Promise<boolean>; }
 {
     const open = oneWindowAtATime(opener);
     return {
@@ -140,16 +141,17 @@ export function startLauncher(): void
     startApart(process.execPath, [...process.execArgv, process.argv[1] ?? "", "launcher"], { cwd: homedir() });
 }
 
-/** Why the launcher was not reached in time, by what was last found at its place. */
-function notReached(there: LauncherThere | undefined): string
+/** Why the launcher was not reached in time, by what was last found at its place: in words, with their code and values. */
+function notReached(there: LauncherThere | undefined): RefusalBody
 {
     if (there === undefined) {
-        return "RPG Engine's launcher did not start within ten seconds: run rpg launcher in a terminal to see why.";
+        return refusalWords("RPG Engine's launcher did not start within ten seconds: run rpg launcher in a terminal to see why.", "launcher-not-started", { seconds: String(startWait / 1000) });
     }
 
+    const at = { url: there.url, pid: String(there.pid) };
     return there.answered === undefined
-        ? `RPG Engine's launcher, at ${there.url}, is there but does not answer: end its process, ${there.pid}, then try again.`
-        : `The launcher of RPG Engine ${there.answered}, at ${there.url}, did not quit: end its process, ${there.pid}, then try again.`;
+        ? refusalWords(`RPG Engine's launcher, at ${there.url}, is there but does not answer: end its process, ${there.pid}, then try again.`, "launcher-silent", at)
+        : refusalWords(`The launcher of RPG Engine ${there.answered}, at ${there.url}, did not quit: end its process, ${there.pid}, then try again.`, "launcher-not-quit", { version: there.answered, ...at });
 }
 
 function parsed(text: string): unknown

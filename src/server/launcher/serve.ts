@@ -7,6 +7,7 @@ import { chooseFolder, type ChosenFolder, type FolderAsked } from "../../confirm
 import { type Context, defaultContext, type Helpers, userDataFolder } from "../../core/context.ts";
 import type { HostId } from "../../core/hosts.ts";
 import { childrenEnded, guardProcess } from "../../core/process.ts";
+import { refusalWords } from "../../core/refusal.ts";
 import { getVersion } from "../../core/version.ts";
 import { lookUntil } from "../../core/wait.ts";
 import { oneWindowAtATime, openWindow, type WindowOpener } from "../../desktop/index.ts";
@@ -95,7 +96,7 @@ const lookAgainEvery = 100;
 // How long a launcher waits for one starting at its place to answer as the launcher: it does once it looked around, within about a second.
 const startingWait = 5000;
 // What the page reads where a request failed in a way nobody foresaw: the launcher goes on.
-const failedWords = "RPG Engine's launcher could not do that. Try again; if it happens again, close its window, run rpg launcher in a terminal and read what it says.";
+const failedWords = refusalWords("RPG Engine's launcher could not do that. Try again; if it happens again, close its window, run rpg launcher in a terminal and read what it says.", "launcher-failed");
 
 /**
  * `rpg launcher`: its link on stdout once it serves, or the link of the one of this engine already there; what happens on stderr. Its exit code: 0 once it
@@ -320,7 +321,7 @@ function atWork(server: Server, port: number, options: LauncherOptions): Launche
         lastBusy = now();
         answerLauncher(request, response, served).catch((error: unknown) => {
             log(`The launcher could not answer ${request.method ?? ""} ${request.url ?? ""}: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
-            sendJson(response, 500, { error: failedWords });
+            sendJson(response, 500, failedWords);
         });
     });
 

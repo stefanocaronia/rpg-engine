@@ -523,6 +523,12 @@
             height: var(--target);
         }
 
+        /* What copies a command, an address or a path, wherever it stands. */
+        .setting-copy {
+            min-width: var(--target);
+            min-height: var(--target);
+        }
+
         .setting-list input,
         .setting-text input,
         .language-choice input {

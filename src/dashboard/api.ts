@@ -59,7 +59,7 @@ export async function sendSetupWord(word: { leave: string; } | { ready: true; })
 {
     try {
         const response = await fetch("/api/setup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(word) });
-        return response.status === 202 ? undefined : ((await response.json() as { error?: string; }).error ?? t("It did not reach the game: try again."));
+        return response.status === 202 ? undefined : refusalText(await response.json() as Refused, t("It did not reach the game: try again."));
     } catch {
         return t("It did not reach the game: try again.");
     }
@@ -97,8 +97,8 @@ export interface Note
     shared?: string;
 }
 
-/** A note written, new or changed, by its id; one taken away; one shared with the master, or taken back before the master hears it. */
-export type NoteChange = { id: string; title: string; text: string; } | { remove: string; } | { share: string; } | { unshare: string; };
+/** A note written, new or changed, by its id; one taken away; one shared with the master. */
+export type NoteChange = { id: string; title: string; text: string; } | { remove: string; } | { share: string; };
 
 /** The player's notes, the last written first (D-371), and those shared that the master has not heard yet, which may be taken back (D-381). */
 export async function readNotes(): Promise<{ notes: Note[]; pending: string[]; }>
@@ -119,7 +119,7 @@ export async function sendNote(change: NoteChange, leaving = false): Promise<str
     const post = async (): Promise<string | undefined> => {
         try {
             const response = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change), keepalive: leaving });
-            return response.ok ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? t("The note was not saved: try again."));
+            return response.ok ? undefined : refusalText(await response.json().catch(() => ({})) as Refused, t("The note was not saved: try again."));
         } catch {
             return t("The note was not saved: the game is not connected.");
         }
@@ -134,12 +134,29 @@ export async function sendNote(change: NoteChange, leaving = false): Promise<str
     return sent;
 }
 
+/** Takes a note shared back before the master reads it (D-381), after those sent before: done, "read" when it is too late, or undefined when the game is away. */
+export async function unshareNote(id: string): Promise<"done" | "read" | undefined>
+{
+    const post = async (): Promise<"done" | "read" | undefined> => {
+        try {
+            const response = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ unshare: id }) });
+            return response.ok ? "done" : response.status === 409 ? "read" : undefined;
+        } catch {
+            return undefined;
+        }
+    };
+
+    const sent = noting.then(post);
+    noting = sent;
+    return sent;
+}
+
 /** Sends the master a story for the player character, which they write in its page with the player (D-386): undefined when it reached the game, else what went wrong. */
 export async function sendStory(text: string, who: string): Promise<string | undefined>
 {
     try {
         const response = await fetch("/api/story", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, who }) });
-        return response.ok ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? t("The story did not reach the master: try again."));
+        return response.ok ? undefined : refusalText(await response.json().catch(() => ({})) as Refused, t("The story did not reach the master: try again."));
     } catch {
         return t("The story did not reach the master: the game is not connected.");
     }
@@ -177,8 +194,7 @@ export async function changeSaves(change: SavesChange): Promise<string | undefin
             return undefined;
         }
 
-        const body = await response.json() as { error?: string; };
-        return body.error ?? t("It did not reach the game: try again.");
+        return refusalText(await response.json() as Refused, t("It did not reach the game: try again."));
     } catch {
         return t("It did not reach the game: try again.");
     }
@@ -558,8 +574,7 @@ async function sendChange(change: SettingChange): Promise<string | undefined>
             return undefined;
         }
 
-        const body = await response.json() as { error?: string; };
-        return body.error ?? t("The change did not reach the game: try again.");
+        return refusalText(await response.json() as Refused, t("The change did not reach the game: try again."));
     } catch {
         return t("The change did not reach the game: try again.");
     }
@@ -684,15 +699,15 @@ export type HostWish = { signIn: { host: string; cancel?: true; }; } | { install
  */
 export type MasterWish = { open: ChatChoice & { fresh: boolean; }; } | { say: string; } | { stop: true; } | { close: true; } | { model: { model: string; effort?: string; }; } | HostWish;
 
-/** Asks it of the chat: the chat as it is after, and, when the table refuses or the game is away, why, with its code where it has one. */
+/** Asks it of the chat: the chat as it is after, and, when the table refuses or the game is away, why, in the page's words, with its code where it has one. */
 export async function changeMaster(wish: MasterWish): Promise<{ shown?: MasterNow; error?: string; code?: string; }>
 {
     try {
         const response = await fetch("/api/master", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(wish) });
-        const { error, code, ...shown } = await response.json().catch(() => ({})) as Partial<MasterNow> & { error?: string; code?: string; };
+        const { error, code, values, ...shown } = await response.json().catch(() => ({})) as Partial<MasterNow> & Refused;
         return {
             ...(shown.table === undefined ? {} : { shown: shown as MasterNow }),
-            ...(response.ok ? {} : { error: error ?? t("It did not reach the game: try again."), ...(code === undefined ? {} : { code }) }),
+            ...(response.ok ? {} : { error: refusalText({ error, code, values }, t("It did not reach the game: try again.")), ...(code === undefined ? {} : { code }) }),
         };
     } catch {
         return { error: t("It did not reach the game: try again.") };
@@ -727,13 +742,14 @@ export async function changePhone(open: boolean): Promise<{ shown: PhoneNow; } |
 {
     try {
         const response = await fetch("/api/phone", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ open }) });
-        const body = await response.json().catch(() => ({})) as Partial<PhoneNow> & { code?: string; };
+        const body = await response.json().catch(() => ({})) as Partial<PhoneNow> & Refused;
 
         if (response.ok) {
             return { shown: body as PhoneNow };
         }
 
-        return body.code === "offline" ? { shown: { phone: false, open: false, offline: true } } : { problem: t("It did not reach the game: try again.") };
+        // Said by its code, as a door that could not open; what has none, in the page's own words, never the engine's.
+        return body.code === "offline" ? { shown: { phone: false, open: false, offline: true } } : { problem: refusalText({ code: body.code, values: body.values }, t("It did not reach the game: try again.")) };
     } catch {
         return { problem: t("It did not reach the game: try again.") };
     }

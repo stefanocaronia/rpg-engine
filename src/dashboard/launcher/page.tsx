@@ -8,6 +8,7 @@ import { HostRows, Independent } from "../chat/apps.tsx";
 import { anyHostReady } from "../chat/chat.ts";
 import { useLookAgain } from "../chat/start.tsx";
 import { Confirm } from "../parts/confirm.tsx";
+import { LogFile } from "../parts/log-file.tsx";
 import { Master } from "../shell/master.tsx";
 import { productName } from "../shell/product.ts";
 import { ThemeCorner } from "../shell/theme-switch.tsx";
@@ -37,8 +38,9 @@ export function Launcher({ asked }: { asked?: string | undefined; })
     const [away, setAway] = useState<string>();
     const [view, setView] = useState<"list" | "new">("list");
     const [doing, setDoing] = useState<Doing>();
-    // What went wrong: with a campaign of the list, by its folder; else with what the page was asked beside it.
-    const [problem, setProblem] = useState<{ root?: string; text: string; }>();
+    // What went wrong: with a campaign of the list, by its folder; else with what the page was asked beside it. With the file of the table's log, where
+    // a table did not start.
+    const [problem, setProblem] = useState<{ root?: string; text: string; log?: string; }>();
     const [removing, setRemoving] = useState<ListedCampaign>();
     // What a screen reader is told, once, as something starts.
     const [told, setTold] = useState("");
@@ -127,7 +129,7 @@ export function Launcher({ asked }: { asked?: string | undefined; })
             leave(opened, sized);
         } else {
             setDoing(undefined);
-            setProblem({ root, text: opened.error });
+            setProblem({ root, text: opened.error, ...(opened.log === undefined ? {} : { log: opened.log }) });
         }
     };
 
@@ -185,7 +187,7 @@ export function Launcher({ asked }: { asked?: string | undefined; })
         }
 
         setDoing(undefined);
-        setProblem({ ...(made.root === undefined ? {} : { root: made.root }), text: made.error });
+        setProblem({ ...(made.root === undefined ? {} : { root: made.root }), text: made.error, ...(made.log === undefined ? {} : { log: made.log }) });
 
         // Made, but its page did not open: it is in the list now, where what went wrong is said under it.
         if (made.root !== undefined) {
@@ -230,7 +232,7 @@ export function Launcher({ asked }: { asked?: string | undefined; })
     const listed = (root: string | undefined): boolean => root !== undefined && campaigns.some((campaign) => campaign.root === root);
     const busy = doing !== undefined;
     // What went wrong with no campaign of the list: said beside what was asked.
-    const aside = problem !== undefined && !listed(problem.root) ? problem.text : undefined;
+    const aside = problem !== undefined && !listed(problem.root) ? problem : undefined;
     return (
         <main class="launcher">
             <p class="visually-hidden" role="status">{told}</p>
@@ -245,7 +247,7 @@ export function Launcher({ asked }: { asked?: string | undefined; })
                         standing={{
                             opening: doing?.what === "opening" && doing.root !== undefined ? { root: doing.root, words: doing.words } : undefined,
                             busy,
-                            problem: problem?.root === undefined ? undefined : { root: problem.root, text: problem.text },
+                            problem: problem?.root === undefined ? undefined : { ...problem, root: problem.root },
                         }}
                         now={new Date()}
                         onOpen={(campaign) => void open(campaign.root, campaign.name)}
@@ -259,7 +261,7 @@ export function Launcher({ asked }: { asked?: string | undefined; })
                         <NewCampaignForm
                             launcher={launcher}
                             busy={doing?.what === "creating" ? doing.words : undefined}
-                            problem={aside}
+                            problem={aside?.text}
                             onCreate={(wish) => void create(wish)}
                             onBack={() => {
                                 setProblem(undefined);
@@ -313,7 +315,8 @@ export function Launcher({ asked }: { asked?: string | undefined; })
                                 </button>
                                 <p id="launcher-folder-is" class="launcher-hint">{t("A campaign you already have on this computer.")}</p>
                             </div>
-                            {aside !== undefined && <p class="launcher-problem" role="alert" dir="auto">{aside}</p>}
+                            {aside !== undefined && <p class="launcher-problem" role="alert" dir="auto">{aside.text}</p>}
+                            {aside?.log !== undefined && <LogFile file={aside.log} />}
                         </div>
                     )}
             </section>

@@ -18,8 +18,9 @@ import { campaignPageElsewhere, campaignPorts, type Dashboard, type DashboardOpt
 import { type TableChat, tableChat, type TableChatOptions } from "./chat.ts";
 import { type Door, welcome } from "./door.ts";
 import { probeTable } from "./hello.ts";
+import { tableLog, tableLogFile } from "./log.ts";
 import { storyMarks } from "./marks.ts";
-import { knock, makeTablesFolder, newToken, readPlace, removePlace, removeRefusal, removeSocketFile, type TablePlace, tableSocket, writePlace, writeRefusal } from "./place.ts";
+import { knock, makeTablesFolder, newToken, readPlace, removePlace, removeRefusal, removeSocketFile, type TablePlace, type TableRefusal, tableSocket, writePlace, writeRefusal } from "./place.ts";
 import { type Seat, tableSeat } from "./seat.ts";
 import { programsWait, turnStopWait } from "./stop.ts";
 
@@ -57,8 +58,10 @@ export interface TableOptions
     dashboard?: DashboardOptions;
     /** Where the chat's host keeps its chats, by its environment; none in the tests. */
     chatFolders?: (environment: Record<string, string>) => ChatFolders | undefined;
-    /** What the table does, a line at a time. */
-    log?: (line: string) => void;
+    /** What the table does, a line at a time; `kept` is what its log's file keeps in the line's place, where the line quotes words of the story. */
+    log?: (line: string, kept?: string) => void;
+    /** The file `rpg table` keeps its log in, which the page names where a chat ended by an error; none where it keeps none, as in the tests. */
+    logFile?: string;
     /** The way back from the page to the launcher, which `rpg table` is given by the command line; none in the tests, unless they give their own. */
     launcher?: LauncherWay;
     /**
@@ -74,8 +77,8 @@ export interface TableOptions
  */
 export type RunOptions = Partial<Omit<TableOptions, "folder">> & { exit?: (code: number) => void; programsWait?: number; };
 
-/** A table opened, the link of one there already, or why it could not start. */
-export type Opened = Table | { running: string; } | { refused: string; };
+/** A table opened, the link of one there already, or why it could not start: in a terminal's words, with their code and values for the launcher's page. */
+export type Opened = Table | { running: string; } | TableRefusal;
 
 /** What a table is made of once its page serves: its context and files, its page, its seat, and its own chat with the master. */
 interface Parts
@@ -100,25 +103,35 @@ const lookAgainFor = 1000;
 const lookAgainEvery = 100;
 
 /**
- * `rpg table` in the process's folder: the table's link on stdout once it serves, or the link of the one already there; what happens on stderr. Its exit
- * code: 0 once it ended, as after a while with no chat and no page, or on Ctrl+C; 1 when it could not start, or on an error nothing caught. Either end
- * waits for the programs it started to end by themselves, `programsWait` at most, and logs how they did.
+ * `rpg table` in the process's folder: the table's link on stdout once it serves, or the link of the one already there; what happens on stderr, and in the
+ * file of its log beside its place. Its exit code: 0 once it ended, as after a while with no chat and no page, or on Ctrl+C; 1 when it could not start, or
+ * on an error nothing caught. Either end waits for the programs it started to end by themselves, `programsWait` at most, and logs how they did.
  */
 export async function runTable(folder = process.cwd(), given: RunOptions = {}): Promise<number>
 {
-    const log = (line: string): boolean => process.stderr.write(`${line}\n`);
+    const home = given.home ?? userDataFolder();
+    const root = findCampaign(folder);
+    // What the table does is said on stderr and kept in its log's file: one started with no terminal, as from the launcher, has no stderr to read.
+    const aloud = given.log ?? ((line: string): boolean => process.stderr.write(`${line}\n`));
+    const keep = root === undefined ? undefined : tableLog(home, root, given.now);
+
+    const log = (line: string, kept = line): void => {
+        aloud(line);
+        keep?.(kept);
+    };
+
     // What the chat takes from outside, the programs whose accounts the page reads included, is the caller's to give: `rpg table` gives this computer's.
     const master = given.master ?? {};
-    const options: TableOptions = { folder, home: userDataFolder(), platform: process.platform, version: getVersion(), log, ...given, master };
+    const logFile = root === undefined ? {} : { logFile: tableLogFile(home, root) };
+    const options: TableOptions = { folder, home, platform: process.platform, version: getVersion(), ...given, log, ...logFile, master };
     const opened = await openTable(options);
 
     if ("refused" in opened) {
         options.log?.(opened.refused);
-        // And for the launcher, which started it apart and reads none of its words.
-        const root = findCampaign(folder);
 
+        // And for the launcher, which started it apart and reads none of its words.
         if (root !== undefined) {
-            writeRefusal(options.home, root, opened.refused);
+            writeRefusal(options.home, root, opened);
         }
 
         return 1;
@@ -160,6 +173,7 @@ export async function openTable(options: TableOptions): Promise<Opened>
     const root = findCampaign(options.folder);
 
     if (root === undefined) {
+        // Said in a terminal alone: the launcher never starts a table where there is no campaign.
         return { refused: `rpg table: ${options.folder} is no campaign. Run it in a campaign's folder, or make one there first with rpg init.` };
     }
 
@@ -177,7 +191,7 @@ export async function openTable(options: TableOptions): Promise<Opened>
  * A table of the campaign there already: its link where it answers a probe; a refusal that says what to do where it does not, or ends; none where its place
  * is missing or stale, taken away then.
  */
-async function tableThere(options: TableOptions, root: string): Promise<{ running: string; } | { refused: string; } | undefined>
+async function tableThere(options: TableOptions, root: string): Promise<{ running: string; } | TableRefusal | undefined>
 {
     const place = readPlace(options.home, root);
 
@@ -193,19 +207,19 @@ async function tableThere(options: TableOptions, root: string): Promise<{ runnin
     }
 
     if (probed === "silent" || ("refused" in probed && probed.refused !== "ending")) {
-        return { refused: `rpg table: the table of ${root} (process ${place.pid}) does not answer: end that process, then run rpg table again.` };
+        return refusal(`the table of ${root} (process ${place.pid}) does not answer: end that process, then run rpg table again.`, "table-silent", { root, pid: String(place.pid) });
     }
 
-    return "refused" in probed ? { refused: `rpg table: the table of ${root} is ending: run rpg table again in a moment.` } : { running: place.url };
+    return "refused" in probed ? refusal(`the table of ${root} is ending: run rpg table again in a moment.`, "table-ending", { root }) : { running: place.url };
 }
 
 /**
  * A table of the campaign started beside this one, as two started together, looked for again for about a second, once this one could not have its page or
  * its socket; what the last look found, if anything.
  */
-async function tableAfterAll(options: TableOptions, root: string): Promise<{ running: string; } | { refused: string; } | undefined>
+async function tableAfterAll(options: TableOptions, root: string): Promise<{ running: string; } | TableRefusal | undefined>
 {
-    let last: { running: string; } | { refused: string; } | undefined;
+    let last: { running: string; } | TableRefusal | undefined;
 
     const look = async (): Promise<{ running: string; } | undefined> => {
         last = await tableThere(options, root);
@@ -216,7 +230,7 @@ async function tableAfterAll(options: TableOptions, root: string): Promise<{ run
 }
 
 /** The table's context, its page, its seat and its own chat; where its page does not start, the table that serves it after all, or why not. */
-async function openParts(options: TableOptions, root: string): Promise<Parts | { running: string; } | { refused: string; }>
+async function openParts(options: TableOptions, root: string): Promise<Parts | { running: string; } | TableRefusal>
 {
     // The chat at the table names the host and gives its environment, once there is a seat; the table's own chat and its page tell each other, once both are.
     let seat: Seat | undefined;
@@ -250,6 +264,7 @@ async function openParts(options: TableOptions, root: string): Promise<Parts | {
             }
         },
         ...(options.log === undefined ? {} : { log: options.log }),
+        ...(options.logFile === undefined ? {} : { logFile: options.logFile }),
     });
     // The way back to the campaigns: the launcher, started from the page where none answers.
     const launcher = options.launcher === undefined ? {} : { launcher: options.launcher };
@@ -258,7 +273,7 @@ async function openParts(options: TableOptions, root: string): Promise<Parts | {
 
     if (dashboard === undefined) {
         session.close();
-        return await tableAfterAll(options, root) ?? { refused: await pageRefusal(root, options) };
+        return await tableAfterAll(options, root) ?? await pageRefusal(root, options);
     }
 
     showPage(context, dashboard);
@@ -267,14 +282,23 @@ async function openParts(options: TableOptions, root: string): Promise<Parts | {
 }
 
 /** Why the table has no page: a chat of the campaign that did not give it, as one of an older engine, or no port free; with what to do. */
-async function pageRefusal(root: string, options: TableOptions): Promise<string>
+async function pageRefusal(root: string, options: TableOptions): Promise<TableRefusal>
 {
     if (await campaignPageElsewhere(root, options.dashboard?.ports ?? campaignPorts(root)) !== undefined) {
-        return "rpg table: a chat of this campaign that is still open serves its page and did not give it, as one started before RPG Engine was updated: close "
-            + "that chat's app (Claude Code, Codex, a terminal), or restart the computer, then open the campaign again.";
+        return refusal(
+            "a chat of this campaign that is still open serves its page and did not give it, as one started before RPG Engine was updated: close "
+                + "that chat's app (Claude Code, Codex, a terminal), or restart the computer, then open the campaign again.",
+            "page-kept-by-chat",
+        );
     }
 
-    return `rpg table: no port is free for the page of ${root}: close the programs that serve pages on this computer, or restart it, then open the campaign again.`;
+    return refusal(`no port is free for the page of ${root}: close the programs that serve pages on this computer, or restart it, then open the campaign again.`, "no-port", { root });
+}
+
+/** A refusal of `rpg table`: its words after its name, as a terminal reads them, with their code and the code's values. */
+function refusal(words: string, code: string, values?: Record<string, string>): TableRefusal
+{
+    return { refused: `rpg table: ${words}`, code, ...(values === undefined ? {} : { values }) };
 }
 
 /** The table at work once its page serves: its socket listening and its place written, its door open, its watch for when to end. */
@@ -331,11 +355,10 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
     if (listened !== undefined) {
         await dashboard.close();
         session.close();
-        return await tableAfterAll(options, root) ?? {
-            refused: listened === "EADDRINUSE"
-                ? `rpg table: another program listens at ${socket}, where the table of ${root} would: end the rpg table of this campaign still running, then start it again.`
-                : `rpg table: the table of ${root} cannot listen at ${socket} (${listened}).`,
-        };
+        return await tableAfterAll(options, root) ?? (listened === "EADDRINUSE"
+            ? refusal(`another program listens at ${socket}, where the table of ${root} would: end the rpg table of this campaign still running, then start it again.`, "socket-taken", { socket, root })
+            // The system's own code for why it cannot listen there, as it gave it.
+            : refusal(`the table of ${root} cannot listen at ${socket} (${listened}).`, "socket-failed", { root, socket, why: listened }));
     }
 
     listener.on("error", () => undefined);

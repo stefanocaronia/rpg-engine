@@ -82,4 +82,12 @@
     .notice-hide svg.icon {
         color: var(--muted);
     }
+
+    /* The file of the table's log, named under what went wrong for who reports it (T-302): quiet, its path as words to copy, which wrap anywhere. */
+    .log-file {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
+    }
 }

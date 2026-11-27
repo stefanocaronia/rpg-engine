@@ -127,8 +127,9 @@ describe("the master in Claude Code", () => {
             const { chat, host, events, until } = play(modelAnswer({ subtype: "error", error: "no such model" }));
             expect(chat.send("Hello")).toBe(true);
             await until((all) => all.some((event) => event.type === "ended"));
-            const why = "the host did not take the model haiku: no such model";
-            expect(events).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            // The host's own words travel as they are, in a value beside the code.
+            const failure = { why: "the host did not take the model haiku: no such model", code: "model-not-taken", values: { model: "haiku", why: "no such model" } };
+            expect(events).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
             // Let go to end by itself: its input closed, never stopped at once.
             expect(host.inputClosed).toBe(true);
             expect(host.stops).toBe(0);
@@ -141,8 +142,8 @@ describe("the master in Claude Code", () => {
             const { chat, host, events, until } = play(modelAnswer({ subtype: "success", response: { model: "claude-sonnet-5" } }));
             chat.send("Hello");
             await until((all) => all.some((event) => event.type === "ended"));
-            const why = "the host was asked for the model haiku and runs claude-sonnet-5";
-            expect(events).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            const failure = { why: "the host was asked for the model haiku and runs claude-sonnet-5", code: "model-other", values: { asked: "haiku", model: "claude-sonnet-5" } };
+            expect(events).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
             expect(host.written.filter(isPlayerWords)).toEqual([]);
             expect(chat.send("Again")).toBe(false);
         });
@@ -153,8 +154,8 @@ describe("the master in Claude Code", () => {
             clock.advance(29_999);
             expect(events).toEqual([]);
             clock.advance(1);
-            const why = "the host did not confirm the model haiku within 30 seconds";
-            expect(events).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            const failure = { why: "the host did not confirm the model haiku within 30 seconds", code: "model-not-confirmed", values: { model: "haiku", seconds: "30" } };
+            expect(events).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
             expect(host.inputClosed).toBe(true);
             expect(host.stopped).toBe(false);
             clock.advance(10_000);
@@ -166,7 +167,7 @@ describe("the master in Claude Code", () => {
         it("ends the chat with no turn when the answer is missing before the player's first words", () => {
             const { chat, host, clock, events } = play([], {}, { ignore: ["set_model"] });
             clock.advance(30_000);
-            expect(events).toEqual([{ type: "ended", why: "the host did not confirm the model haiku within 30 seconds" }]);
+            expect(events).toEqual([{ type: "ended", why: "the host did not confirm the model haiku within 30 seconds", code: "model-not-confirmed", values: { model: "haiku", seconds: "30" } }]);
             expect(host.inputClosed).toBe(true);
             clock.advance(10_000);
             expect(host.stopped).toBe(true);
@@ -177,7 +178,9 @@ describe("the master in Claude Code", () => {
             const { chat, host, events, until } = play([said("Hello"), init("session-1", "claude-sonnet-5"), delta("leaked"), result(), ...turn("Again", delta("Fine"))]);
             chat.send("Hello");
             await until((all) => turnEnds(all).length === 1);
-            expect(events).toEqual([{ type: "turnEnd", reason: "failed", why: "the host runs the model claude-sonnet-5 instead of claude-haiku-5-5" }]);
+            expect(events).toEqual([
+                { type: "turnEnd", reason: "failed", why: "the host runs the model claude-sonnet-5 instead of claude-haiku-5-5", code: "model-switched", values: { model: "claude-sonnet-5", asked: "claude-haiku-5-5" } },
+            ]);
             expect(host.written.map(kindOf)).toEqual(["set_model", "user", "interrupt"]);
             chat.send("Again");
             await until((all) => turnEnds(all).length === 2);
@@ -192,7 +195,7 @@ describe("the master in Claude Code", () => {
             expect(events).toEqual([{ type: "session", session: "session-1", model: "claude-haiku-5-5[1m]" }, { type: "text", block: 0, text: "Fine" }, { type: "turnEnd", reason: "done" }]);
             chat.send("Again");
             await until((all) => turnEnds(all).length === 2);
-            expect(events.at(-1)).toEqual({ type: "turnEnd", reason: "failed", why: "the host runs the model  instead of claude-haiku-5-5" });
+            expect(events.at(-1)).toEqual({ type: "turnEnd", reason: "failed", why: "the host runs the model  instead of claude-haiku-5-5", code: "model-switched", values: { model: "", asked: "claude-haiku-5-5" } });
             expect(host.problems).toEqual([]);
         });
 
@@ -272,13 +275,19 @@ describe("the master in Claude Code", () => {
             };
 
             expect(await ran(toolUse("t1", "Bash", { command: "curl example.com" }))).toEqual([
-                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use Bash" },
+                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use Bash", code: "tool-unasked", values: { tool: "Bash" } },
             ]);
             expect(await ran(toolUse("t1", "Read", { file_path: "/home/player/.ssh/id_rsa" }))).toEqual([
-                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: Read read /home/player/.ssh/id_rsa, and the table lets the master read only the campaign's folder" },
+                {
+                    type: "turnEnd",
+                    reason: "failed",
+                    why: "the host ran a tool without asking: Read read /home/player/.ssh/id_rsa, and the table lets the master read only the campaign's folder",
+                    code: "read-outside",
+                    values: { tool: "Read", path: "/home/player/.ssh/id_rsa" },
+                },
             ]);
             expect(await ran(toolUse("t1", "Agent", { subagent_type: "general-purpose", prompt: "look around" }))).toEqual([
-                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use Agent" },
+                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use Agent", code: "tool-unasked", values: { tool: "Agent" } },
             ]);
         });
 
@@ -396,7 +405,19 @@ describe("the master in Claude Code", () => {
             await until((all) => turnEnds(all).length === 1);
             chat.send("Again");
             await until((all) => turnEnds(all).length === 2);
-            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: "API Error: overloaded" }, { type: "turnEnd", reason: "failed", why: "error_max_turns" }]);
+            // Nothing of the table's around the host's words: the code says they are the host's, and they are its one value.
+            expect(turnEnds(events)).toEqual([
+                { type: "turnEnd", reason: "failed", why: "API Error: overloaded", code: "host-said", values: { why: "API Error: overloaded" } },
+                { type: "turnEnd", reason: "failed", why: "error_max_turns", code: "host-said", values: { why: "error_max_turns" } },
+            ]);
+        });
+
+        it("fails with the error's name where the host words an error of the API with no words at all", async () => {
+            const wordless = out({ type: "assistant", parent_tool_use_id: null, is_api_error_message: true, error: "rate_limit", message: { id: "m1", role: "assistant", content: [] } });
+            const { chat, events, until } = play([said("Hello"), init(), wordless, result("success", { is_error: true, result: "" })]);
+            chat.send("Hello");
+            await until((all) => turnEnds(all).length === 1);
+            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host's model failed: rate_limit", code: "model-failed", values: { why: "rate_limit" } }]);
         });
 
         it("fails the turn and ends the chat when the process ends", async () => {
@@ -404,7 +425,8 @@ describe("the master in Claude Code", () => {
             chat.send("Hello");
             await until((all) => all.some((event) => event.type === "text"));
             host.end("exit code 1");
-            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host's program ended (exit code 1)" }, { type: "ended", why: "the host's program ended (exit code 1)" }]);
+            const failure = { why: "the host's program ended (exit code 1)", code: "program-ended", values: { reason: "exit code 1" } };
+            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
             expect(chat.send("Again")).toBe(false);
         });
 
@@ -414,14 +436,15 @@ describe("the master in Claude Code", () => {
             await until((all) => all.some((event) => event.type === "text"));
             ["one", "", "two", "   ", "three", "four", "five", `six ${"x".repeat(400)}`].forEach((line) => host.complain(line));
             host.end("exit code 1");
-            const why = `the host's program ended (exit code 1): two | three | four | five | six ${"x".repeat(296)}`;
-            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            const lines = `two | three | four | five | six ${"x".repeat(296)}`;
+            const failure = { why: `the host's program ended (exit code 1): ${lines}`, code: "program-ended", values: { reason: "exit code 1", why: lines } };
+            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
         });
 
         it("never stops the process again once it ended by itself: its pid may be another program's", () => {
             const { chat, host, events } = play([]);
             host.end("exit code 3");
-            expect(events).toEqual([{ type: "ended", why: "the host's program ended (exit code 3)" }]);
+            expect(events).toEqual([{ type: "ended", why: "the host's program ended (exit code 3)", code: "program-ended", values: { reason: "exit code 3" } }]);
             chat.close();
             expect(host.stops).toBe(0);
         });
@@ -438,7 +461,8 @@ describe("the master in Claude Code", () => {
             expect(host.stopped).toBe(false);
             clock.advance(1);
             expect(host.stopped).toBe(true);
-            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "interrupted" }, { type: "ended", why: "the host did not stop its turn and was closed" }]);
+            // A code with no values: the event carries none.
+            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "interrupted" }, { type: "ended", why: "the host did not stop its turn and was closed", code: "not-stopped" }]);
             expect(chat.send("Again")).toBe(false);
         });
 
@@ -634,8 +658,8 @@ describe("the master in Claude Code over a real process and pipe", () => {
         const { chat, events } = openReal({ COMPLAIN: "Not logged in|Please run /login" });
         chat.send("Hello");
         await waitFor(() => events.some((event) => event.type === "ended"));
-        const why = "the host's program ended (exit code 1): Not logged in | Please run /login";
-        expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+        const failure = { why: "the host's program ended (exit code 1): Not logged in | Please run /login", code: "program-ended", values: { reason: "exit code 1", why: "Not logged in | Please run /login" } };
+        expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
     }, 30_000);
 });
 
@@ -684,6 +708,11 @@ describe("Claude Code as the table drives it", () => {
         expect(driver.missing(folderWith(".mcp.json"))).toBeUndefined();
         expect(driver.missing(folderWith())).toBe("This campaign has no .mcp.json, which tells Claude Code how to start the game's server: run rpg init in the campaign's folder, then try again.");
         expect(driver.missing(folderWith(join(".mcp.json", "a-file")))).toBeDefined();
+    });
+
+    it("says the same with a code and its values, the file and the app's name, for a page to say it in its language", () => {
+        expect(driver.lacking?.(folderWith(".mcp.json"))).toBeUndefined();
+        expect(driver.lacking?.(folderWith())).toEqual({ why: driver.missing(folderWith()), code: "no-server-file", values: { file: ".mcp.json", host: "Claude Code" } });
     });
 
     it("takes a name of a model or a chat of letters, digits and . _ - : / @ [ ], from a letter or a digit, up to 200", () => {

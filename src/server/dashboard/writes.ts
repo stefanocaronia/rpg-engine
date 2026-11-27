@@ -20,7 +20,7 @@ import { readOpenScene } from "../../commands/shared/scene/scene.ts";
 import { listedLayer } from "../../commands/view/layers.ts";
 import { write } from "../../commands/write/write.ts";
 import { type Context, packagesFolder } from "../../core/context.ts";
-import { Refusal, refusalBody } from "../../core/refusal.ts";
+import { Refusal, refusalBody, refusalWords } from "../../core/refusal.ts";
 import { files, withFiles } from "../../core/store.ts";
 import { comparableText } from "../../core/text.ts";
 import { getVersion, isNewerVersion } from "../../core/version.ts";
@@ -132,9 +132,14 @@ export async function changeSetting(request: IncomingMessage, response: ServerRe
             const before = playerSettingNamed(root, served.context, change.setting) ?? (setup ? setupSettingNamed(root, change.setting) : undefined);
 
             if (before === undefined) {
-                return (settingNames as string[]).includes(change.setting.trim())
-                    ? { status: 403, error: `${change.setting} is the master's to change, in the chat.` }
-                    : { status: 400, error: `There is no setting "${change.setting}": the player's are ${playerSettings(root, served.context).map((one) => one.name).join(", ")}.` };
+                const setting = change.setting.trim();
+
+                if ((settingNames as string[]).includes(setting)) {
+                    return { status: 403, body: refusalWords(`${change.setting} is the master's to change, in the chat.`, "masters-setting", { setting }) };
+                }
+
+                const settings = playerSettings(root, served.context).map((one) => one.name).join(", ");
+                return { status: 400, body: refusalWords(`There is no setting "${change.setting}": the player's are ${settings}.`, "no-setting", { setting, settings }) };
             }
 
             const input = "value" in change ? { value: change.value } : "add" in change ? { add: [change.add] } : { remove: [change.remove] };
@@ -150,7 +155,7 @@ export async function changeSetting(request: IncomingMessage, response: ServerRe
         if (refused === undefined) {
             sendJson(response, 202, {});
         } else {
-            sendJson(response, refused.status, { error: refused.error });
+            sendJson(response, refused.status, refused.body);
         }
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
@@ -181,12 +186,12 @@ export async function changeSaves(request: IncomingMessage, response: ServerResp
     // Going back while the master waits for the player's answer would answer it in the game started over (D-361); while a call of theirs runs, it would write
     // in the game loaded.
     if ((parsed.data.action === "load" || parsed.data.action === "reset") && served.asked !== undefined) {
-        sendJson(response, 409, { error: "The master is asking you something: answer it first, then go back." });
+        sendJson(response, 409, refusalWords("The master is asking you something: answer it first, then go back.", "go-back-question"));
         return;
     }
 
     if ((parsed.data.action === "load" || parsed.data.action === "reset") && (served.context.chat?.calls ?? 0) > 0) {
-        sendJson(response, 409, { error: "The master is working on the game now: go back once they have answered." });
+        sendJson(response, 409, refusalWords("The master is working on the game now: go back once they have answered.", "go-back-working"));
         return;
     }
 
@@ -197,7 +202,7 @@ export async function changeSaves(request: IncomingMessage, response: ServerResp
             const name = readSettings(requireCampaign(served.context.folder)).name;
 
             if (change.action === "reset" && comparableText(change.campaign) !== comparableText(name)) {
-                throw new Error(`Write the campaign's name, ${name}, to start it over. Nothing changed.`);
+                throw new Refusal(`Write the campaign's name, ${name}, to start it over. Nothing changed.`, "start-over-name", { name });
             }
 
             const input = change.action === "make"
@@ -212,7 +217,7 @@ export async function changeSaves(request: IncomingMessage, response: ServerResp
         served.events.push(news);
         sendJson(response, 202, {});
     } catch (error) {
-        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+        sendJson(response, 400, refusalBody(error));
     }
 }
 

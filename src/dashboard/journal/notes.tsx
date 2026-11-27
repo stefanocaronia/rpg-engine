@@ -1,7 +1,7 @@
 // The player's notes (D-371), a tab of the Journal: free notes, a title and a text each, saved by themselves as the player writes, kept outside the game; one may
 // be shared with the master, who hears it at their next call, and taken back until then (D-381).
 import { useEffect, useRef, useState } from "preact/hooks";
-import { type Note, readNotes, sendNote } from "../api.ts";
+import { type Note, readNotes, sendNote, unshareNote } from "../api.ts";
 import { Icon } from "../parts/icons.tsx";
 import { realTimeLabel } from "../parts/labels.ts";
 import { t } from "../text.ts";
@@ -186,11 +186,11 @@ function NoteCard({ note, pending, focus, onWritten, onPending, onRemoved }: {
     };
 
     const unshare = async (): Promise<void> => {
-        const problem = await sendNote({ unshare: note.id });
-        // Taken back only when the game heard it: until then the master may still read it.
-        setSaid(problem === undefined ? undefined : t("It did not reach the game: try again."));
+        const taken = await unshareNote(note.id);
+        // Taken back only when the game heard it: until then the master may still read it; too late once they have.
+        setSaid(taken === "done" ? undefined : taken === "read" ? t("The master has already read it.") : t("It did not reach the game: try again."));
 
-        if (problem === undefined) {
+        if (taken === "done") {
             onPending(false);
             setShared(undefined);
         }

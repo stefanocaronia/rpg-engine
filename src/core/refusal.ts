@@ -15,8 +15,22 @@ export class Refusal extends Error
     }
 }
 
+/** A refusal as it travels to the dashboard: the engine's words, and a code with its values where the page may say it in its language. */
+export interface RefusalBody
+{
+    error: string;
+    code?: string;
+    values?: Record<string, string>;
+}
+
+/** A refusal told without throwing, as a function that answers why not: the engine's words with their code and values. */
+export function refusalWords(error: string, code: string, values: Record<string, string> = {}): RefusalBody
+{
+    return { error, code, ...(Object.keys(values).length === 0 ? {} : { values }) };
+}
+
 /** What the dashboard sends of an error: its words, and its code and values when it is a refusal. */
-export function refusalBody(error: unknown): { error: string; code?: string; values?: Record<string, string>; }
+export function refusalBody(error: unknown): RefusalBody
 {
     const message = error instanceof Error ? error.message : String(error);
     return error instanceof Refusal ? { error: message, code: error.code, ...(Object.keys(error.values).length === 0 ? {} : { values: error.values }) } : { error: message };

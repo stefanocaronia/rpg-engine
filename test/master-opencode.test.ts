@@ -162,8 +162,8 @@ describe("the master in OpenCode", () => {
             const { chat, host, events, until } = play([...begin(), ...newSession(), ...turn("Hello", text("leaked"))], {}, { models: { [model]: "opencode/free" } });
             chat.send("Hello");
             await until(() => events.some((event) => event.type === "ended"));
-            const why = `the host was asked for the model ${model} and runs opencode/free`;
-            expect(events).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            const failure = { why: `the host was asked for the model ${model} and runs opencode/free`, code: "model-other", values: { asked: model, model: "opencode/free" } };
+            expect(events).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
             expect(host.written.some(isPrompt)).toBe(false);
             expect(host.inputClosed).toBe(true);
             expect(host.stopped).toBe(false);
@@ -173,13 +173,33 @@ describe("the master in OpenCode", () => {
             const { chat, events, until } = play([...begin(), ...newSession()], {}, { failing: ["session/set_config_option"] });
             chat.send("Hello");
             await until(() => events.some((event) => event.type === "ended"));
-            expect(events.at(-1)).toEqual({ type: "ended", why: `the host did not take the model ${model}: session/set_config_option failed` });
+            expect(events.at(-1)).toEqual({
+                type: "ended",
+                why: `the host did not take the model ${model}: session/set_config_option failed`,
+                code: "model-not-taken",
+                values: { model, why: "session/set_config_option failed" },
+            });
+        });
+
+        it("ends the chat with the agent's words when it refuses the effort asked at the opening, and when it cannot take a chat up again", async () => {
+            const flow = [...begin(), ...newSession([modelOption()]), ...setting("model", model, [modelOption(model), effortOption()])];
+            const refusing = play(flow, { effort: "high" }, { refusing: { high: "no such effort" } });
+            await refusing.until(() => refusing.events.some((event) => event.type === "ended"));
+            expect(refusing.events).toEqual([{ type: "ended", why: "the host did not take the effort high: no such effort", code: "effort-not-taken", values: { effort: "high", why: "no such effort" } }]);
+
+            const handshake: FlowEntry[] = [
+                { dir: "in", msg: { jsonrpc: "2.0", id: 1, method: "initialize", params: {} } },
+                { dir: "out", msg: { jsonrpc: "2.0", id: 1, result: { protocolVersion: 1, agentCapabilities: {} } } },
+            ];
+            const noResume = play(handshake, { session: "ses_old" });
+            await noResume.until(() => noResume.events.some((event) => event.type === "ended"));
+            expect(noResume.events).toEqual([{ type: "ended", why: "the host cannot take a chat up again: open a new one", code: "no-resume" }]);
         });
 
         it("ends the chat when the agent opens no session, saying why", async () => {
             const { events, until } = play(begin(), {}, { failing: ["session/new"] });
             await until(() => events.some((event) => event.type === "ended"));
-            expect(events).toEqual([{ type: "ended", why: "the host did not open the chat: session/new failed" }]);
+            expect(events).toEqual([{ type: "ended", why: "the host did not open the chat: session/new failed", code: "chat-not-opened", values: { why: "session/new failed" } }]);
         });
 
         it("ends the chat when the agent is not signed in, saying how to sign it in", async () => {
@@ -188,7 +208,13 @@ describe("the master in OpenCode", () => {
                 msg: { jsonrpc: "2.0", id: 2, error: { code: -32000, message: "Authentication required" } },
             }]);
             await until(() => events.some((event) => event.type === "ended"));
-            expect(events).toEqual([{ type: "ended", why: "the host did not open the chat: Authentication required: sign in from OpenCode itself, then try again", code: "signin" }]);
+            // The sign-in's code, with the app's name and its own words, without how to sign in, which the page says in its language.
+            expect(events).toEqual([{
+                type: "ended",
+                why: "the host did not open the chat: Authentication required: sign in from OpenCode itself, then try again",
+                code: "signin",
+                values: { host: "OpenCode", why: "Authentication required" },
+            }]);
         });
 
         it("ends the chat when the agent is not ready within 60 seconds", async () => {
@@ -199,8 +225,8 @@ describe("the master in OpenCode", () => {
             clock.advance(59_999);
             expect(events).toEqual([]);
             clock.advance(1);
-            const why = `the host was not ready to play with the model ${model} within 60 seconds`;
-            expect(events).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            const failure = { why: `the host was not ready to play with the model ${model} within 60 seconds`, code: "not-ready", values: { model, seconds: "60" } };
+            expect(events).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
             expect(host.inputClosed).toBe(true);
             clock.advance(10_000);
             expect(host.stopped).toBe(true);
@@ -212,7 +238,7 @@ describe("the master in OpenCode", () => {
             const { chat, host, events, until } = play(flow);
             chat.send("Hello");
             await until(() => turnEnds(events).length === 1);
-            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: `the host runs the model opencode/free instead of ${model}` }]);
+            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: `the host runs the model opencode/free instead of ${model}`, code: "model-switched", values: { model: "opencode/free", asked: model } }]);
             expect(events.filter((event) => event.type === "text").map((event) => event.type === "text" && event.text)).toEqual(["Fine"]);
             expect(host.written).toContainEqual({ jsonrpc: "2.0", method: "session/cancel", params: { sessionId: "ses_1" } });
             expect(host.written.filter(isModelSetting)).toHaveLength(2);
@@ -291,18 +317,28 @@ describe("the master in OpenCode", () => {
                 return turnEnds(events);
             };
 
-            const failed = (why: string): MasterEvent[] => [{ type: "turnEnd", reason: "failed", why: `the host ran a tool without asking: ${why}` }];
-
-            expect(await ran({ name: "bash", kind: "execute", rawInput: { command: "curl example.com" } })).toEqual(failed("the table does not let the master use bash"));
-            expect(await ran({ name: "shell", kind: "execute", rawInput: { command: "curl example.com" } })).toEqual(failed("the table does not let the master use shell"));
-            expect(await ran({ name: "webfetch", kind: "fetch", rawInput: { url: "https://example.com" } })).toEqual(failed("the table does not let the master use webfetch"));
-            expect(await ran({ name: "read", kind: "read", rawInput: { filePath: "/home/player/.ssh/id_rsa" } })).toEqual(
-                failed("read read /home/player/.ssh/id_rsa, and the table lets the master read only the campaign's folder"),
-            );
+            expect(await ran({ name: "bash", kind: "execute", rawInput: { command: "curl example.com" } })).toEqual(unasked("bash"));
+            expect(await ran({ name: "shell", kind: "execute", rawInput: { command: "curl example.com" } })).toEqual(unasked("shell"));
+            expect(await ran({ name: "webfetch", kind: "fetch", rawInput: { url: "https://example.com" } })).toEqual(unasked("webfetch"));
+            expect(await ran({ name: "read", kind: "read", rawInput: { filePath: "/home/player/.ssh/id_rsa" } })).toEqual([{
+                type: "turnEnd",
+                reason: "failed",
+                why: "the host ran a tool without asking: read read /home/player/.ssh/id_rsa, and the table lets the master read only the campaign's folder",
+                code: "read-outside",
+                values: { tool: "read", path: "/home/player/.ssh/id_rsa" },
+            }]);
+            // A read that names no path is one outside: its own code, as there is no path to say.
+            expect(await ran({ name: "read", kind: "read", rawInput: {} })).toEqual([{
+                type: "turnEnd",
+                reason: "failed",
+                why: "the host ran a tool without asking: read read a path it did not say, and the table lets the master read only the campaign's folder",
+                code: "read-unsaid",
+                values: { tool: "read" },
+            }]);
             const code = { name: "execute", kind: "other", rawInput: { code: "await tools.rpg.status(); await tools.jira.search();" } };
-            expect(await ran(code)).toEqual(failed("the table does not let the master use execute"));
+            expect(await ran(code)).toEqual(unasked("execute"));
             const metadata = { rawOutput: { metadata: { toolCalls: [{ tool: "rpg.status", status: "completed" }, { tool: "jira.search", status: "completed" }] } } };
-            expect(await ran({ ...code, rawInput: { code: "await tools.rpg.status();" } }, metadata)).toEqual(failed("the table does not let the master use jira.search"));
+            expect(await ran({ ...code, rawInput: { code: "await tools.rpg.status();" } }, metadata)).toEqual(unasked("jira.search"));
         });
 
         it("lets a tool run that the table allowed when asked, or of a kind it allows, reading inside the folder", async () => {
@@ -330,15 +366,20 @@ describe("the master in OpenCode", () => {
         });
 
         it("fails a turn the agent stops short, in words a player reads, or with the agent's error", async () => {
-            const flow = [...begin(), ...newSession(), ...turn("Hello", "max_tokens"), ...turn("Again", "something_new")];
-            const { chat, events, until } = play(flow);
-            chat.send("Hello");
-            await until(() => turnEnds(events).length === 1);
-            chat.send("Again");
-            await until(() => turnEnds(events).length === 2);
+            const reasons = ["max_tokens", "something_new", "max_turn_requests", "refusal"];
+            const { chat, events, until } = play([...begin(), ...newSession(), ...reasons.flatMap((reason, index) => turn(`Words ${String(index)}`, reason))]);
+
+            for (const index of reasons.keys()) {
+                chat.send(`Words ${String(index)}`);
+                await until(() => turnEnds(events).length === index + 1);
+            }
+
+            // A reason the table has words for has its own code and no values; one it does not know travels as the agent named it.
             expect(turnEnds(events)).toEqual([
-                { type: "turnEnd", reason: "failed", why: "the master's answer reached the longest its model may write" },
-                { type: "turnEnd", reason: "failed", why: "the host stopped the turn: something_new" },
+                { type: "turnEnd", reason: "failed", why: "the master's answer reached the longest its model may write", code: "answer-too-long" },
+                { type: "turnEnd", reason: "failed", why: "the host stopped the turn: something_new", code: "turn-stopped", values: { why: "something_new" } },
+                { type: "turnEnd", reason: "failed", why: "the master took more steps than one turn allows", code: "too-many-steps" },
+                { type: "turnEnd", reason: "failed", why: "the model refused to go on", code: "model-refused" },
             ]);
         });
     });
@@ -412,19 +453,14 @@ describe("the master in OpenCode", () => {
         it("holds a tool the subagent ran without asking to the master's limits: a shell, or any read of a file, fails the turn", async () => {
             const character = { agent: "rpg-character", prompt: "Bertoldo" };
             expect(await childRuns(character, { name: "execute", rawInput: { code: "return await tools.rpg.view({ as: 'Bertoldo' });" } })).toEqual([{ type: "turnEnd", reason: "done" }]);
-            expect(await childRuns(character, { name: "bash", rawInput: { command: "dir" } })).toEqual([{ type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use bash" }]);
+            expect(await childRuns(character, { name: "bash", rawInput: { command: "dir" } })).toEqual(unasked("bash"));
             const read = (path: string): Promise<MasterEvent[]> => childRuns(character, { name: "read", rawInput: { filePath: path } });
-            const refused = [{ type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use read" }];
-            expect(await read("/home/player/.ssh/id_rsa")).toEqual(refused);
-            expect(await read(join(folder, "world", "a.md"))).toEqual(refused);
+            expect(await read("/home/player/.ssh/id_rsa")).toEqual(unasked("read"));
+            expect(await read(join(folder, "world", "a.md"))).toEqual(unasked("read"));
         });
 
         it("fails the turn for a session no subagent the table allows started", async () => {
-            expect(await childRuns({ agent: "general", prompt: "Look around" }, { name: "execute", rawInput: { code: "return 1;" } })).toEqual([{
-                type: "turnEnd",
-                reason: "failed",
-                why: "the host ran a tool without asking: the table does not let the master use subagent",
-            }]);
+            expect(await childRuns({ agent: "general", prompt: "Look around" }, { name: "execute", rawInput: { code: "return 1;" } })).toEqual(unasked("subagent"));
 
             const flow = [
                 ...begin(),
@@ -438,7 +474,7 @@ describe("the master in OpenCode", () => {
             const { chat, events, until } = play(flow, { allowed: tableKinds });
             chat.send("Hello");
             await until(() => turnEnds(events).length === 1);
-            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host ran a subagent the table did not let the master start" }]);
+            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host ran a subagent the table did not let the master start", code: "agent-unasked" }]);
             expect(events.filter((event) => event.type === "text")).toEqual([]);
         });
     });
@@ -544,7 +580,7 @@ describe("the master in OpenCode", () => {
                 hostTurn,
                 { type: "tool", id: "sh-1", name: "bash", kind: "shell", state: "started" },
                 { type: "tool", id: "sh-1", name: "bash", kind: "shell", state: "done" },
-                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use bash" },
+                ...unasked("bash"),
             ]);
             expect(host.written.filter((message) => message.method === "session/cancel")).toHaveLength(2);
             clock.advance(silence);
@@ -729,7 +765,7 @@ describe("the master in OpenCode", () => {
             chat.interrupt();
             expect(host.written.filter((message) => message.method === "session/cancel")).toEqual([{ jsonrpc: "2.0", method: "session/cancel", params: { sessionId: "ses_1" } }]);
             clock.advance(10_000);
-            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "interrupted" }, { type: "ended", why: "the host did not stop its turn and was closed" }]);
+            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "interrupted" }, { type: "ended", why: "the host did not stop its turn and was closed", code: "not-stopped" }]);
             expect(host.stopped).toBe(true);
         });
 
@@ -740,8 +776,9 @@ describe("the master in OpenCode", () => {
             host.complain("Error: no provider is signed in");
             host.complain("Run opencode auth login");
             host.end("exit code 1");
-            const why = "the host's program ended (exit code 1): Error: no provider is signed in | Run opencode auth login";
-            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            const said = "Error: no provider is signed in | Run opencode auth login";
+            const failure = { why: `the host's program ended (exit code 1): ${said}`, code: "program-ended", values: { reason: "exit code 1", why: said } };
+            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
             expect(host.stops).toBe(0);
         });
 
@@ -885,6 +922,12 @@ function play(flow: FlowEntry[], overrides: Partial<MasterOptions> = {}, fake: F
 function options(host: FakeHost): MasterOptions
 {
     return { folder, program: { command: "opencode-program", args: ["--first"] }, model, allowed: ["rpg"], environment: { HOME: "/home/player" }, start: host.start };
+}
+
+/** A turn failed as the agent ran, without asking, a tool the table does not allow: its words, its code and the tool as its value. */
+function unasked(tool: string): MasterEvent[]
+{
+    return [{ type: "turnEnd", reason: "failed", why: `the host ran a tool without asking: the table does not let the master use ${tool}`, code: "tool-unasked", values: { tool } }];
 }
 
 /** The protocol begun, as OpenCode answers. */

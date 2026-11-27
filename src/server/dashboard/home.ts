@@ -3,6 +3,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import { findCampaign } from "../../campaign/index.ts";
+import { refusalWords } from "../../core/refusal.ts";
 import { withFiles } from "../../core/store.ts";
 import { readBody, sendJson } from "../page/index.ts";
 import type { Served } from "./index.ts";
@@ -29,7 +30,7 @@ export async function startHome(request: IncomingMessage, response: ServerRespon
     }
 
     if (served.launcher === undefined) {
-        sendJson(response, 409, { error: "Only a campaign's table starts the launcher: start it with rpg open." });
+        sendJson(response, 409, refusalWords("Only a campaign's table starts the launcher: start it with rpg open.", "no-launcher-way"));
         return;
     }
 

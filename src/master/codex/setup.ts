@@ -1,4 +1,6 @@
 // Getting the chat ready: the protocol begun, the account read, the thread opened or taken up with the model and effort, confirmed before the player's words.
+import type { Failure } from "../chat.ts";
+import { chatNotOpened, effortOther, hostSaid, modelNotConfirmed, modelNotTaken, modelOther, noProtocol, notReady, notSignedIn, turnStopped, wordsNotTaken } from "../failures.ts";
 import { failureOf, isObject, type Message, notification, wordsOf } from "../lines.ts";
 import { chatReady, endTurn, modelChanged, refused, tell, write } from "../state.ts";
 import { initializeParams } from "./protocol.ts";
@@ -17,12 +19,12 @@ type Before = NonNullable<State["model"]["before"]>;
 /** Begins the protocol; the rest follows each answer. */
 export function begin(state: State): void
 {
-    state.cancelReadyWait = state.later(readyWait, () => refused(state, `the host was not ready to play with the model ${state.model.asked} within ${String(readyWait / 1000)} seconds`));
+    state.cancelReadyWait = state.later(readyWait, () => refused(state, notReady(state.model.asked, readyWait / 1000)));
     state.requests.ask("initialize", initializeParams(), (answer) => {
         const why = failureOf(answer);
 
         if (why !== undefined || !isObject(answer.result)) {
-            refused(state, `the host did not begin the protocol: ${why ?? "its answer is no answer"}`);
+            refused(state, noProtocol(why));
             return;
         }
 
@@ -103,7 +105,8 @@ export function turnCompleted(state: State, params: Message): void
     } else if (completed.status === "completed") {
         endTurn(state, "done");
     } else {
-        endTurn(state, "failed", wordsOf(completed.error) ?? `the host ended the turn: ${String(completed.status)}`);
+        const said = wordsOf(completed.error);
+        endTurn(state, "failed", said === undefined ? turnStopped("ended", String(completed.status)) : hostSaid(said));
     }
 }
 
@@ -113,7 +116,7 @@ function accountRead(state: State, answer: Message): void
     const read = isObject(answer.result) ? answer.result : {};
 
     if (failureOf(answer) === undefined && read.account === null && read.requiresOpenaiAuth === true) {
-        refused(state, "Codex is not signed in on this computer: sign in here, then open the chat", "signin");
+        refused(state, notSignedIn(state.name));
         return;
     }
 
@@ -147,11 +150,11 @@ function threadOpened(state: State, answer: Message): void
     const { asked, effort } = state.model;
 
     if (why !== undefined || typeof thread !== "string") {
-        refused(state, `the host did not ${state.resumed === undefined ? "open the chat" : "take the chat up again"}: ${why ?? "it named no thread"}`);
+        refused(state, chatNotOpened(why, "it named no thread", state.resumed !== undefined));
     } else if (opened.model !== asked) {
-        refused(state, `the host was asked for the model ${asked} and runs ${typeof opened.model === "string" ? opened.model : "another, unnamed"}`);
+        refused(state, modelOther(asked, opened.model));
     } else if (effort !== undefined && opened.reasoningEffort !== effort) {
-        refused(state, `the host was asked for the effort ${effort} and runs ${typeof opened.reasoningEffort === "string" ? opened.reasoningEffort : "another, unnamed"}`);
+        refused(state, effortOther(effort, opened.reasoningEffort));
     } else {
         state.thread = thread;
         state.model.confirmed = asked;
@@ -169,12 +172,12 @@ export function changeModel(state: State, model: string, effort: string | undefi
     const before = { asked, ...(running === undefined ? {} : { effort: running }), ...(confirmed === undefined ? {} : { confirmed }) };
     state.ready = false;
     state.model = { asked: model, ...(effort === undefined ? {} : { effort }), ...(confirmed === undefined ? {} : { confirmed }), before };
-    state.cancelReadyWait = state.later(changeWait, () => changeRefused(state, before, `the host did not confirm the model ${model} within ${String(changeWait / 1000)} seconds`));
+    state.cancelReadyWait = state.later(changeWait, () => changeRefused(state, before, modelNotConfirmed(model, changeWait / 1000)));
     state.requests.ask("thread/settings/update", { threadId: state.thread, model, ...(effort === undefined ? {} : { effort }) }, (answer) => {
         const why = failureOf(answer);
 
         if (why !== undefined) {
-            changeRefused(state, before, `the host did not take the model ${model}: ${why}`);
+            changeRefused(state, before, modelNotTaken(model, why));
         }
     });
 }
@@ -189,9 +192,9 @@ export function changeSettled(state: State, model: unknown, effort: unknown): vo
     }
 
     if (model !== asked) {
-        changeRefused(state, before, `the host was asked for the model ${asked} and runs ${typeof model === "string" ? model : "another, unnamed"}`);
+        changeRefused(state, before, modelOther(asked, model));
     } else if (askedEffort !== undefined && effort !== askedEffort) {
-        changeRefused(state, before, `the host was asked for the effort ${askedEffort} and runs ${typeof effort === "string" ? effort : "another, unnamed"}`);
+        changeRefused(state, before, effortOther(askedEffort, effort));
     } else {
         state.model = { asked, confirmed: asked, ...(askedEffort === undefined ? {} : { effort: askedEffort }) };
         modelChanged(state, asked, undefined, asked);
@@ -200,7 +203,7 @@ export function changeSettled(state: State, model: unknown, effort: unknown): vo
 }
 
 /** Codex did not take the model or effort asked in the open chat: the chat goes on with those it ran before, its next turn's start naming them again. */
-function changeRefused(state: State, before: Before, why: string): void
+function changeRefused(state: State, before: Before, failure: Failure): void
 {
     if (state.model.before !== before) {
         return;
@@ -208,7 +211,7 @@ function changeRefused(state: State, before: Before, why: string): void
 
     const asked = state.model.asked;
     state.model = before;
-    tell(state, { type: "changeRefused", asked, model: before.asked, ...(before.effort === undefined ? {} : { effort: before.effort }), why });
+    tell(state, { type: "changeRefused", asked, model: before.asked, ...(before.effort === undefined ? {} : { effort: before.effort }), why: failure.why });
     chatReady(state);
 }
 
@@ -225,7 +228,7 @@ function turnStarted(state: State, turn: Turn, answer: Message): void
         if (turn.interrupted && turn.failure === undefined) {
             endTurn(state, "interrupted");
         } else {
-            endTurn(state, "failed", turn.failure ?? `the host did not take the player's words: ${why}`);
+            endTurn(state, "failed", turn.failure ?? wordsNotTaken(why));
         }
 
         return;

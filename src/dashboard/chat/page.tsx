@@ -7,10 +7,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { MasterShown } from "../data.ts";
 import { useMedia } from "../parts/card.tsx";
 import { Icon } from "../parts/icons.tsx";
+import { LogFile } from "../parts/log-file.tsx";
 import { PageHead } from "../shell/pages.tsx";
 import { tableSection } from "../shell/table.tsx";
 import { t } from "../text.ts";
-import { chatApp, chatNews, chatOffer, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, effortsOf, endedWords, expiredHost, firstAnswerDue, proposedEffort, turnDoing, turnWords, waitingQuestion } from "./chat.ts";
+import { chatApp, chatNews, chatOffer, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, effortsOf, endedLog, endedWords, firstAnswerDue, proposedEffort, turnDoing, turnWords, waitingQuestion } from "./chat.ts";
 import { type ChatGame, ChatLog } from "./log.tsx";
 import { ModelPicker } from "./models.tsx";
 import { ChatOffering } from "./offer.tsx";
@@ -111,6 +112,7 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
     const offering = offer === undefined ? undefined : <ChatOffering offer={offer} busy={chat.sending} alone={!some} onSend={(words) => void chat.say(words)} />;
     const open = view === "open" ? shown.chat : undefined;
     const playing = open === undefined ? undefined : shown.hosts.find((one) => one.id === open.host);
+    const log = endedLog(shown);
     // The model of the open chat changes from under its words, where the app lets it, between two turns: its levels of thinking as the app said them once
     // it was chosen, else as its list says. Another model is asked with its level: the one chosen where that model takes it, else the one proposed for it;
     // with none where its levels are not known until it is chosen. On a phone it changes from the chat's sheet, named and described by the sheet's lines.
@@ -171,9 +173,10 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
                 {view === "ended" && (
                     <p class="chat-note problem" dir="auto">
                         <Icon name="alert" />
-                        {endedWords(shown.chat?.why, expiredHost(shown))}
+                        {endedWords(shown)}
                     </p>
                 )}
+                {view === "ended" && log !== undefined && <LogFile file={log} />}
                 {view === "elsewhere" && (
                     <p class="chat-note">
                         <Icon name="info" />

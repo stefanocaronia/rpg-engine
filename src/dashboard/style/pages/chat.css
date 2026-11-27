@@ -802,6 +802,12 @@
         font-weight: 600;
     }
 
+    /* Under why the chat ended, from where its words start: the file to attach to a report. */
+    .chat-box > .log-file {
+        padding: 6px 16px 0;
+        padding-inline-start: 44px;
+    }
+
     /* The player's words, as an AI app has them: one rounded box with the words and, in its corner at the end, what sends them or stops the master, with
        room for one more control before; under it, small and quiet, what the chat plays with and what closes it. */
     .chat-words {
@@ -1475,35 +1481,9 @@
             border-top: 0;
         }
 
-        /* The player's turn, seen from the chat: one slim strip under the top, as wide as the window, its words on one line. */
+        /* The player's turn, seen from the chat: the phone's strip of every section (pages/scene.css), the messages right under it. */
         .page:has(.chat-page.chat-section) .turn-notice {
-            flex-wrap: nowrap;
-            align-items: center;
-            min-height: var(--target);
-            margin: 0 calc(-1 * var(--gap));
-            padding-block: 0;
-            padding-inline: 16px 8px;
-            border-radius: 0;
-            box-shadow: none;
-            font-size: 0.9rem;
-        }
-
-        .page:has(.chat-page.chat-section) .turn-notice svg.icon {
-            width: 18px;
-            height: 18px;
-            margin-block-start: 0;
-        }
-
-        .page:has(.chat-page.chat-section) .turn-notice > span:not(.turn-notice-go) {
-            min-width: 0;
-            padding-block: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .page:has(.chat-page.chat-section) .turn-notice-go {
-            font-size: 0.85rem;
+            margin-block-end: 0;
         }
 
         /* While the player writes on a touch screen the strip steps aside with the bar of the sections (parts/top.css): the room is the messages'. */

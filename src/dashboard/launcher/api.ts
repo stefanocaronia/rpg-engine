@@ -1,6 +1,7 @@
 // What the launcher's page asks the launcher: the campaigns of this computer, and one opened, made, added or taken off the list.
 import type { HostWish } from "../api.ts";
 import type { ChatHost } from "../data.ts";
+import { refusalText } from "../parts/refusals.ts";
 import { t } from "../text.ts";
 
 /** A campaign as the launcher lists it. */
@@ -17,8 +18,10 @@ export interface ListedCampaign
     open: boolean;
     /** Its folder, or its file, is gone. */
     missing: boolean;
-    /** Why its file does not read, where it does not. */
+    /** Why its file does not read, where it does not: the launcher's words, and their code with its values, which the page says in its own. */
     problem?: string;
+    problemCode?: string;
+    problemValues?: Record<string, string>;
     /** The colours of its theme's dice, the body and the ink of the numbers, in each look of the page, where its game system has a theme. */
     colours?: { light: { body: string; ink: string; }; dark: { body: string; ink: string; }; };
     /** Its player character, and the address of their portrait where they have one. */
@@ -48,10 +51,14 @@ export interface CampaignWish
     effort?: string;
 }
 
-/** A refusal, in the launcher's words. */
+/**
+ * A refusal: in the page's words where the launcher gave its code, else in the launcher's; with the file of the table's log on this computer, where a table
+ * did not start or does not answer.
+ */
 export interface Refused
 {
     error: string;
+    log?: string;
 }
 
 /** The launcher as it is now; it throws, in the page's words, when it does not answer. */
@@ -116,13 +123,13 @@ export function changeHost(wish: HostWish): Promise<{ hosts?: ChatHost[]; } | Re
     return ask(wish);
 }
 
-/** Asks one thing of the launcher: what it answers, a refusal in its own words, or in the page's that it does not answer. */
+/** Asks one thing of the launcher: what it answers, a refusal in the page's words by its code, else in the launcher's own, or that it does not answer. */
 async function ask<Answer extends object>(wish: object): Promise<Answer | Refused>
 {
     try {
         const response = await fetch("/api/launcher", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(wish) });
-        const body = await response.json().catch(() => ({})) as Answer & { error?: string; };
-        return response.ok && body.error === undefined ? body : { ...body, error: body.error ?? away() };
+        const body = await response.json().catch(() => ({})) as Answer & { error?: string; code?: string; values?: Record<string, string>; };
+        return response.ok && body.error === undefined ? body : { ...body, error: refusalText(body, away()) };
     } catch {
         return { error: away() };
     }

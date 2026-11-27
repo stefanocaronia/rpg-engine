@@ -1,10 +1,14 @@
 // The door to the player's phone on the home network (T-317): opened from the computer's page alone, it lets in only a phone paired by its code.
+import { mkdirSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
+import { doorPhrases } from "../src/server/dashboard/phone.ts";
+import { pageFolder } from "./i18n/phrases.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -23,7 +27,8 @@ beforeEach(async () => {
     inPlay(folder);
     session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
     addresses = ["127.0.0.1"];
-    const started = await startDashboard({ ...context, files: session }, session, { ports: [0], homeAddresses: () => addresses });
+    // The page's words from its sources, as they are before a build.
+    const started = await startDashboard({ ...context, files: session }, session, { ports: [0], page: pageFolder, homeAddresses: () => addresses });
 
     if (started === undefined) {
         throw new Error("The dashboard did not start.");
@@ -63,6 +68,47 @@ describe("the door to the phone", () => {
         const wrong = await call(door.port, "GET", `/pair?code=${"x".repeat(door.code.length)}`);
         expect(wrong.status).toBe(403);
         expect(wrong.cookie).toBeUndefined();
+    });
+
+    it("says why it lets nothing in in the campaign's language, as the page behind it would, with no page around the words", async () => {
+        const door = await openDoor();
+        const unpaired = await call(door.port, "GET", "/");
+        expect(unpaired).toMatchObject({ status: 403, type: "text/plain; charset=utf-8", text: "Questo telefono non è abbinato: inquadra il codice QR nelle Impostazioni del gioco, sul computer." });
+        expect((await call(door.port, "GET", "/", { host: `evil.example:${door.port}` })).text).toBe("L'accesso dal telefono risponde solo all'indirizzo del suo codice QR.");
+
+        // The language of the campaign now, not the one it had as the door opened; English for one nobody translated, as the page.
+        expect((await runCommandLine(["config", "language", "en"], { ...context, files: session })).exitCode).toBe(0);
+        expect((await call(door.port, "GET", "/")).text).toBe(doorPhrases.unpaired);
+        await runCommandLine(["config", "language", "it-CH"], { ...context, files: session });
+        expect((await call(door.port, "GET", "/")).text).toContain("Questo telefono non è abbinato");
+        await runCommandLine(["config", "language", "tlh"], { ...context, files: session });
+        expect((await call(door.port, "GET", "/", { host: "elsewhere" })).text).toBe(doorPhrases.elsewhere);
+
+        // A campaign.yaml written by hand that says no language, or does not read: English, and still nothing let in.
+        const file = join(folder, "campaign.yaml");
+        const written = session.text(file) ?? "";
+        session.write(file, written.replace(/^language:.*\n/m, ""));
+        expect(await call(door.port, "GET", "/")).toMatchObject({ status: 403, text: doorPhrases.unpaired });
+        session.write(file, "language: [it\n");
+        expect(await call(door.port, "GET", "/api/asked")).toMatchObject({ status: 403, text: doorPhrases.unpaired });
+        session.write(file, written);
+    });
+
+    it("says it in English where the page's words in the campaign's language do not read, and never what went wrong", async () => {
+        const page = makeTempFolder();
+        mkdirSync(join(page, "i18n"));
+        // A file that holds no phrases at all, as one cut short and written again by hand.
+        writeFileSync(join(page, "i18n", "it.json"), "null");
+        const other = await startDashboard({ ...context, files: session }, session, { ports: [0], page, homeAddresses: () => addresses });
+
+        try {
+            const at = Number(new URL(other?.url ?? "").port);
+            const link = new URL(((await call(at, "POST", "/api/phone", { origin: `http://127.0.0.1:${at}` }, { open: true })).body as { link: string; }).link);
+            expect(await call(Number(link.port), "GET", "/")).toMatchObject({ status: 403, text: doorPhrases.unpaired });
+        } finally {
+            await other?.close();
+            removeFolder(page);
+        }
     });
 
     it("pairs a phone by its code, which then plays the page but neither closes the door nor reads its code", async () => {
@@ -105,7 +151,9 @@ describe("the door to the phone", () => {
         const cookie = `rpg-phone-${door.port}=${door.code}`;
 
         expect((await call(door.port, "GET", "/api/home", { cookie })).body).toEqual({ phone: true });
-        expect((await call(door.port, "POST", "/api/home", { cookie, origin: `http://127.0.0.1:${door.port}` }, { start: true })).status).toBe(403);
+        const refused = await call(door.port, "POST", "/api/home", { cookie, origin: `http://127.0.0.1:${door.port}` }, { start: true });
+        expect(refused.status).toBe(403);
+        expect(refused.body).toEqual({ error: "The campaigns open on the computer: go back to them there.", code: "home-on-computer" });
     });
 
     it("says why when it cannot listen at the address", async () => {

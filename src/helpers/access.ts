@@ -1,8 +1,9 @@
 // How each AI host's account stands on this computer and how the player gets there: Claude Code's and Codex's asked of their own status in the background,
 // their sign-in started and cancelled from the page, their installation by the engine; the other hosts sign in and install from their own app or page.
-import type { HelperLogin, HelperName, Helpers, HelperState } from "../core/context.ts";
+import type { HelperFailure, HelperLogin, HelperName, Helpers, HelperState } from "../core/context.ts";
 import { type HostId, hosts } from "../core/hosts.ts";
-import { hostHelper, isUnderWayElsewhere } from "./programs.ts";
+import { type RefusalBody, refusalWords } from "../core/refusal.ts";
+import { hostHelper, type InstallCode, type SignInCode } from "./programs.ts";
 
 /** A host's account as the page shows it, how its sign-in and installation are reached, and how one under way or failed stands. */
 export interface HostAccess
@@ -18,13 +19,18 @@ export interface HostAccess
     signingIn?: true;
     /** The sign-in's own link while it waits, for when the browser did not open by itself. */
     signInLink?: string;
-    /** Why the last sign-in failed; with `elsewhere`, it did not fail but goes on in another window of the engine, as `signInWhy` says in English. */
+    /**
+     * Why the last sign-in failed, in English, with its code and the code's values beside it, for the page to say it in its language; with `elsewhere`, it
+     * did not fail but goes on in another window of the engine.
+     */
     signInWhy?: string;
-    signInCode?: "elsewhere";
+    signInCode?: SignInCode;
+    signInValues?: Record<string, string>;
     installing?: true;
-    /** Why the last installation failed; with `elsewhere`, as for the sign-in. */
+    /** Why the last installation failed, with its code and values; with `elsewhere`, as for the sign-in. */
     installWhy?: string;
-    installCode?: "elsewhere";
+    installCode?: InstallCode;
+    installValues?: Record<string, string>;
 }
 
 /**
@@ -46,6 +52,10 @@ export interface AccessKeeper
     cancelSignIn(host: HostId): string | undefined;
     /** Installs a host in the engine's folder, once however often it is asked: why not, else undefined. */
     install(host: HostId): string | undefined;
+    /** As signIn, cancelSignIn and install: why not as a refusal, the words with their code and values for the page to say in its language. */
+    trySignIn(host: HostId): RefusalBody | undefined;
+    tryCancelSignIn(host: HostId): RefusalBody | undefined;
+    tryInstall(host: HostId): RefusalBody | undefined;
 }
 
 export interface AccessOptions
@@ -70,10 +80,13 @@ const installPages: Record<HostId, string> = {
     openCode: "https://opencode.ai/download",
 };
 
-// What the page reads where a host signs in elsewhere.
-const ownSignIn: Partial<Record<HostId, string>> = {
-    antigravity: "Antigravity signs in from its own app, not from here: open Antigravity, sign in with your Google account there, then look again.",
-    openCode: "OpenCode plays without signing in. To use an account of a provider, sign in from OpenCode itself, then look again.",
+// What the page reads where a host signs in elsewhere: with an account its own app asks for, or with none.
+const ownSignIn: Partial<Record<HostId, RefusalBody>> = {
+    antigravity: refusalWords("Antigravity signs in from its own app, not from here: open Antigravity, sign in with your Google account there, then look again.", "signin-in-app-account", {
+        host: hosts.antigravity.name,
+        account: "Google",
+    }),
+    openCode: refusalWords("OpenCode plays without signing in. To use an account of a provider, sign in from OpenCode itself, then look again.", "signin-not-needed", { host: hosts.openCode.name }),
 };
 
 // The least time between two looks at a program the page asks for: short, as a player who signed out or in outside the page comes back to it at once.
@@ -179,7 +192,7 @@ export function accessKeeper(options: AccessOptions): AccessKeeper
             delete one.signInLink;
 
             if (login.state === "failed") {
-                one.signInWhy = login.why;
+                one.signInFailed = { why: login.why, ...(login.code === undefined ? {} : { code: login.code }), ...(login.values === undefined ? {} : { values: login.values }) };
             }
         });
         look(name, "ended");
@@ -201,6 +214,100 @@ export function accessKeeper(options: AccessOptions): AccessKeeper
             : { ...shownOf(entry(name)), signIn: "page", install: { page: installPages[host], engine: true } };
     };
 
+    const trySignIn = (host: HostId): RefusalBody | undefined => {
+        const name = hostHelper[host];
+        const app = hosts[host].name;
+
+        if (name === undefined) {
+            return ownSignIn[host] ?? refusalWords(`${app} signs in from its own app, not from here: sign in there, then look again.`, "signin-in-app", { host: app });
+        }
+
+        const one = entry(name);
+
+        if (one.state === "missing") {
+            return refusalWords(`${app} is not on this computer: install it first, then sign in.`, "signin-not-installed", { host: app });
+        }
+
+        if (one.signingIn === true) {
+            return undefined;
+        }
+
+        const attempt = ++one.attempt;
+        shown(name, (them) => {
+            them.signingIn = true;
+            delete them.signInFailed;
+        });
+        const ended = (login: HelperLogin): void => signInEnded(name, attempt, login);
+        // The first answer, while the player is in the browser, gives the link; how it ends comes later, or now where it ended already.
+        const answered = (login: HelperLogin): void => (login.state === "waiting" ? linkGiven(name, attempt, login.link) : ended(login));
+        options.helpers.login(name, ended).then(answered, (error: unknown) => ended({ state: "failed", why: error instanceof Error ? error.message : String(error) }));
+        return undefined;
+    };
+
+    const tryCancelSignIn = (host: HostId): RefusalBody | undefined => {
+        const name = hostHelper[host];
+        const app = hosts[host].name;
+
+        if (name === undefined) {
+            return refusalWords(`${app} signs in from its own app: there is no sign-in here to cancel.`, "signin-none-to-cancel", { host: app });
+        }
+
+        if (entry(name).signingIn !== true) {
+            return undefined;
+        }
+
+        entry(name).attempt++;
+        options.helpers.cancel(name);
+        shown(name, (one) => {
+            delete one.signingIn;
+            delete one.signInLink;
+        });
+        return undefined;
+    };
+
+    const tryInstall = (host: HostId): RefusalBody | undefined => {
+        const name = hostHelper[host];
+        const app = hosts[host].name;
+        const page = installPages[host];
+
+        if (name === undefined) {
+            return refusalWords(`RPG Engine does not install ${app}: install it from ${page}, then look again.`, "install-from-page", { host: app, page });
+        }
+
+        if (entry(name).installing === true) {
+            return undefined;
+        }
+
+        shown(name, (one) => {
+            one.installing = true;
+            delete one.installFailed;
+        });
+
+        const installed = (failed: HelperFailure | undefined): void => {
+            shown(name, (one) => {
+                delete one.installing;
+
+                if (failed !== undefined) {
+                    one.installFailed = failed;
+                }
+            });
+            look(name, "ended");
+        };
+
+        // Why not with its code, where these helpers say it; else their words alone, as an error's are.
+        const install = async (): Promise<HelperFailure | undefined> => {
+            if (options.helpers.tryInstall !== undefined) {
+                return options.helpers.tryInstall(name);
+            }
+
+            const why = await options.helpers.install(name);
+            return why === undefined ? undefined : { why };
+        };
+
+        install().then(installed, (error: unknown) => installed({ why: error instanceof Error ? error.message : String(error) }));
+        return undefined;
+    };
+
     return {
         access: (host) => {
             const name = hostHelper[host];
@@ -216,83 +323,12 @@ export function accessKeeper(options: AccessOptions): AccessKeeper
             const names = host === undefined ? Object.values(hostHelper) : [hostHelper[host]];
             names.forEach((name) => name !== undefined && look(name, "asked"));
         },
-        signIn: (host) => {
-            const name = hostHelper[host];
-
-            if (name === undefined) {
-                return ownSignIn[host] ?? `${hosts[host].name} signs in from its own app, not from here: sign in there, then look again.`;
-            }
-
-            const one = entry(name);
-
-            if (one.state === "missing") {
-                return `${hosts[host].name} is not on this computer: install it first, then sign in.`;
-            }
-
-            if (one.signingIn === true) {
-                return undefined;
-            }
-
-            const attempt = ++one.attempt;
-            shown(name, (them) => {
-                them.signingIn = true;
-                delete them.signInWhy;
-            });
-            const ended = (login: HelperLogin): void => signInEnded(name, attempt, login);
-            // The first answer, while the player is in the browser, gives the link; how it ends comes later, or now where it ended already.
-            const answered = (login: HelperLogin): void => (login.state === "waiting" ? linkGiven(name, attempt, login.link) : ended(login));
-            options.helpers.login(name, ended).then(answered, (error: unknown) => ended({ state: "failed", why: error instanceof Error ? error.message : String(error) }));
-            return undefined;
-        },
-        cancelSignIn: (host) => {
-            const name = hostHelper[host];
-
-            if (name === undefined) {
-                return `${hosts[host].name} signs in from its own app: there is no sign-in here to cancel.`;
-            }
-
-            if (entry(name).signingIn !== true) {
-                return undefined;
-            }
-
-            entry(name).attempt++;
-            options.helpers.cancel(name);
-            shown(name, (one) => {
-                delete one.signingIn;
-                delete one.signInLink;
-            });
-            return undefined;
-        },
-        install: (host) => {
-            const name = hostHelper[host];
-
-            if (name === undefined) {
-                return `RPG Engine does not install ${hosts[host].name}: install it from ${installPages[host]}, then look again.`;
-            }
-
-            if (entry(name).installing === true) {
-                return undefined;
-            }
-
-            shown(name, (one) => {
-                one.installing = true;
-                delete one.installWhy;
-            });
-
-            const installed = (why: string | undefined): void => {
-                shown(name, (one) => {
-                    delete one.installing;
-
-                    if (why !== undefined) {
-                        one.installWhy = why;
-                    }
-                });
-                look(name, "ended");
-            };
-
-            new Promise<string | undefined>((resolve) => resolve(options.helpers.install(name))).then(installed, (error: unknown) => installed(error instanceof Error ? error.message : String(error)));
-            return undefined;
-        },
+        signIn: (host) => trySignIn(host)?.error,
+        cancelSignIn: (host) => tryCancelSignIn(host)?.error,
+        install: (host) => tryInstall(host)?.error,
+        trySignIn,
+        tryCancelSignIn,
+        tryInstall,
     };
 }
 
@@ -309,26 +345,39 @@ interface Kept
     attempt: number;
     signingIn?: true;
     signInLink?: string;
-    signInWhy?: string;
+    /** Why the last sign-in and the last installation failed, as whoever ran them told it. */
+    signInFailed?: HelperFailure;
     installing?: true;
-    installWhy?: string;
+    installFailed?: HelperFailure;
 }
+
+// Another window of the engine has a sign-in or an installation under way: nothing failed, it goes on there.
+const elsewhere = "elsewhere";
 
 /** Forgets a sign-in's or an installation's why where it said another window had one under way. */
 function dropElsewhere(one: Kept): void
 {
-    if (one.signInWhy !== undefined && isUnderWayElsewhere(one.signInWhy)) {
-        delete one.signInWhy;
+    if (one.signInFailed?.code === elsewhere) {
+        delete one.signInFailed;
     }
 
-    if (one.installWhy !== undefined && isUnderWayElsewhere(one.installWhy)) {
-        delete one.installWhy;
+    if (one.installFailed?.code === elsewhere) {
+        delete one.installFailed;
     }
 }
 
-/** What the page sees of a program: its account, from how it stood, and what is under way or failed. */
-function shownOf(one: Kept): Pick<HostAccess, "account" | "metered" | "signingIn" | "signInLink" | "signInWhy" | "signInCode" | "installing" | "installWhy" | "installCode">
+/** A failure's code and values as the page gets them: those it came with; where it came with words alone, as an error's, `otherwise` with the words as `why`. */
+function coded<Code extends string>(failed: HelperFailure, otherwise: Code): { code: Code; values?: Record<string, string>; }
 {
+    const values = failed.code === undefined ? { why: failed.why } : failed.values;
+    return { code: (failed.code ?? otherwise) as Code, ...(values === undefined ? {} : { values }) };
+}
+
+/** What the page sees of a program: its account, from how it stood, and what is under way or failed. */
+function shownOf(one: Kept): Omit<HostAccess, "signIn" | "install">
+{
+    const signIn = one.signInFailed === undefined ? undefined : coded<SignInCode>(one.signInFailed, "signin-failed");
+    const install = one.installFailed === undefined ? undefined : coded<InstallCode>(one.installFailed, "app-install-failed");
     // The chat uses the player's login as it is: an API key signs in too, and is paid by the answer; a program missing tells nothing, as `found` says it.
     const account = one.state === "logged out" ? "out" : one.state === "ready" || one.state === "api key" ? "in" : "unknown";
     return {
@@ -336,8 +385,8 @@ function shownOf(one: Kept): Pick<HostAccess, "account" | "metered" | "signingIn
         ...(one.state === "api key" ? { metered: true } : {}),
         ...(one.signingIn === true ? { signingIn: true } : {}),
         ...(one.signingIn === true && one.signInLink !== undefined ? { signInLink: one.signInLink } : {}),
-        ...(one.signInWhy === undefined ? {} : { signInWhy: one.signInWhy, ...(isUnderWayElsewhere(one.signInWhy) ? { signInCode: "elsewhere" as const } : {}) }),
+        ...(signIn === undefined ? {} : { signInWhy: one.signInFailed?.why, signInCode: signIn.code, ...(signIn.values === undefined ? {} : { signInValues: signIn.values }) }),
         ...(one.installing === true ? { installing: true } : {}),
-        ...(one.installWhy === undefined ? {} : { installWhy: one.installWhy, ...(isUnderWayElsewhere(one.installWhy) ? { installCode: "elsewhere" as const } : {}) }),
+        ...(install === undefined ? {} : { installWhy: one.installFailed?.why, installCode: install.code, ...(install.values === undefined ? {} : { installValues: install.values }) }),
     };
 }

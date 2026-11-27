@@ -1,9 +1,8 @@
 // The master in Codex: its program started with no terminal as `codex app-server`, spoken to by its own JSON-RPC protocol, in the campaign's folder.
-import { join } from "node:path";
 import { hosts } from "../../core/hosts.ts";
-import type { MasterChat, MasterDriver, MasterOptions } from "../chat.ts";
+import type { Failure, MasterChat, MasterDriver, MasterOptions } from "../chat.ts";
 import { Requests } from "../lines.ts";
-import { isFile } from "../program.ts";
+import { lackingServerFile } from "../program.ts";
 import { heldChat, startHost } from "../state.ts";
 import { codexModels } from "./models.ts";
 import { codexEnvironment, codexProgram, serverArguments } from "./program.ts";
@@ -14,16 +13,20 @@ import { newTurn, sendInterrupt, type State } from "./state.ts";
 /** Codex as the table drives it: the model a new chat proposes is the first Codex lists, the account's own default. */
 export const codex: MasterDriver = {
     open: (options) => openCodex(options),
-    missing: (folder) =>
-        isFile(join(folder, ".codex", "config.toml"))
-            ? undefined
-            : "This campaign has no .codex/config.toml, which tells Codex how to start the game's server: run rpg init in the campaign's folder, then try again.",
+    missing: (folder) => lacking(folder)?.why,
+    lacking,
     program: codexProgram,
     environment: codexEnvironment,
     models: codexModels,
     model: "",
     efforts: ["low", "medium", "high", "xhigh", "max", "ultra"],
 };
+
+/** What a campaign lacks for Codex: the file that names the game's server. */
+function lacking(folder: string): Failure | undefined
+{
+    return lackingServerFile(folder, ".codex/config.toml", hosts.codex.name);
+}
 
 /** Opens a chat with the master in Codex, or takes one up again by its thread; the player's words wait until the model is confirmed. */
 function openCodex(options: MasterOptions): MasterChat

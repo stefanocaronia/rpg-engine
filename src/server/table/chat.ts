@@ -3,11 +3,13 @@
 import { randomBytes } from "node:crypto";
 import type { Helpers } from "../../core/context.ts";
 import { type HostId, hosts } from "../../core/hosts.ts";
+import { type RefusalBody, refusalWords } from "../../core/refusal.ts";
 import { accessKeeper, heldBack, type HostAccess, hostHelper } from "../../helpers/index.ts";
 import {
     askModels,
-    effortRefused,
+    effortFailure,
     type EndCode,
+    type Failure,
     type HostOffered,
     hostProgram,
     hostsOffered,
@@ -22,7 +24,7 @@ import {
     traceVariable,
     withoutTrace,
 } from "../../master/index.ts";
-import type { ChatQuestion, HostWish, MasterRefusal, ModelMark, PageChat, PageMaster, PageMessage } from "../dashboard/index.ts";
+import type { ChatQuestion, HostWish, LineMark, ModelMark, PageChat, PageMaster, PageMessage } from "../dashboard/index.ts";
 import { newFlowName, readFlow, turnEnded, writeFlow } from "./flow.ts";
 import { type LastChat, readLastChat, writeLastChat } from "./last-chat.ts";
 import type { ResolvedMarks } from "./marks.ts";
@@ -32,12 +34,12 @@ export interface TableChat extends PageMaster
 {
     /** What the page shows of the chat: the hosts, the last choice, the chat and its messages. */
     shown(): ChatShown;
-    /** Opens a chat with a host, taking up the campaign's last one in that host unless `fresh`; a refusal in words when it cannot, with its code where it has one. */
-    open(choice: ChatChoice): MasterRefusal | undefined;
-    /** What the page asks of an AI app: its sign-in started or cancelled, its installation, a look again at each one's account; why not, in words. */
-    hostWish(wish: HostWish): string | undefined;
-    /** Another model, and effort where given, for the open chat between two turns; why not, in words. */
-    changeModel(model: string, effort?: string): string | undefined;
+    /** Opens a chat with a host, taking up the campaign's last one in that host unless `fresh`; a refusal when it cannot: its words, with their code and values. */
+    open(choice: ChatChoice): RefusalBody | undefined;
+    /** What the page asks of an AI app: its sign-in started or cancelled, its installation, a look again at each one's account; why not, as a refusal. */
+    hostWish(wish: HostWish): RefusalBody | undefined;
+    /** Another model, and effort where given, for the open chat between two turns; why not, as a refusal. */
+    changeModel(model: string, effort?: string): RefusalBody | undefined;
     /** The player's words to the master; the message kept for the page is `shown` where given, as the sentence without what was added to it. */
     say(text: string, shown?: string): "sent" | "busy" | "closed";
     /** Stops the master's turn. */
@@ -83,6 +85,7 @@ export interface ChatShown extends PageChat
         state: "idle" | "turn" | "ended";
         why?: string;
         code?: EndCode;
+        values?: Record<string, string>;
         tool?: string;
         answers?: true;
         changes?: true;
@@ -125,7 +128,10 @@ export interface TableChatOptions
     switched?: () => void;
     newToken?: () => string;
     now?: () => number;
-    log?: (line: string) => void;
+    /** What the chat does, a line at a time; `kept` is what the table's log keeps in the line's place, where the line quotes words of the story. */
+    log?: (line: string, kept?: string) => void;
+    /** The file the table keeps its log in, which the page is given to name where a chat ended by an error. */
+    logFile?: string;
     /** What the engine's marks in a master's message stand for once it is complete, from the campaign as it is then (D-586); none where not given. */
     marks?: (text: string) => ResolvedMarks;
 }
@@ -143,8 +149,9 @@ interface OpenChat
     master: MasterChat;
     state: "idle" | "turn" | "ended";
     why?: string;
-    /** Why it ended beside the words, as the player no longer signed in. */
+    /** Why it ended beside the words, as the player no longer signed in, with the code's values. */
     code?: EndCode;
+    values?: Record<string, string>;
     tool?: string;
     /** The master's message of this turn, and the block of text it ends with. */
     reply?: Words;
@@ -166,7 +173,14 @@ interface OpenChat
      * That change until the host takes it: the model and effort asked, which the chat and the campaign's last choice take only then, and the table's line
      * for it, never written for a change the host did not take; and the host's name for it and its efforts, where the host said them before it took it.
      */
-    pending?: { model: string; effort?: string; line: { text: string; mark: ModelMark; }; runs?: string; efforts?: string[]; };
+    pending?: { model: string; effort?: string; line: Line; runs?: string; efforts?: string[]; };
+}
+
+/** A line of the table in the chat: its words, and beside them what it says for a page that says it in its own language. */
+interface Line
+{
+    text: string;
+    mark: LineMark;
 }
 
 /** A host's program on this computer. */
@@ -177,16 +191,39 @@ const mostMessages = 200;
 const mostText = 200_000;
 // How long whether a host is on this computer stays known.
 const foundFor = 5000;
-// What the page says of a turn the master ended without a word, and of the tool it was refused in it.
+// What the page says of a turn the master ended without a word, alone or with the tool it was refused in it; and of a turn that failed with no word of why.
 const silentTurn = "The master ended its turn without writing anything. Write to it again.";
-const refusedTool = (name: string): string => `It tried to use ${name.slice(0, 60)}, which the master may not use here.`;
+
+const silentLine = (refused: string | undefined): Line => {
+    const tool = refused?.slice(0, 60);
+    return tool === undefined
+        ? { text: silentTurn, mark: { code: "turn-silent" } }
+        : { text: `${silentTurn} It tried to use ${tool}, which the master may not use here.`, mark: { code: "turn-silent-tool", values: { tool } } };
+};
+
+// A turn that failed: the driver's words, with the code and values it gave them; with no word of why, the table's own.
+const failedLine = (failed: { why?: string; code?: EndCode; values?: Record<string, string>; }): Line => {
+    if (failed.why === undefined) {
+        return { text: "The master's turn failed.", mark: { code: "turn-failed" } };
+    }
+
+    return { text: failed.why, mark: failed.code === undefined ? {} : { code: failed.code, ...(failed.values === undefined ? {} : { values: failed.values }) } };
+};
+
+// What the log's file keeps of a mark the page cannot show: that there was one, never the mark, which is the master's words.
+const unreadMark = "The master wrote a mark in the story which stands for nothing the page can show: it shows nothing there.";
 // What the table writes to the master, once in a turn of the player's, where the host ended a turn without a word after a tool it was refused.
 const goOnLine = (name: string): string => `The table refused ${name.slice(0, 60)}: you cannot use it here. Go on with the game's commands, and answer the player.`;
 // The kinds of tools the master may use at the table: the game's commands and the web, never a file read, written or run by the host's own tools (D-589).
 const allowed = ["rpg", "web", "fetch", "agent", "image"] as const;
 // What the page reads where the table was given no programs to ask, as a table a test started; and of another model asked while the master answers.
-const noAccess = "This table cannot sign in to the AI apps or install them: start it again with rpg table in the campaign's folder, then try again.";
-const answering = "The master is answering: change the model once they have finished.";
+const noAccess = refusalWords("This table cannot sign in to the AI apps or install them: start it again with rpg table in the campaign's folder, then try again.", "no-access-table");
+const answering = refusalWords("The master is answering: change the model once they have finished.", "model-while-answering");
+// What keeps a chat from opening, or its model from changing, that names nothing.
+const chatOpen = refusalWords("A chat with the master is open already: close it first.", "chat-open");
+const chatByHand = refusalWords("A chat opened by hand plays this campaign: close it, then open the chat here.", "chat-by-hand");
+const noChat = refusalWords("No chat with the master is open: open one first.", "no-chat");
+const gettingReady = refusalWords("The master is getting ready: change the model in a moment.", "master-getting-ready");
 
 /** The table's chat with the master, for the campaign at `options.root`. */
 export function tableChat(options: TableChatOptions): TableChat
@@ -297,7 +334,8 @@ export function tableChat(options: TableChatOptions): TableChat
             }
 
             for (const mark of resolved?.unresolved ?? []) {
-                options.log?.(`The master wrote ${mark} in the story, which stands for nothing the page can show: it shows nothing there.`);
+                // The mark is the master's own words: the terminal reads it, the log's file only that there was one.
+                options.log?.(`The master wrote ${mark} in the story, which stands for nothing the page can show: it shows nothing there.`, unreadMark);
             }
         } catch (error) {
             options.log?.(`The table could not read the marks of a message of its chat: ${error instanceof Error ? error.message : String(error)}`);
@@ -377,10 +415,11 @@ export function tableChat(options: TableChatOptions): TableChat
             Object.assign(opened, { state: "idle", tool: undefined });
 
             if (event.reason === "failed") {
-                add("table", event.why ?? "The master's turn failed.");
+                tableLine(failedLine(event));
+                options.log?.(`A turn of the master failed in ${hosts[opened.host].name}: ${event.why ?? "the host did not say why."}`);
             } else if (event.reason === "done" && opened.spoke !== true && !byHost) {
                 // A turn that ends with nothing for the player to read, as some hosts end one after a tool they were refused: the page says so.
-                add("table", opened.refused === undefined ? silentTurn : `${silentTurn} ${refusedTool(opened.refused)}`);
+                tableLine(silentLine(opened.refused));
             }
 
             Object.assign(opened, { spoke: undefined, refused: undefined, nudged: undefined, byHost: undefined, changed: undefined, pending: undefined });
@@ -397,7 +436,9 @@ export function tableChat(options: TableChatOptions): TableChat
             return;
         } else {
             replyDone(opened);
-            Object.assign(opened, { state: "ended", why: event.why, tool: undefined, ...(event.code === undefined ? {} : { code: event.code }) });
+            const coded = event.code === undefined ? {} : { code: event.code, ...(event.values === undefined ? {} : { values: event.values }) };
+            Object.assign(opened, { state: "ended", why: event.why, tool: undefined, ...coded });
+            options.log?.(`The table's chat with ${hosts[opened.host].name} ended: ${event.why}`);
 
             // The player is no longer signed in: the page reads the hosts' accounts anew, to offer the sign-in.
             if (event.code === "signin") {
@@ -510,8 +551,8 @@ export function tableChat(options: TableChatOptions): TableChat
     // A model's name as the page shows it, else its id.
     const shownModel = (host: HostId, model: string): string => models.known(host).find((one) => one.id === model)?.name ?? model;
 
-    // A line of the table, with its mark for a page that knows it.
-    const tableLine = (line: { text: string; mark: ModelMark; }): void => {
+    // A line of the table, with its mark for a page that says it in its own language.
+    const tableLine = (line: Line): void => {
         keep({ id: ++lastId, from: "table", text: line.text.slice(0, mostText), ...line.mark });
     };
 
@@ -548,43 +589,55 @@ export function tableChat(options: TableChatOptions): TableChat
     };
 
     // The host's driver and program for a choice, or why the chat cannot open; a host the player is not signed in to is never started.
-    const startable = (choice: ChatChoice): { driver: MasterDriver; program: Program; } | MasterRefusal => {
+    const startable = (choice: ChatChoice): { driver: MasterDriver; program: Program; } | RefusalBody => {
         const name = hosts[choice.host].name;
         const driver = driverOf(choice.host);
 
         if (chat !== undefined && chat.state !== "ended") {
-            return "A chat with the master is open already: close it first.";
+            return chatOpen;
         }
 
         if (options.elsewhere()) {
-            return "A chat opened by hand plays this campaign: close it, then open the chat here.";
+            return chatByHand;
         }
 
         if (driver === undefined) {
-            return `The page cannot open a chat with ${name} yet: choose ${masterHosts().map((host) => hosts[host].name).join(" or ")}.`;
+            return notYet(name);
         }
 
         const program = programOf(choice.host);
 
         if (program === undefined) {
-            return `${name} is not on this computer: install it, then try again.`;
+            return refusalWords(`${name} is not on this computer: install it, then try again.`, "app-missing", { host: name });
         }
 
         if (access?.known(choice.host).account === "out" && !keyHeldBack(choice.host, driver)) {
             // Signed in since, elsewhere: the next try knows it.
             access.lookAgain(choice.host);
-            return { error: `${name} is not signed in on this computer: sign in here, then open the chat.`, code: "signin" };
+            return refusalWords(`${name} is not signed in on this computer: sign in here, then open the chat.`, "signin", { host: name });
         }
 
-        if (choice.model.trim() === "") {
-            return `Choose the model ${name} plays the master with.`;
+        const unnamed = modelUnnamed(name, choice.model);
+
+        if (unnamed !== undefined) {
+            return unnamed;
         }
 
-        if (!isHostName(choice.model)) {
-            return `That is no name of a model: ${choice.model}.`;
+        const failed = effortFailure(choice.host, driver, models.known(choice.host), choice.model, choice.effort) ?? driver.lacking?.(options.root);
+
+        if (failed !== undefined) {
+            return refusalOf(failed);
         }
 
-        return effortRefused(choice.host, driver, models.known(choice.host), choice.model, choice.effort) ?? driver.missing(options.root) ?? { driver, program };
+        // A driver that says what the campaign lacks in words alone, as one of a test.
+        const missing = driver.lacking === undefined ? driver.missing(options.root) : undefined;
+        return missing === undefined ? { driver, program } : { error: missing };
+    };
+
+    // The page cannot open a chat with a host that has no driver: which hosts it can.
+    const notYet = (name: string): RefusalBody => {
+        const able = masterHosts().map((host) => hosts[host].name).join(" or ");
+        return refusalWords(`The page cannot open a chat with ${name} yet: choose ${able}.`, "host-not-yet", { host: name, hosts: able });
     };
 
     // Whether the chat's environment holds a key the host's status was asked without: its "out" then says nothing of the chat, which finds it by itself.
@@ -593,8 +646,8 @@ export function tableChat(options: TableChatOptions): TableChat
         return helper !== undefined && heldBack(helper, driver.environment(options.environment));
     };
 
-    // The host's chat opened, or why not in words, as where its program does not start.
-    const start = (choice: ChatChoice, driver: MasterDriver, program: Program, token: string, session: string | undefined): MasterChat | string => {
+    // The host's chat opened, or why not, as where its program does not start.
+    const start = (choice: ChatChoice, driver: MasterDriver, program: Program, token: string, session: string | undefined): MasterChat | RefusalBody => {
         const name = hosts[choice.host].name;
 
         try {
@@ -610,9 +663,11 @@ export function tableChat(options: TableChatOptions): TableChat
                 ...(options.log === undefined ? {} : { log: options.log }),
                 ...(trace === undefined ? {} : { trace }),
             });
-            return master ?? `The page cannot open a chat with ${name} yet.`;
+            return master ?? notYet(name);
         } catch (error) {
-            return `${name} could not start: ${error instanceof Error ? error.message : String(error)}.`;
+            // What the host's driver or the system threw, as it said it.
+            const why = error instanceof Error ? error.message : String(error);
+            return refusalWords(`${name} could not start: ${why}.`, "host-not-started", { host: name, why });
         }
     };
 
@@ -635,10 +690,10 @@ export function tableChat(options: TableChatOptions): TableChat
         corrected = read?.left ?? [];
     };
 
-    const openChat = (choice: ChatChoice): MasterRefusal | undefined => {
+    const openChat = (choice: ChatChoice): RefusalBody | undefined => {
         const ready = startable(choice);
 
-        if (typeof ready === "string" || "error" in ready) {
+        if ("error" in ready) {
             return ready;
         }
 
@@ -649,7 +704,7 @@ export function tableChat(options: TableChatOptions): TableChat
         tokens.add(token);
         const master = start(choice, ready.driver, ready.program, token, session);
 
-        if (typeof master === "string") {
+        if ("error" in master) {
             return master;
         }
 
@@ -729,7 +784,7 @@ export function tableChat(options: TableChatOptions): TableChat
             const refused = openChat({ host: taking.host, model: taking.model, ...(taking.effort === undefined ? {} : { effort: taking.effort }) });
 
             if (refused !== undefined) {
-                options.log?.(`The table did not take up the campaign's last chat: ${typeof refused === "string" ? refused : refused.error}`);
+                options.log?.(`The table did not take up the campaign's last chat: ${refused.error}`);
             }
         };
 
@@ -744,18 +799,19 @@ export function tableChat(options: TableChatOptions): TableChat
     };
 
     // What the page asks of an AI app: a host already on this computer is never installed again.
-    const hostWish = (wish: HostWish): string | undefined => {
+    const hostWish = (wish: HostWish): RefusalBody | undefined => {
         if (access === undefined) {
             return noAccess;
         }
 
         if ("signIn" in wish) {
-            return wish.signIn.cancel === true ? access.cancelSignIn(wish.signIn.host) : access.signIn(wish.signIn.host);
+            return wish.signIn.cancel === true ? access.tryCancelSignIn(wish.signIn.host) : access.trySignIn(wish.signIn.host);
         }
 
         if ("install" in wish) {
             const host = wish.install.host;
-            return programOf(host) === undefined ? access.install(host) : `${hosts[host].name} is on this computer already: choose it, and open the chat.`;
+            const name = hosts[host].name;
+            return programOf(host) === undefined ? access.tryInstall(host) : refusalWords(`${name} is on this computer already: choose it, and open the chat.`, "app-here", { host: name });
         }
 
         found = undefined;
@@ -764,11 +820,11 @@ export function tableChat(options: TableChatOptions): TableChat
     };
 
     // Another model for the open chat, checked as at its opening, between two turns: the campaign's last choice follows, and the chat says so.
-    const changeModel = (model: string, effort?: string): string | undefined => {
+    const changeModel = (model: string, effort?: string): RefusalBody | undefined => {
         const current = chat;
 
         if (current === undefined || current.state === "ended") {
-            return "No chat with the master is open: open one first.";
+            return noChat;
         }
 
         if (current.state === "turn") {
@@ -779,29 +835,27 @@ export function tableChat(options: TableChatOptions): TableChat
         const driver = driverOf(current.host);
 
         if (current.master.setModel === undefined || driver === undefined) {
-            return `${name} cannot change its model in an open chat: close the chat, then open it with another model.`;
+            return refusalWords(`${name} cannot change its model in an open chat: close the chat, then open it with another model.`, "no-model-change", { host: name });
         }
 
-        if (model.trim() === "") {
-            return `Choose the model ${name} plays the master with.`;
-        }
+        const unnamed = modelUnnamed(name, model);
 
-        if (!isHostName(model)) {
-            return `That is no name of a model: ${model}.`;
+        if (unnamed !== undefined) {
+            return unnamed;
         }
 
         const known = models.known(current.host);
-        const refused = effortRefused(current.host, driver, known, model, effort);
+        const refused = effortFailure(current.host, driver, known, model, effort);
 
         if (refused !== undefined) {
-            return refused;
+            return refusalOf(refused);
         }
 
         // An effort not given stays, where the model takes it or its efforts are not known yet; one it does not take is left, and the line says so. A change
         // asked and not taken yet is the one the next starts from.
         const was = current.pending ?? { model: current.model, effort: current.effort };
         const before = was.effort;
-        const stays = effort === undefined && before !== undefined && effortRefused(current.host, driver, known, model, before) === undefined;
+        const stays = effort === undefined && before !== undefined && effortFailure(current.host, driver, known, model, before) === undefined;
         const asked = effort ?? (stays ? before : undefined);
         const dropped = effort === undefined && before !== undefined && !stays ? before : undefined;
 
@@ -810,7 +864,7 @@ export function tableChat(options: TableChatOptions): TableChat
         }
 
         if (!current.master.setModel(model, asked)) {
-            return "The master is getting ready: change the model in a moment.";
+            return gettingReady;
         }
 
         current.changed = true;
@@ -837,6 +891,7 @@ export function tableChat(options: TableChatOptions): TableChat
                 ...(chat === undefined ? {} : { chat: { ...chatShown(chat, cutShort), ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
                 messages: messages.map((message) => ({ ...message })),
                 elsewhere: options.elsewhere(),
+                ...(options.logFile === undefined ? {} : { log: options.logFile }),
             };
         },
         open: openChat,
@@ -1003,6 +1058,22 @@ function modelLine(model: string, effort: string | undefined, dropped: string | 
     return { text: `From now on the master plays with ${model}${effort === undefined ? "" : `, effort ${effort}`}.`, mark: { code: "model", model, ...(effort === undefined ? {} : { effort }) } };
 }
 
+/** A driver's failure as a refusal the page gets: its words, with their code and values. */
+function refusalOf(failed: Failure): RefusalBody
+{
+    return refusalWords(failed.why, failed.code, failed.values);
+}
+
+/** Why a model's name cannot be asked of a host: none given, or one no host's program may take. */
+function modelUnnamed(host: string, model: string): RefusalBody | undefined
+{
+    if (model.trim() === "") {
+        return refusalWords(`Choose the model ${host} plays the master with.`, "model-needed", { host });
+    }
+
+    return isHostName(model) ? undefined : refusalWords(`That is no name of a model: ${model}.`, "model-no-name", { model, host });
+}
+
 function chatShown(chat: OpenChat, cutShort: boolean): NonNullable<ChatShown["chat"]>
 {
     return {
@@ -1017,6 +1088,7 @@ function chatShown(chat: OpenChat, cutShort: boolean): NonNullable<ChatShown["ch
         state: chat.state,
         ...(chat.why === undefined ? {} : { why: chat.why }),
         ...(chat.code === undefined ? {} : { code: chat.code }),
+        ...(chat.values === undefined ? {} : { values: { ...chat.values } }),
         ...(chat.tool === undefined ? {} : { tool: chat.tool }),
         // Its model changes between two turns, where its host's driver lets it.
         ...(chat.state !== "ended" && chat.master.setModel !== undefined ? { changes: true as const } : {}),

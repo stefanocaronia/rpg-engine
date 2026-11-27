@@ -1,13 +1,14 @@
 // The master: a chat with the AI host's own program, driven by its protocol so that the table can show it.
 import { type HostId, hostIds, hosts } from "../core/hosts.ts";
 import { antigravity } from "./antigravity/index.ts";
-import { type MasterChat, type MasterDriver, type MasterModel, type MasterOptions, withoutTrace } from "./chat.ts";
+import { type Failure, type MasterChat, type MasterDriver, type MasterModel, type MasterOptions, withoutTrace } from "./chat.ts";
 import { claudeCode } from "./claude-code/index.ts";
 import { codex } from "./codex/index.ts";
+import { effortNone, effortNotOfModel, effortUnknown } from "./failures.ts";
 import { openCode } from "./opencode/index.ts";
 
 export { isHostName, traceVariable, withoutTrace } from "./chat.ts";
-export type { EndCode, MasterChat, MasterDriver, MasterEvent, MasterModel, MasterOptions, ModelsOptions, ToolKind } from "./chat.ts";
+export type { EndCode, Failure, MasterChat, MasterDriver, MasterEvent, MasterModel, MasterOptions, ModelsOptions, ToolKind } from "./chat.ts";
 export { type ModelKeeper, modelKeeper } from "./keeper.ts";
 
 /** A host's program on this computer: the command, and the arguments before the host's own. */
@@ -120,6 +121,12 @@ export function askModels(
  */
 export function effortRefused(host: HostId, driver: MasterDriver, known: MasterModel[], model: string, effort: string | undefined): string | undefined
 {
+    return effortFailure(host, driver, known, model, effort)?.why;
+}
+
+/** Why an effort cannot go with a model of a host, as effortRefused says it, with the code and values of the words beside them. */
+export function effortFailure(host: HostId, driver: MasterDriver, known: MasterModel[], model: string, effort: string | undefined): Failure | undefined
+{
     const listed = known.find((one) => one.id === model);
     const efforts = listed?.efforts ?? driver.efforts;
     // Not known until the model is chosen: the driver sets the effort only where that model takes it.
@@ -132,10 +139,8 @@ export function effortRefused(host: HostId, driver: MasterDriver, known: MasterM
     const name = hosts[host].name;
 
     if (listed === undefined) {
-        return `${name} knows no effort ${effort}: choose one of ${efforts.join(", ")}.`;
+        return effortUnknown(name, effort, efforts);
     }
 
-    return efforts.length === 0
-        ? `${listed.name} takes no effort in ${name}: leave the effort to the host.`
-        : `${listed.name} takes no effort ${effort} in ${name}: choose one of ${efforts.join(", ")}.`;
+    return efforts.length === 0 ? effortNone(listed.name, name) : effortNotOfModel(listed.name, effort, name, efforts);
 }

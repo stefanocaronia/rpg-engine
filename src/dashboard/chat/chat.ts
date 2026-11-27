@@ -2,6 +2,7 @@
 // list follows what comes. No drawing here: the page's parts draw what these say.
 import type { ChatAsked, ChatChoice, ChatHost, ChatMessage, ChatModel, ChatSaid, MasterShown, ShownRoll } from "../data.ts";
 import { rollText } from "../parts/labels.ts";
+import { failureText, tableLineText } from "../parts/refusals.ts";
 import { t } from "../text.ts";
 
 /** What the chat's place shows: where a chat is opened, a chat opened by hand in its place, the open chat, or one whose program ended. */
@@ -426,8 +427,8 @@ export function speaker(from: ChatSaid["from"]): string
 }
 
 /**
- * A word of the table's as the page says it: a line about the master's model in the page's own words, by its code; any other, or one whose code the page
- * does not know, as the table wrote it. `app`, the name of the chat's app, which a change it did not take names.
+ * A word of the table's as the page says it, by its code: a line about the master's model, a turn that ended without a word or that failed, with why; one
+ * with no code, or whose code the page does not know, as the table wrote it. `app`, the name of the chat's app, which the page's words name.
  */
 export function tableWords(message: ChatSaid, app: string | undefined): string
 {
@@ -449,7 +450,7 @@ export function tableWords(message: ChatSaid, app: string | undefined): string
         return t("{name} did not take {asked}: the master goes on with {model}.", { name: app, asked: message.asked, model });
     }
 
-    return message.text;
+    return tableLineText(message.code, message.values, app) ?? message.text;
 }
 
 /** Whether a word of the table's only says what became of the master's model: no trouble, drawn quietly. */
@@ -459,7 +460,7 @@ export function aboutModel(message: ChatSaid): boolean
 }
 
 /** The name of the app the chat plays in, open or ended; none before a chat. */
-export function chatApp(shown: MasterShown): string | undefined
+export function chatApp(shown: Pick<MasterShown, "hosts" | "chat">): string | undefined
 {
     const host = shown.chat?.host;
     return host === undefined ? undefined : (shown.hosts.find((one) => one.id === host)?.name ?? host);
@@ -486,7 +487,7 @@ export function chatNews(before: MasterShown | undefined, now: MasterShown): str
     const state = now.chat?.state;
 
     if (state === "ended" && was !== "ended") {
-        return endedWords(now.chat?.why, expiredHost(now));
+        return endedWords(now);
     }
 
     if (state === "turn" && was !== "turn") {
@@ -502,14 +503,30 @@ export function chatNews(before: MasterShown | undefined, now: MasterShown): str
     return undefined;
 }
 
-/** That the chat ended, with why when the table says it; where the app's sign-in ran out (`expired`, the app's name), what to do in the page's own words. */
-export function endedWords(why: string | undefined, expired?: string): string
+/**
+ * That the chat ended, with why when the table says it: in the page's words by its code, else as the table wrote it; where the app's sign-in ran out, what
+ * to do in the page's own words.
+ */
+export function endedWords(shown: Pick<MasterShown, "hosts" | "chat">): string
 {
+    const expired = expiredHost(shown);
+
     if (expired !== undefined) {
         return expiredWords(expired);
     }
 
+    const chat = shown.chat;
+    const why = failureText(chat?.code, chat?.values, chatApp(shown)) ?? chat?.why;
     return why === undefined || why.trim() === "" ? t("The chat ended.") : t("The chat ended: {why}", { why });
+}
+
+/**
+ * The file of the table's log to name with a chat that ended, for who reports it: where the table keeps one and the chat ended by something that went wrong,
+ * never as the app's sign-in ran out, which the player sets right from the page.
+ */
+export function endedLog(shown: Pick<MasterShown, "chat" | "log">): string | undefined
+{
+    return shown.chat?.state === "ended" && shown.chat.code !== "signin" ? shown.log : undefined;
 }
 
 /** That an app's sign-in ran out, and what to do. */
@@ -567,6 +584,50 @@ export function atEnd(list: { scrollTop: number; clientHeight: number; scrollHei
 export function sendsWords(event: { key: string; shiftKey: boolean; isComposing: boolean; }, touch = false): boolean
 {
     return !touch && event.key === "Enter" && !event.shiftKey && !event.isComposing;
+}
+
+// The signs of a story's dialogue that a keyboard lacks, by the two keys typed for each.
+const storySigns: Record<string, string> = { "<<": "«", ">>": "»", "--": "—" };
+
+/**
+ * A sign that took the place of the two keys typed for it: where it starts in the player's words, the sign, the keys, which Backspace gives back, and the
+ * words with the sign in them.
+ */
+export interface TypedSign
+{
+    start: number;
+    sign: string;
+    keys: string;
+    text: string;
+}
+
+/** Whether what entered the player's words is one key typed: never what is pasted, dropped or put by a keyboard's suggestion, nor a word an input method composes. */
+export function typesKey(event: { inputType: string; data: string | null; isComposing: boolean; }): boolean
+{
+    return event.inputType === "insertText" && event.data?.length === 1 && !event.isComposing;
+}
+
+/**
+ * The sign the player's words take as a key is typed in them, the caret right after that key: `<<` becomes «, `>>` » and `--` —, at the second key of
+ * the two, wherever in the words. None where the two characters before the caret are no such pair.
+ */
+export function typedSign(text: string, caret: number): TypedSign | undefined
+{
+    const keys = text.slice(Math.max(0, caret - 2), caret);
+
+    if (!Object.hasOwn(storySigns, keys)) {
+        return undefined;
+    }
+
+    const start = caret - keys.length;
+    const sign = storySigns[keys];
+    return { start, sign, keys, text: text.slice(0, start) + sign + text.slice(caret) };
+}
+
+/** Whether Backspace gives back the two keys of a sign, as a writing program does: only right after it took their place, the words and the caret as it left them. */
+export function takesSignBack(typed: TypedSign | undefined, text: string, caret: number): typed is TypedSign
+{
+    return typed !== undefined && text === typed.text && caret === typed.start + typed.sign.length;
 }
 
 /**

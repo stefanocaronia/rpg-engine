@@ -192,11 +192,11 @@ describe("each host's account", () => {
         await settle();
         keeper.signIn("claudeCode");
         const why = "a sign-in to Claude Code is already under way in another window of RPG Engine: finish it there, or close that window, then try again";
-        helpers.endLogin("claude", { state: "failed", why });
+        helpers.endLogin("claude", { state: "failed", why, code: "elsewhere", values: { host: "Claude Code" } });
         await settle();
-        expect(keeper.known("claudeCode")).toMatchObject({ account: "out", signInWhy: why, signInCode: "elsewhere" });
+        expect(keeper.known("claudeCode")).toMatchObject({ account: "out", signInWhy: why, signInCode: "elsewhere", signInValues: { host: "Claude Code" } });
 
-        // A failure of its own has no code; the other window's ends, and a look finds the player signed in there.
+        // A failure of its own has another code; the other window's ends, and a look finds the player signed in there.
         helpers.states.claude = "ready";
         clock.now = 61_000;
         keeper.lookAgain("claudeCode");
@@ -251,14 +251,49 @@ describe("the sign-in from the page", () => {
         const helpers = drivenHelpers({ claude: "logged out" }, true);
         const { keeper } = keeperOver(helpers);
         keeper.signIn("claudeCode");
-        helpers.endLogin("claude", { state: "failed", why: "it said: address already in use" });
+        helpers.endLogin("claude", { state: "failed", why: "it said: address already in use", code: "signin-said", values: { why: "address already in use" } });
         await settle();
-        expect(keeper.access("claudeCode")).toMatchObject({ account: "out", signInWhy: "it said: address already in use" });
+        // The program's own words travel as they are, in a value beside the code.
+        expect(keeper.access("claudeCode")).toMatchObject({ account: "out", signInWhy: "it said: address already in use", signInCode: "signin-said", signInValues: { why: "address already in use" } });
         expect(keeper.access("claudeCode").signingIn).toBeUndefined();
 
         keeper.signIn("claudeCode");
         expect(keeper.access("claudeCode")).toMatchObject({ signingIn: true });
         expect(keeper.access("claudeCode").signInWhy).toBeUndefined();
+        expect(keeper.access("claudeCode")).not.toHaveProperty("signInCode");
+        expect(keeper.access("claudeCode")).not.toHaveProperty("signInValues");
+    });
+
+    it("says every why with the code and values it came with, never read from its words: a code with values, one with none, words alone, an error's", async () => {
+        const failed = async (why: string, coded: { code?: string; values?: Record<string, string>; } = {}): Promise<unknown> => {
+            const helpers = drivenHelpers({ claude: "logged out" }, true);
+            const { keeper } = keeperOver(helpers);
+            keeper.signIn("claudeCode");
+            helpers.endLogin("claude", { state: "failed", why, ...coded });
+            await settle();
+            const { signInWhy, signInCode, signInValues } = keeper.known("claudeCode");
+            expect(signInWhy).toBe(why);
+            return { code: signInCode, ...(signInValues === undefined ? {} : { values: signInValues }) };
+        };
+
+        const ending = "the sign-in to Claude Code just stopped is still ending: try again in a few seconds";
+        expect(await failed(ending, { code: "signin-ending", values: { host: "Claude Code" } })).toEqual({ code: "signin-ending", values: { host: "Claude Code" } });
+        // A code with no values.
+        expect(await failed("the sign-in stopped", { code: "signin-stopped" })).toEqual({ code: "signin-stopped" });
+        // The program's own words, in a value as they came.
+        const said = "Error: address already in use 127.0.0.1:1455";
+        expect(await failed(`it said: ${said}`, { code: "signin-said", values: { why: said } })).toEqual({ code: "signin-said", values: { why: said } });
+        // Words with no code, as helpers that know none give them: a failure with them as its value, even where they are the very words of a code.
+        expect(await failed("the sign-in stopped")).toEqual({ code: "signin-failed", values: { why: "the sign-in stopped" } });
+        expect(await failed(ending)).toEqual({ code: "signin-failed", values: { why: ending } });
+
+        // A sign-in that could not start at all: the error's own message.
+        const helpers = drivenHelpers({ claude: "logged out" }, true);
+        helpers.login = () => Promise.reject(new Error("spawn EPERM"));
+        const { keeper } = keeperOver(helpers);
+        keeper.signIn("claudeCode");
+        await settle();
+        expect(keeper.known("claudeCode")).toMatchObject({ signInWhy: "spawn EPERM", signInCode: "signin-failed", signInValues: { why: "spawn EPERM" } });
     });
 
     it("cancels one under way, stopping its program, and does not hear its end", async () => {
@@ -285,6 +320,31 @@ describe("the sign-in from the page", () => {
         expect(keeper.signIn("codex")).toBe("Codex is not on this computer: install it first, then sign in.");
         expect(helpers.asked.filter((one) => one.startsWith("login"))).toEqual([]);
     });
+
+    it("refuses the same with a code and its values beside the words, for the page to say it in its language", async () => {
+        const helpers = drivenHelpers({ codex: "missing" }, true);
+        const { keeper } = keeperOver(helpers);
+        expect(keeper.trySignIn("antigravity")).toEqual({
+            error: "Antigravity signs in from its own app, not from here: open Antigravity, sign in with your Google account there, then look again.",
+            code: "signin-in-app-account",
+            values: { host: "Antigravity", account: "Google" },
+        });
+        expect(keeper.trySignIn("openCode")).toEqual({ error: keeper.signIn("openCode"), code: "signin-not-needed", values: { host: "OpenCode" } });
+        expect(keeper.tryCancelSignIn("openCode")).toEqual({ error: "OpenCode signs in from its own app: there is no sign-in here to cancel.", code: "signin-none-to-cancel", values: { host: "OpenCode" } });
+        keeper.access("codex");
+        await settle();
+        expect(keeper.trySignIn("codex")).toEqual({ error: "Codex is not on this computer: install it first, then sign in.", code: "signin-not-installed", values: { host: "Codex" } });
+        expect(helpers.asked.filter((one) => one.startsWith("login"))).toEqual([]);
+
+        // Nothing refused: the sign-in starts, once, and is cancelled, as by the calls that answer in words.
+        helpers.states.codex = "logged out";
+        const signedOut = keeperOver(helpers).keeper;
+        expect(signedOut.trySignIn("codex")).toBeUndefined();
+        expect(signedOut.trySignIn("codex")).toBeUndefined();
+        expect(helpers.asked.filter((one) => one.startsWith("login"))).toEqual(["login codex"]);
+        expect(signedOut.tryCancelSignIn("codex")).toBeUndefined();
+        expect(helpers.asked).toContain("cancel codex");
+    });
 });
 
 describe("the installation from the page", () => {
@@ -310,16 +370,50 @@ describe("the installation from the page", () => {
         const helpers = drivenHelpers({}, true);
         const { keeper } = keeperOver(helpers);
         keeper.install("codex");
-        helpers.endInstall("codex", "npm said: EACCES");
+        helpers.endInstall("codex", { why: "npm said: EACCES", code: "app-install-said", values: { why: "EACCES" } });
         await settle();
-        expect(keeper.access("codex")).toMatchObject({ installWhy: "npm said: EACCES" });
+        // npm's own words travel as they are, in a value beside the code.
+        expect(keeper.access("codex")).toMatchObject({ installWhy: "npm said: EACCES", installCode: "app-install-said", installValues: { why: "EACCES" } });
         expect(keeper.access("codex").installing).toBeUndefined();
+    });
+
+    it("says every why with the code and values it came with, never read from its words: another window's, npm that said nothing, words alone, an error's", async () => {
+        const failed = async (why: string | Error, coded?: { code: string; values?: Record<string, string>; }, wordsAlone = false): Promise<unknown> => {
+            const helpers = drivenHelpers({}, true);
+
+            if (why instanceof Error) {
+                helpers.tryInstall = () => Promise.reject(why);
+            }
+
+            // Helpers that tell why not in words alone, as those of an engine before the codes.
+            if (wordsAlone) {
+                delete helpers.tryInstall;
+            }
+
+            const { keeper } = keeperOver(helpers);
+            keeper.install("codex");
+            helpers.endInstall("codex", why instanceof Error ? undefined : coded === undefined ? why : { why, ...coded });
+            await settle();
+            const { installWhy, installCode, installValues } = keeper.known("codex");
+            expect(installWhy).toBe(why instanceof Error ? why.message : why);
+            return { code: installCode, ...(installValues === undefined ? {} : { values: installValues }) };
+        };
+
+        const elsewhere = "an installation is already under way in another window of RPG Engine: wait for it to end there, then try again";
+        const stopped = "npm stopped without installing @openai/codex";
+        expect(await failed(elsewhere, { code: "elsewhere" })).toEqual({ code: "elsewhere" });
+        expect(await failed(stopped, { code: "app-install-stopped", values: { package: "@openai/codex" } })).toEqual({ code: "app-install-stopped", values: { package: "@openai/codex" } });
+        // Words with no code are a failure with them as its value, even where they are the very words of a code.
+        expect(await failed(elsewhere)).toEqual({ code: "app-install-failed", values: { why: elsewhere } });
+        expect(await failed(stopped, undefined, true)).toEqual({ code: "app-install-failed", values: { why: stopped } });
+        expect(await failed(new Error("spawn ENOENT"))).toEqual({ code: "app-install-failed", values: { why: "spawn ENOENT" } });
     });
 
     it("refuses a host the engine does not install, with its own page", () => {
         const { keeper } = keeperOver();
         expect(keeper.install("openCode")).toBe("RPG Engine does not install OpenCode: install it from https://opencode.ai/download, then look again.");
         expect(keeper.install("antigravity")).toContain("https://antigravity.google/download");
+        expect(keeper.tryInstall("openCode")).toEqual({ error: keeper.install("openCode"), code: "install-from-page", values: { host: "OpenCode", page: "https://opencode.ai/download" } });
     });
 });
 

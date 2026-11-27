@@ -13,7 +13,7 @@ export interface MasterChat
     table: boolean | undefined;
     /** The chat, where a table keeps one. */
     shown: MasterShown | undefined;
-    /** What went wrong with the last thing the player asked here, in the table's words. */
+    /** What went wrong with the last thing the player asked here: in the page's words where the table gave its code, else in the table's. */
     problem: string | undefined;
     /** Something the player asked is on its way. */
     sending: boolean;

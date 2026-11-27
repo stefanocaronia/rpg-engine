@@ -72,6 +72,8 @@ describe("architecture", () => {
             "server/route/notes.ts",
             // Where each campaign's table is found, in the player's data folder (D-582).
             "server/table/place.ts",
+            // What each table says it does, a line at a time, in a file beside its place: the only trace of one started with no terminal.
+            "server/table/log.ts",
             // Whether the folder of each campaign the launcher lists answers, asked without blocking, as a network share may not.
             "server/launcher/campaigns.ts",
             // The engine's own files in the player's data folder, written whole or not at all: the places of the tables and the launcher, the campaigns it

@@ -2,19 +2,21 @@
 // its name in the serif, with whom it is played, its game system and language as chips and when it was last opened, then where it is; the one whose table
 // answers says so. One whose folder is gone, or that does not read, is greyed, says why and can only be taken off the list.
 import { Icon } from "../parts/icons.tsx";
+import { LogFile } from "../parts/log-file.tsx";
+import { campaignWhy } from "../parts/refusals.ts";
 import { pageLocale, t } from "../text.ts";
 import type { ListedCampaign } from "./api.ts";
 import { campaignChips, campaignState, openedLabel, opens } from "./campaigns.ts";
 import { CampaignDie } from "./die.tsx";
 
-/** What the list is doing with a campaign, and what went wrong with one, each by its folder. */
+/** What the list is doing with a campaign, and what went wrong with one, each by its folder; with the file of the table's log, where a table did not start. */
 export interface ListStanding
 {
     /** The campaign being opened, with the words that say so. */
     opening?: { root: string; words: string; } | undefined;
     /** Something is on its way: nothing else starts meanwhile. */
     busy: boolean;
-    problem?: { root: string; text: string; } | undefined;
+    problem?: { root: string; text: string; log?: string; } | undefined;
 }
 
 export function CampaignList({ campaigns, standing, now, onOpen, onRemove }: {
@@ -50,7 +52,7 @@ export function CampaignList({ campaigns, standing, now, onOpen, onRemove }: {
                     opened={openedLabel(campaign.opened, now, pageLocale())}
                     opening={standing.opening?.root === campaign.root ? standing.opening.words : undefined}
                     busy={standing.busy}
-                    problem={standing.problem?.root === campaign.root ? standing.problem.text : undefined}
+                    problem={standing.problem?.root === campaign.root ? standing.problem : undefined}
                     onOpen={() => onOpen(campaign)}
                     onRemove={() => onRemove(campaign)}
                 />
@@ -66,7 +68,7 @@ function CampaignRow({ id, campaign, chips, opened, opening, busy, problem, onOp
     opened: string | undefined;
     opening: string | undefined;
     busy: boolean;
-    problem: string | undefined;
+    problem: { text: string; log?: string; } | undefined;
     onOpen(): void;
     onRemove(): void;
 })
@@ -93,7 +95,7 @@ function CampaignRow({ id, campaign, chips, opened, opening, busy, problem, onOp
                 {opening ?? (state === "missing"
                     ? t("Folder not found")
                     : state === "unreadable"
-                    ? t("Cannot be read: {why}", { why: campaign.problem ?? "" })
+                    ? t("Cannot be read: {why}", { why: campaignWhy(campaign.problemCode, campaign.problemValues) ?? campaign.problem ?? "" })
                     : (
                         <>
                             {chips.map((chip) => <bdi key={chip} class="launcher-chip">{chip}</bdi>)}
@@ -126,7 +128,8 @@ function CampaignRow({ id, campaign, chips, opened, opening, busy, problem, onOp
             <button type="button" class="icon-button launcher-remove tip-left" aria-label={remove} data-tip={remove} aria-disabled={busy} onClick={() => !busy && onRemove()}>
                 <Icon name="close" />
             </button>
-            {problem !== undefined && <p class="launcher-problem" role="alert" dir="auto">{problem}</p>}
+            {problem !== undefined && <p class="launcher-problem" role="alert" dir="auto">{problem.text}</p>}
+            {problem?.log !== undefined && <LogFile file={problem.log} />}
         </li>
     );
 }

@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { basename, join } from "node:path";
 import { PassThrough } from "node:stream";
+import { runInNewContext } from "node:vm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { iconOnFirstRun, type Terminal } from "../src/cli/icon.ts";
@@ -15,8 +16,10 @@ import { isPageAddress } from "../src/core/page-address.ts";
 import { stopTree } from "../src/core/process.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { FileStore, withFiles } from "../src/core/store.ts";
+import { launcherRefusals } from "../src/dashboard/parts/refusals/launcher.ts";
 import { productName } from "../src/dashboard/shell/product.ts";
 import { windowPlace as pageWindowPlace } from "../src/dashboard/shell/window.ts";
+import { setLanguage } from "../src/dashboard/text.ts";
 import {
     appBrowser,
     type BrowserSystem,
@@ -59,6 +62,7 @@ import {
     type WaitingPage,
     waitingWords,
 } from "../src/server/launcher/index.ts";
+import { waitingRefusals } from "../src/server/launcher/waiting.ts";
 import { launcherHtml, pageHtml } from "../src/server/page/index.ts";
 import { type Probed, readLastChat, type TablePlace } from "../src/server/table/index.ts";
 import { writePlace } from "../src/server/table/place.ts";
@@ -197,7 +201,7 @@ describe("a campaign opened from the launcher", () => {
         const tables = fakeTables({ token: { version: "0.9.0", seated: true } });
         const opened = await openCampaign(root, tables);
 
-        expect(opened).toEqual({ error: expect.stringContaining("runs RPG Engine 0.9.0, not 1.2.3") });
+        expect(opened).toEqual({ error: expect.stringContaining("runs RPG Engine 0.9.0, not 1.2.3"), code: "table-other-engine", values: { root, version: "0.9.0", ours: "1.2.3", pid: "4242" } });
         expect("error" in opened && opened.error).toContain("4242");
         expect(tables.starts).toEqual([]);
     });
@@ -206,10 +210,11 @@ describe("a campaign opened from the launcher", () => {
         const root = await campaignIn(makeTempFolder(), "Rocca");
         const tables = fakeTables({});
 
-        expect(await openCampaign(root, tables)).toEqual({ error: expect.stringContaining("did not start within 15 seconds") });
+        expect(await openCampaign(root, tables)).toEqual({ error: expect.stringContaining("did not start within 15 seconds"), code: "table-not-started", values: { root, seconds: "15" } });
         expect(tables.starts).toEqual([root]);
         expect(tables.clock.now).toBeGreaterThanOrEqual(15_000);
-        expect(await openCampaign(makeTempFolder(), tables)).toEqual({ error: expect.stringContaining("holds no campaign") });
+        const empty = makeTempFolder();
+        expect(await openCampaign(empty, tables)).toEqual({ error: expect.stringContaining("holds no campaign"), code: "campaign-gone", values: { root: empty } });
     });
 });
 
@@ -270,7 +275,11 @@ describe("a campaign made from the launcher", () => {
 
         const full = makeTempFolder();
         writeFileSync(join(full, "notes.txt"), "mine");
-        expect(await makeCampaign({ name: "Rocca", folder: full, language: "it", system: "fake" }, where(opening()))).toEqual({ error: expect.stringContaining("already holds files") });
+        expect(await makeCampaign({ name: "Rocca", folder: full, language: "it", system: "fake" }, where(opening()))).toEqual({
+            error: expect.stringContaining("already holds files"),
+            code: "folder-not-empty",
+            values: { folder: full },
+        });
         expect(existsSync(join(full, "campaign.yaml"))).toBe(false);
     });
 
@@ -279,10 +288,24 @@ describe("a campaign made from the launcher", () => {
         const root = "root" in made ? made.root ?? "" : "";
 
         expect(readLastChat(home, root)).toEqual({ root, host: "claudeCode", model: "sonnet", effort: "high" });
-        expect(await makeCampaign({ name: "Altra", language: "it", system: "fake", host: "claudeCode", effort: "max" }, where(opening()))).toEqual({ error: expect.stringContaining("knows no effort max") });
-        expect(await makeCampaign({ name: "Altra", language: "it", system: "fake", host: "codex" }, where(opening()))).toEqual({ error: expect.stringContaining("cannot open in codex yet") });
-        expect(await makeCampaign({ name: "Altra", language: "it", system: "fake", host: "claudeCode", model: "two words" }, where(opening()))).toEqual({ error: expect.stringContaining("no name of a model") });
-        expect(await makeCampaign({ name: "Altra", language: "it", system: "nowhere" }, where(opening()))).toEqual({ error: expect.stringContaining("is not an installed system") });
+        const wish = { name: "Altra", language: "it", system: "fake" };
+        expect(await makeCampaign({ ...wish, host: "claudeCode", effort: "max" }, where(opening()))).toEqual({
+            error: expect.stringContaining("knows no effort max"),
+            code: "effort-unknown",
+            values: { host: "Claude Code", effort: "max", efforts: expect.any(String) },
+        });
+        // The host by its name for the player where the engine knows it, else as the page wrote it.
+        expect(await makeCampaign({ ...wish, host: "codex" }, where(opening()))).toEqual({ error: expect.stringContaining("cannot open in codex yet"), code: "host-not-yet-new", values: { host: "Codex" } });
+        expect(await makeCampaign({ ...wish, host: "nobody" }, where(opening()))).toEqual({ error: expect.stringContaining("cannot open in nobody yet"), code: "host-not-yet-new", values: { host: "nobody" } });
+        expect(await makeCampaign({ ...wish, host: "claudeCode", model: "two words" }, where(opening()))).toEqual({
+            error: expect.stringContaining("no name of a model"),
+            code: "model-no-name",
+            values: { model: "two words", host: "Claude Code" },
+        });
+        // A code with no values.
+        expect(await makeCampaign({ ...wish, model: "sonnet" }, where(opening()))).toEqual({ error: "Choose the host first, then its model and effort.", code: "host-first" });
+        // What the command that makes a campaign refuses, in its own words.
+        expect(await makeCampaign({ ...wish, system: "nowhere" }, where(opening()))).toMatchObject({ error: expect.stringContaining("is not an installed system") });
         expect(existsSync(join(campaignsFolder(userHome), "Altra", "campaign.yaml"))).toBe(false);
     });
 
@@ -291,8 +314,16 @@ describe("a campaign made from the launcher", () => {
         const listed = (tables: TableStarter): Parameters<typeof makeCampaign>[1] => ({ ...where(tables), models });
         const wish = { name: "Rocca", language: "it", system: "fake", host: "claudeCode" };
 
-        expect(await makeCampaign({ ...wish, model: "opus", effort: "high" }, listed(opening()))).toEqual({ error: "Opus 5.5 takes no effort high in Claude Code: choose one of low, max." });
-        expect(await makeCampaign({ ...wish, model: "haiku", effort: "low" }, listed(opening()))).toEqual({ error: "Haiku 4.5 takes no effort in Claude Code: leave the effort to the host." });
+        expect(await makeCampaign({ ...wish, model: "opus", effort: "high" }, listed(opening()))).toEqual({
+            error: "Opus 5.5 takes no effort high in Claude Code: choose one of low, max.",
+            code: "effort-not-of-model",
+            values: { model: "Opus 5.5", effort: "high", host: "Claude Code", efforts: "low, max" },
+        });
+        expect(await makeCampaign({ ...wish, model: "haiku", effort: "low" }, listed(opening()))).toEqual({
+            error: "Haiku 4.5 takes no effort in Claude Code: leave the effort to the host.",
+            code: "effort-none",
+            values: { model: "Haiku 4.5", host: "Claude Code" },
+        });
         const made = await makeCampaign({ ...wish, model: "opus", effort: "max" }, listed(opening()));
         const root = "root" in made ? made.root ?? "" : "";
         expect(readLastChat(home, root)).toEqual({ root, host: "claudeCode", model: "opus", effort: "max" });
@@ -491,12 +522,22 @@ describe("the launcher's server", () => {
     });
 
     it("gives the folder the player chose, a cancel, or why there is no window", async () => {
-        const answers = [join(userHome, "Chosen"), undefined, { refused: "no window here" }];
+        const answers = [
+            join(userHome, "Chosen"),
+            undefined,
+            { refused: "no window here" },
+            { refused: "The window could not open: Add-Type failed.", code: "folder-window-failed", values: { why: "Add-Type failed" } },
+        ];
         const launcher = await startLauncher({ pick: () => Promise.resolve(answers.shift()) });
 
         expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({ status: 200, body: { folder: join(userHome, "Chosen") } });
         expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({ status: 200, body: { cancelled: true } });
-        expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({ status: 409, body: { error: "no window here" } });
+        // Why there is no window: the words alone where whoever shows it knows no code, else its code and values with them.
+        expect((await call(launcher.url, "POST", "/api/launcher", { pick: true })).body).toEqual({ error: "no window here" });
+        expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({
+            status: 409,
+            body: { error: "The window could not open: Add-Type failed.", code: "folder-window-failed", values: { why: "Add-Type failed" } },
+        });
     });
 
     it("gives the folder window the page's title and the folder it opens in, a whole path; refuses a title it cannot show and a path that is not whole", async () => {
@@ -737,11 +778,20 @@ describe("the AI apps from the launcher's page", () => {
 
         expect(await call(launcher.url, "POST", "/api/launcher", { signIn: { host: "antigravity" } })).toMatchObject({
             status: 409,
-            body: { error: expect.stringContaining("Antigravity signs in from its own app, not from here") },
+            body: { error: expect.stringContaining("Antigravity signs in from its own app, not from here"), code: "signin-in-app-account", values: { host: "Antigravity", account: "Google" } },
         });
         expect(await call(launcher.url, "POST", "/api/launcher", { install: { host: "antigravity" } })).toMatchObject({
             status: 409,
-            body: { error: "RPG Engine does not install Antigravity: install it from https://antigravity.google/download, then look again." },
+            body: {
+                error: "RPG Engine does not install Antigravity: install it from https://antigravity.google/download, then look again.",
+                code: "install-from-page",
+                values: { host: "Antigravity", page: "https://antigravity.google/download" },
+            },
+        });
+        // A host that is on this computer already is never installed again.
+        expect(await call(launcher.url, "POST", "/api/launcher", { install: { host: "claudeCode" } })).toMatchObject({
+            status: 409,
+            body: { error: "Claude Code is on this computer already: choose it for a campaign, and play.", code: "app-here", values: { host: "Claude Code" } },
         });
         expect(await call(launcher.url, "POST", "/api/launcher", { signIn: { host: "cursor" } })).toMatchObject({
             status: 400,
@@ -751,7 +801,7 @@ describe("the AI apps from the launcher's page", () => {
 
         await launcher.end("a launcher given no programs comes next");
         const bare = await startLauncher({ hosts: appHosts({ codex: false }) });
-        expect(await call(bare.url, "POST", "/api/launcher", { hosts: true })).toMatchObject({ status: 409, body: { error: expect.stringContaining("start it again with rpg launcher") } });
+        expect(await call(bare.url, "POST", "/api/launcher", { hosts: true })).toMatchObject({ status: 409, body: { error: expect.stringContaining("start it again with rpg launcher"), code: "no-access-launcher" } });
     });
 
     it("looks at every host again when the page asks, at most once a minute", async () => {
@@ -811,7 +861,7 @@ describe("reaching the launcher", () => {
         const starts: number[] = [];
         const reached = await reachLauncher(home, version, { start: () => void starts.push(now), now: () => now, wait: (milliseconds) => Promise.resolve(void (now += milliseconds)) });
 
-        expect(reached).toEqual({ error: expect.stringContaining("did not start within ten seconds") });
+        expect(reached).toEqual({ error: expect.stringContaining("did not start within ten seconds"), code: "launcher-not-started", values: { seconds: "10" } });
         expect(starts).toEqual([0]);
     });
 });
@@ -839,7 +889,7 @@ describe("the way back from a campaign's page", () => {
     }
 
     /** A way to the launcher that always finds and reaches what it is given, and opens no window. */
-    function reaching(reached: { url: string; } | { error: string; }): LauncherWay
+    function reaching(reached: { url: string; } | { error: string; code?: string; values?: Record<string, string>; }): LauncherWay
     {
         return { find: () => Promise.resolve("url" in reached ? reached : undefined), reach: () => Promise.resolve(reached), open: () => Promise.resolve(false) };
     }
@@ -859,7 +909,7 @@ describe("the way back from a campaign's page", () => {
     });
 
     it("starts the launcher from the page at a table alone, and refuses elsewhere", async () => {
-        expect(await call(await serve(), "POST", "/api/home", { start: true })).toMatchObject({ status: 409, body: { error: expect.stringContaining("rpg open") } });
+        expect(await call(await serve(), "POST", "/api/home", { start: true })).toMatchObject({ status: 409, body: { error: expect.stringContaining("rpg open"), code: "no-launcher-way" } });
         await dashboard?.close();
 
         const url = await serve(reaching({ url: "http://127.0.0.1:5750" }));
@@ -868,8 +918,10 @@ describe("the way back from a campaign's page", () => {
         expect((await call(url, "POST", "/api/home", { start: true }, { origin: "" })).status).toBe(403);
         await dashboard?.close();
 
-        const failing = await serve(reaching({ error: "not within ten seconds" }));
-        expect(await call(failing, "POST", "/api/home", { start: true })).toMatchObject({ status: 409, body: { error: "not within ten seconds" } });
+        // Why the launcher was not reached goes to the page as it was told: its words, its code and its values.
+        const failing = await serve(reaching({ error: "not within ten seconds", code: "launcher-not-started", values: { seconds: "10" } }));
+        expect((await call(failing, "POST", "/api/home", { start: true })).body).toEqual({ error: "not within ten seconds", code: "launcher-not-started", values: { seconds: "10" } });
+        expect(await call(failing, "POST", "/api/home", { start: true })).toMatchObject({ status: 409 });
     });
 
     it("opens the launcher's page in a window of its own once it answers, one for two quick asks", async () => {
@@ -921,14 +973,20 @@ describe("the folder window", () => {
 
         expect(await chooseFolder("win32", {}, { title: "Choose" }, run)).toBe("C:\\Giochi\\Città");
         expect(await chooseFolder("win32", {}, { title: "Choose" }, run)).toBeUndefined();
-        expect(await chooseFolder("win32", {}, { title: "Choose" }, run)).toEqual({ refused: expect.stringContaining("could not open") });
+        // A window that failed without a word: a code with no values.
+        expect(await chooseFolder("win32", {}, { title: "Choose" }, run)).toEqual({ refused: expect.stringContaining("could not open"), code: "folder-window-failed" });
     });
 
     it("says why the window did not open on Windows, as PowerShell wrote it, and that PowerShell is missing", async () => {
         const failed = (): Promise<{ code: number; out: string; err: string; }> => Promise.resolve({ code: 1, out: "", err: "Add-Type failed\r\n" });
 
-        expect(await chooseFolder("win32", {}, {}, failed)).toEqual({ refused: "The window to choose a folder could not open: Add-Type failed. Write the folder's path instead." });
-        expect(await chooseFolder("win32", {}, {}, () => Promise.resolve("missing"))).toEqual({ refused: expect.stringContaining("no window to choose a folder") });
+        // What PowerShell wrote travels as it is, in a value.
+        expect(await chooseFolder("win32", {}, {}, failed)).toEqual({
+            refused: "The window to choose a folder could not open: Add-Type failed. Write the folder's path instead.",
+            code: "folder-window-failed",
+            values: { why: "Add-Type failed" },
+        });
+        expect(await chooseFolder("win32", {}, {}, () => Promise.resolve("missing"))).toEqual({ refused: expect.stringContaining("no window to choose a folder"), code: "folder-window-none" });
     });
 
     it("is osascript's choose folder on macOS, its prompt and its folder arguments, each the system's own when empty; Escape is a cancel", async () => {
@@ -968,8 +1026,8 @@ describe("the folder window", () => {
         expect(await chooseFolder("linux", { DISPLAY: ":0" }, { title: "Choose" }, zenityMissing)).toBe("/home/ann/Giochi");
         expect(tried).toEqual(["zenity", "kdialog"]);
         expect(await chooseFolder("linux", { DISPLAY: ":0" }, { title: "Choose" }, () => Promise.resolve({ code: 1, out: "" }))).toBeUndefined();
-        expect(await chooseFolder("linux", { DISPLAY: ":0" }, { title: "Choose" }, () => Promise.resolve("missing"))).toEqual({ refused: expect.stringContaining("zenity or kdialog") });
-        expect(await chooseFolder("linux", {}, { title: "Choose" }, () => Promise.reject(new Error("never run")))).toEqual({ refused: expect.any(String) });
+        expect(await chooseFolder("linux", { DISPLAY: ":0" }, { title: "Choose" }, () => Promise.resolve("missing"))).toEqual({ refused: expect.stringContaining("zenity or kdialog"), code: "folder-window-missing" });
+        expect(await chooseFolder("linux", {}, { title: "Choose" }, () => Promise.reject(new Error("never run")))).toEqual({ refused: expect.any(String), code: "folder-window-missing" });
     });
 });
 
@@ -1324,6 +1382,26 @@ function fakeTerminal(options: { tty?: boolean; env?: NodeJS.ProcessEnv; } = {})
     return { output: { isTTY: options.tty ?? true }, env: options.env ?? { DISPLAY: ":0" } };
 }
 
+/** What the window of the wait shows once its own script, run as a browser runs it, took why the launcher was not reached: its line, and the answer it read. */
+async function windowShows(page: WaitingPage): Promise<{ text: string; failed: boolean; answer: unknown; }>
+{
+    const html = await (await fetch(page.url)).text();
+    const line = { textContent: /<p role="status">(.*)<\/p>/.exec(html)?.[1] };
+    let answer: unknown;
+    const failed = await new Promise<boolean>((done) => {
+        runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
+            fetch: async (path: string) => {
+                answer = await (await fetch(new URL(path, page.url))).json();
+                return { json: () => answer };
+            },
+            document: { querySelector: (what: string) => (what === "p" ? line : undefined), body: { classList: { add: (name: string) => done(name === "failed") } } },
+            location: { search: "", replace: () => done(false) },
+            setTimeout,
+        });
+    });
+    return { text: line.textContent ?? "", failed, answer };
+}
+
 describe("rpg open, rpg icon and rpg launcher", () => {
     // Every icon in the test's own folders: should a check of the terminal fail, none goes on the real desktop.
     const where = (own: Partial<OpenWhere> = {}): OpenWhere => ({
@@ -1424,10 +1502,20 @@ describe("rpg open, rpg icon and rpg launcher", () => {
     });
 
     it("serves the page of the wait in the computer's language, with a rolling die, until the window took where to go", async () => {
-        expect(waitingWords("it-IT")).toEqual({ text: "Apro RPG Engine: può volerci qualche secondo…", language: "it" });
-        expect(waitingWords("xx")).toEqual({ text: "Opening RPG Engine: it can take a few seconds…", language: "en" });
+        expect(waitingWords("it-IT", pageFolder)).toEqual({ text: "Apro RPG Engine: può volerci qualche secondo…", language: "it" });
+        expect(waitingWords("xx", pageFolder)).toEqual({ text: "Opening RPG Engine: it can take a few seconds…", language: "en" });
+        // As the launcher's page reads a language: Norwegian as Bokmål, and Chinese in traditional characters never as the simplified.
+        expect(waitingWords("no", pageFolder).language).toBe("nb");
+        expect(waitingWords("zh-TW", pageFolder).language).toBe("en");
+        // A file of words written by hand that does not read, or holds no phrases: English.
+        const broken = makeTempFolder();
+        mkdirSync(join(broken, "i18n"));
+        writeFileSync(join(broken, "i18n", "it.json"), "{ not json");
+        writeFileSync(join(broken, "i18n", "fr.json"), "null");
+        writeFileSync(join(broken, "i18n", "de.json"), JSON.stringify({ "Opening {name}: it can take a few seconds…": 3 }));
+        expect(["it", "fr", "de", "../it"].map((language) => waitingWords(language, broken).language)).toEqual(["en", "en", "en", "en"]);
 
-        const page = await serveWaitingPage("it", 5000);
+        const page = await serveWaitingPage("it", 5000, pageFolder);
         const html = await (await fetch(page.url)).text();
         expect(html).toContain("Apro RPG Engine");
         expect(html).toContain('class="die"');
@@ -1437,6 +1525,55 @@ describe("rpg open, rpg icon and rpg launcher", () => {
         expect(await (await fetch(`${page.url}ready`)).json()).toEqual({ url: "http://127.0.0.1:5750" });
         await page.ended;
         await expect(fetch(page.url)).rejects.toThrow();
+    });
+
+    it("answers the window why the launcher was not reached with its words, its code and its values, and the window says the page's phrase in its language", async () => {
+        const page = await serveWaitingPage("it", 5000, pageFolder);
+        const refused = { error: "RPG Engine's launcher, at http://127.0.0.1:5750, is there but does not answer: end its process, 4321, then try again.", code: "launcher-silent", values: { url: "http://127.0.0.1:5750", pid: "4321" } };
+        const said = "RPG Engine è già avviato, su http://127.0.0.1:5750, ma non risponde: termina il suo processo, 4321, o riavvia il computer, poi riprova.";
+        page.reached(refused);
+        expect(await windowShows(page)).toEqual({ text: said, failed: true, answer: { ...refused, said } });
+        await page.ended;
+    });
+
+    it("says each reason the launcher was not reached as the launcher's page says it, and the engine's words where it has no phrase or a value did not come", async () => {
+        const says = async (language: string, refused: { error: string; code?: string; values?: Record<string, string>; }): Promise<unknown> => {
+            const page = await serveWaitingPage(language, 5000, pageFolder);
+            page.reached(refused);
+            const answer = await (await fetch(`${page.url}ready`)).json() as { said: string; };
+            await page.ended;
+            return answer.said;
+        };
+
+        const late = { error: "RPG Engine's launcher did not start within ten seconds…", code: "launcher-not-started", values: { seconds: "10" } };
+        const silent = { error: "RPG Engine's launcher, at http://127.0.0.1:5750, is there…", code: "launcher-silent", values: { url: "http://127.0.0.1:5750", pid: "4321" } };
+        const kept = { error: "The launcher of RPG Engine 1.2.2…", code: "launcher-not-quit", values: { version: "1.2.2", url: "http://127.0.0.1:5750", pid: "77" } };
+        expect([...waitingRefusals.keys()]).toEqual([late.code, silent.code, kept.code]);
+
+        // The same words as the page's own phrase of each code, character by character, with the values under the page's names; from right to left each
+        // value keeps its own order, as on the page.
+        try {
+            for (const language of ["en", "it", "ar"]) {
+                await setLanguage(language, (code) => Promise.resolve(JSON.parse(readFileSync(join(pageFolder, "i18n", `${code}.json`), "utf8")) as Record<string, string>));
+
+                for (const refused of [late, silent, kept]) {
+                    expect(await says(language, refused), `${refused.code} in ${language}`).toBe(launcherRefusals[refused.code](refused.values));
+                }
+            }
+        } finally {
+            await setLanguage("en");
+        }
+
+        expect(await says("it-IT", late)).toBe("RPG Engine non è partito entro 10 secondi: riprova. Se succede ancora, scrivi rpg launcher in un terminale per vedere perché.");
+        expect(await says("it", kept)).toBe("RPG Engine 1.2.2 è ancora avviato, su http://127.0.0.1:5750, e non si è chiuso: termina il suo processo, 77, o riavvia il computer, poi riprova.");
+        expect(await says("he-IL", silent)).toContain(`${String.fromCodePoint(0x2068)}http://127.0.0.1:5750${String.fromCodePoint(0x2069)}`);
+        // A language the page does not ship: the page's English.
+        expect(await says("tlh", late)).toBe("RPG Engine did not start within 10 seconds: try again. If it happens again, type rpg launcher in a terminal to see why.");
+        // The engine's words for a code with no phrase here, a name every object has, no code at all, and a value that did not come.
+        expect(await says("it", { error: "Something new.", code: "tomorrow's" })).toBe("Something new.");
+        expect(await says("it", { error: "Its own.", code: "constructor" })).toBe("Its own.");
+        expect(await says("it", { error: "It did not start." })).toBe("It did not start.");
+        expect(await says("it", { ...kept, values: { version: "1.2.2", url: "http://127.0.0.1:5750" } })).toBe("The launcher of RPG Engine 1.2.2…");
     });
 
     it("writes why it failed to open.log, the last time alone, for the icon that has no console", async () => {

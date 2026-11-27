@@ -10,6 +10,7 @@ import type { Catalog } from "../../commands/shared/packages/catalog.ts";
 import { loadCampaignCode } from "../../commands/shared/packages/code.ts";
 import { themesFolder } from "../../commands/shared/packages/unpacked.ts";
 import type { Context, Player, SystemTexts } from "../../core/context.ts";
+import type { RefusalBody } from "../../core/refusal.ts";
 import type { SessionStore } from "../../core/session-store.ts";
 import { withFiles } from "../../core/store.ts";
 import { lookUntil } from "../../core/wait.ts";
@@ -29,7 +30,7 @@ import { campaignPorts, type DashboardAt, dashboardAt } from "./ports.ts";
 import { answer } from "./routes.ts";
 import type { PackageAction, PackagePhase } from "./writes.ts";
 
-export type { ChatQuestion, HostWish, MarkedClock, MarkedTurns, MasterRefusal, ModelMark, PageChat, PageMaster, PageMessage, StoryMarks } from "./master.ts";
+export type { ChatQuestion, HostWish, LineMark, MarkedClock, MarkedTurns, ModelMark, PageChat, PageMaster, PageMessage, StoryMarks } from "./master.ts";
 export { showPage } from "./opener.ts";
 export { campaignPorts, dashboardAt, dashboardPorts } from "./ports.ts";
 export { pageRoutes } from "./routes.ts";
@@ -97,7 +98,7 @@ export interface DashboardOptions
 export interface LauncherWay
 {
     find(): Promise<{ url: string; } | undefined>;
-    reach(): Promise<{ url: string; } | { error: string; }>;
+    reach(): Promise<{ url: string; } | RefusalBody>;
     open(url: string): Promise<boolean>;
 }
 

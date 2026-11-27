@@ -39,8 +39,11 @@ import {
     settledChoice,
     speaker,
     tableWords,
+    takesSignBack,
     turnDoing,
     turnWords,
+    typedSign,
+    typesKey,
     unseenWords,
     waitingQuestion,
     withModel,
@@ -220,7 +223,8 @@ describe("the chat with the master on the page (D-582)", () => {
         expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn", tool: "ask" })).toBe("Il master aspetta la tua risposta…");
         expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn", tool: "roll" })).toBe("Il master sta tirando i dadi…");
         expect([speaker("player"), speaker("master"), speaker("table")]).toEqual(["Tu", "Il master", "Il tavolo"]);
-        expect([endedWords(undefined), endedWords("  "), endedWords("It closed.")]).toEqual(["La chat si è chiusa.", "La chat si è chiusa.", "La chat si è chiusa: It closed."]);
+        const ended = (why?: string): string => endedWords(shown({ chat: { host: "claudeCode", model: "sonnet", state: "ended", ...(why === undefined ? {} : { why }) } }));
+        expect([ended(), ended("  "), ended("It closed.")]).toEqual(["La chat si è chiusa.", "La chat si è chiusa.", "La chat si è chiusa: It closed."]);
         expect(sectionLabel("chat")).toBe("Gioco");
     });
 
@@ -265,6 +269,52 @@ describe("the chat with the master on the page (D-582)", () => {
         expect([wordsToSend(" \n ", "idle"), wordsToSend("Wait.", "turn"), wordsToSend("Wait.", "ended"), wordsToSend("Wait.", undefined)]).toEqual([undefined, undefined, undefined, undefined]);
         // In the master's turn they go only while they answer the question that waits.
         expect([wordsToSend(" I jump. ", "turn", true), wordsToSend("  ", "turn", true), wordsToSend("I jump.", "idle", true), wordsToSend("I jump.", "ended", true)]).toEqual(["I jump.", undefined, "I jump.", undefined]);
+    });
+
+    it("turns << >> and -- into the signs of a story's dialogue as they are typed, wherever in the words, and Backspace right after gives the two keys back (T-326)", () => {
+        // The words as each key is typed at the caret, which starts between what is there before it and after it.
+        const typing = (keys: string, before = "", after = ""): string => {
+            let text = before + after;
+            let caret = before.length;
+
+            for (const key of keys) {
+                const typed = typedSign(text.slice(0, caret) + key + text.slice(caret), caret + 1);
+                text = typed?.text ?? text.slice(0, caret) + key + text.slice(caret);
+                caret = typed === undefined ? caret + 1 : typed.start + typed.sign.length;
+            }
+
+            return text;
+        };
+
+        expect(typing("<<ciao>> -- sì")).toBe("«ciao» — sì");
+        expect(typing("a < b, c > d, e - f, <>, ->, <-")).toBe("a < b, c > d, e - f, <>, ->, <-");
+        // At the second key of the two: a third starts another pair.
+        expect([typing("<<<"), typing("---"), typing("----"), typing("-->")]).toEqual(["«<", "—-", "——", "—>"]);
+        // In the middle of the words, which stay as they are around the sign, the caret right after it.
+        expect(typing("<<", "He said ", "no, never.")).toBe("He said «no, never.");
+        expect(typedSign("He said <<no, never.", 10)).toEqual({ start: 8, sign: "«", keys: "<<", text: "He said «no, never." });
+        // A key typed after a character that was there makes the pair too; a pair that is not right before the caret is left alone.
+        expect(typing("-", "well -", " then")).toBe("well — then");
+        expect([typedSign("<<ciao", 6), typedSign("<<ciao", 1), typedSign("<", 1), typedSign("", 0)]).toEqual([undefined, undefined, undefined, undefined]);
+
+        // One key typed alone counts: what is pasted, dropped, put by a keyboard's suggestion or composed by an input method stays as it is.
+        expect(typesKey({ inputType: "insertText", data: "<", isComposing: false })).toBe(true);
+        expect([
+            typesKey({ inputType: "insertFromPaste", data: "<", isComposing: false }),
+            typesKey({ inputType: "insertFromDrop", data: "<", isComposing: false }),
+            typesKey({ inputType: "insertReplacementText", data: "-", isComposing: false }),
+            typesKey({ inputType: "insertCompositionText", data: "-", isComposing: true }),
+            typesKey({ inputType: "insertText", data: "-", isComposing: true }),
+            typesKey({ inputType: "insertText", data: "--", isComposing: false }),
+            typesKey({ inputType: "insertText", data: null, isComposing: false }),
+            typesKey({ inputType: "insertLineBreak", data: null, isComposing: false }),
+        ]).toEqual([false, false, false, false, false, false, false, false]);
+
+        // Backspace gives the keys back only while the words and the caret are as the sign left them.
+        const typed = typedSign("go --", 5);
+        expect(typed).toEqual({ start: 3, sign: "—", keys: "--", text: "go —" });
+        expect(takesSignBack(typed, "go —", 4)).toBe(true);
+        expect([takesSignBack(typed, "go — on", 7), takesSignBack(typed, "go —", 2), takesSignBack(typed, "no —", 4), takesSignBack(undefined, "go —", 4)]).toEqual([false, false, false, false]);
     });
 
     it("finds the master's question that waits, the last asked, and says the master asks while it does", () => {
@@ -523,7 +573,7 @@ describe("the first access to an app, and the model for who does not know them (
         const ended = shown({ hosts: [codex], chat: { host: "codex", model: "gpt", state: "ended", why: "401 Unauthorized", code: "signin" } });
         expect(expiredHost(ended)).toBe("Codex");
         expect(expiredHost(shown({ chat: { host: "codex", model: "gpt", state: "ended", why: "It closed." } }))).toBeUndefined();
-        expect(endedWords("401 Unauthorized", "Codex")).toBe("Your access to Codex has expired: sign in again to continue.");
+        expect(endedWords(ended)).toBe("Your access to Codex has expired: sign in again to continue.");
         expect(chatNews(shown({ hosts: [codex], chat: { host: "codex", model: "gpt", state: "idle" } }), ended)).toBe("Your access to Codex has expired: sign in again to continue.");
         const turn = { host: "claudeCode", model: "sonnet", state: "turn" as const };
         expect(firstAnswerDue(shown({ chat: turn, messages: [{ id: 1, from: "player", text: "Begin." }] }))).toBe(true);
@@ -546,7 +596,7 @@ describe("the first access to an app, and the model for who does not know them (
         // A mark the page does not know, or one with a part missing: the table's own words.
         expect(tableWords(line({ code: "model-kept", model: "Haiku 4.5" }), "Claude Code")).toBe("The table's English.");
         expect(tableWords(line({ code: "model-kept", model: "Haiku 4.5", asked: "Fable 5.2" }), undefined)).toBe("The table's English.");
-        expect(tableWords(line({ code: "other" as "model", model: "x" }), "Claude Code")).toBe("The table's English.");
+        expect(tableWords(line({ code: "other", model: "x" }), "Claude Code")).toBe("The table's English.");
         expect([aboutModel(line({ code: "model", model: "x" })), aboutModel(line({ code: "model-kept" })), aboutModel(line({}))]).toEqual([true, true, false]);
         const open = { host: "claudeCode", model: "opus", state: "turn" as const };
         const changed = shown({ chat: { ...open, state: "idle" }, messages: [line({ code: "model", model: "Opus 5.5" })] });

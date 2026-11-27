@@ -6,7 +6,7 @@ import { view } from "../src/commands/view/view.ts";
 import type { Context } from "../src/core/context.ts";
 import type { HostId } from "../src/core/hosts.ts";
 import { FileStore, withFiles } from "../src/core/store.ts";
-import type { MasterChat, MasterDriver, MasterEvent, MasterModel, MasterOptions, ModelsOptions } from "../src/master/index.ts";
+import type { Failure, MasterChat, MasterDriver, MasterEvent, MasterModel, MasterOptions, ModelsOptions } from "../src/master/index.ts";
 import { type ChatShown, type TableChat, tableChat, type TableChatOptions } from "../src/server/table/chat.ts";
 import { readFlow } from "../src/server/table/flow.ts";
 import { readLastChat, writeLastChat } from "../src/server/table/last-chat.ts";
@@ -232,38 +232,63 @@ describe("the table's chat with the master", () => {
         expect(chat.owns({ RPG_TABLE_MASTER: "token-1" })).toBe(false);
     });
 
-    it("refuses, in words, a second chat, one while a chat opened by hand sits, a host with no driver or not here, no model, an effort the host does not know", () => {
+    it("refuses, in words with their code and values, a second chat, one while a chat opened by hand sits, a host with no driver or not here, no model, an effort the host does not know", () => {
         const chat = chatWith();
         elsewhere = true;
-        expect(chat.open(choice)).toBe("A chat opened by hand plays this campaign: close it, then open the chat here.");
+        // A code with no values.
+        expect(chat.open(choice)).toEqual({ error: "A chat opened by hand plays this campaign: close it, then open the chat here.", code: "chat-by-hand" });
         elsewhere = false;
         // Every host of the registry has a driver: this one is left out by the drivers the test gives, while the hosts offered are still the registry's.
-        expect(chat.open({ host: "codex", model: "gpt" })).toBe("The page cannot open a chat with Codex yet: choose Claude Code or Codex or Antigravity or OpenCode.");
+        expect(chat.open({ host: "codex", model: "gpt" })).toEqual({
+            error: "The page cannot open a chat with Codex yet: choose Claude Code or Codex or Antigravity or OpenCode.",
+            code: "host-not-yet",
+            values: { host: "Codex", hosts: "Claude Code or Codex or Antigravity or OpenCode" },
+        });
         found = false;
-        expect(chat.open(choice)).toBe("Claude Code is not on this computer: install it, then try again.");
+        expect(chat.open(choice)).toEqual({ error: "Claude Code is not on this computer: install it, then try again.", code: "app-missing", values: { host: "Claude Code" } });
         found = true;
-        expect(chat.open({ ...choice, model: " " })).toBe("Choose the model Claude Code plays the master with.");
-        expect(chat.open({ ...choice, effort: "max" })).toBe("Claude Code knows no effort max: choose one of low, high.");
+        expect(chat.open({ ...choice, model: " " })).toEqual({ error: "Choose the model Claude Code plays the master with.", code: "model-needed", values: { host: "Claude Code" } });
+        expect(chat.open({ ...choice, effort: "max" })).toEqual({
+            error: "Claude Code knows no effort max: choose one of low, high.",
+            code: "effort-unknown",
+            values: { host: "Claude Code", effort: "max", efforts: "low, high" },
+        });
         expect(masters).toEqual([]);
         expect(chat.open(choice)).toBeUndefined();
-        expect(chat.open(choice)).toBe("A chat with the master is open already: close it first.");
+        expect(chat.open(choice)).toEqual({ error: "A chat with the master is open already: close it first.", code: "chat-open" });
         expect(masters).toHaveLength(1);
     });
 
-    it("refuses a model no host's program may take, what the campaign lacks for the host, and a program that does not start, in words", () => {
+    it("refuses a model no host's program may take, what the campaign lacks for the host, and a program that does not start: what is not the table's own in a value", () => {
         const chat = chatWith();
-        expect(chat.open({ ...choice, model: "--dangerously-skip-permissions" })).toBe("That is no name of a model: --dangerously-skip-permissions.");
+        expect(chat.open({ ...choice, model: "--dangerously-skip-permissions" })).toEqual({
+            error: "That is no name of a model: --dangerously-skip-permissions.",
+            code: "model-no-name",
+            values: { model: "--dangerously-skip-permissions", host: "Claude Code" },
+        });
+        // A driver that says what the campaign lacks in words alone: the words, with no code.
         missing = "This campaign has no .mcp.json: run rpg init.";
-        expect(chat.open(choice)).toBe("This campaign has no .mcp.json: run rpg init.");
+        expect(chat.open(choice)).toEqual({ error: "This campaign has no .mcp.json: run rpg init." });
         missing = undefined;
         expect(masters).toEqual([]);
 
+        // One that says it with its code, as the engine's own drivers do.
+        const lacking = (): Failure => ({ why: "This campaign has no .mcp.json, which tells Claude Code how to start the game's server.", code: "no-server-file", values: { file: ".mcp.json", host: "Claude Code" } });
+        const coded = chatWith({ driver: (host) => (host === "claudeCode" ? { ...driver, program: () => ({ command: "claude-program", args: [] }), lacking } : undefined) });
+        expect(coded.open(choice)).toEqual({
+            error: "This campaign has no .mcp.json, which tells Claude Code how to start the game's server.",
+            code: "no-server-file",
+            values: { file: ".mcp.json", host: "Claude Code" },
+        });
+        expect(masters).toEqual([]);
+
+        // What the system said as the program did not start travels as it is, in a value.
         const broken = chatWith({
             open: () => {
                 throw new Error("spawn ENAMETOOLONG");
             },
         });
-        expect(broken.open(choice)).toBe("Claude Code could not start: spawn ENAMETOOLONG.");
+        expect(broken.open(choice)).toEqual({ error: "Claude Code could not start: spawn ENAMETOOLONG.", code: "host-not-started", values: { host: "Claude Code", why: "spawn ENAMETOOLONG" } });
         expect(broken.active()).toBe(false);
     });
 
@@ -314,7 +339,7 @@ describe("the table's chat with the master", () => {
         // A turn that ends with nothing written says so on the page.
         expect(chat.shown().messages).toEqual([
             { id: 1, from: "player", text: "Open the door" },
-            { id: 2, from: "table", text: "The master ended its turn without writing anything. Write to it again." },
+            { id: 2, from: "table", text: "The master ended its turn without writing anything. Write to it again.", code: "turn-silent" },
         ]);
     });
 
@@ -348,6 +373,9 @@ describe("the table's chat with the master", () => {
             id: 2,
             from: "table",
             text: "The master ended its turn without writing anything. Write to it again. It tried to use run_command, which the master may not use here.",
+            // The tool's name is the host's own: a value, as it came.
+            code: "turn-silent-tool",
+            values: { tool: "run_command" },
         });
 
         chat.say("Again");
@@ -385,6 +413,7 @@ describe("the table's chat with the master", () => {
         master.emit({ type: "tool", id: "t1", name: "view", kind: "rpg", state: "started" });
         master.emit({ type: "turnEnd", reason: "failed", why: "API Error: overloaded" });
         expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", state: "idle" });
+        expect(logged).toEqual(["A turn of the master failed in Claude Code: API Error: overloaded"]);
         expect(idles).toBe(1);
         chat.say("Two");
         chat.stop();
@@ -398,6 +427,23 @@ describe("the table's chat with the master", () => {
             { id: 2, from: "table", text: "API Error: overloaded" },
             { id: 3, from: "player", text: "Two" },
         ]);
+    });
+
+    it("says a failed turn with the code and values its driver gave it: the host's own words in a value, a code with none, and the table's own where the driver says nothing", () => {
+        const { chat, master } = opened();
+        chat.say("One");
+        master.emit({ type: "turnEnd", reason: "failed", why: "API Error: overloaded", code: "host-said", values: { why: "API Error: overloaded" } });
+        chat.say("Two");
+        master.emit({ type: "turnEnd", reason: "failed", why: "the model refused to go on", code: "model-refused" });
+        chat.say("Three");
+        master.emit({ type: "turnEnd", reason: "failed" });
+        expect(chat.shown().messages.filter((message) => message.from === "table")).toEqual([
+            { id: 2, from: "table", text: "API Error: overloaded", code: "host-said", values: { why: "API Error: overloaded" } },
+            { id: 4, from: "table", text: "the model refused to go on", code: "model-refused" },
+            { id: 6, from: "table", text: "The master's turn failed.", code: "turn-failed" },
+        ]);
+        // The chat goes on: a failed turn ends no chat, and leaves it no code of its own.
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", state: "idle" });
     });
 
     it("runs a turn the host begins by itself: its words a new message, the player's refused meanwhile, and its end never said empty nor followed", () => {
@@ -434,7 +480,7 @@ describe("the table's chat with the master", () => {
         // The player's next turn is followed and said empty as ever.
         chat.say("Again");
         master.emit({ type: "turnEnd", reason: "done" });
-        expect(chat.shown().messages.at(-1)).toEqual({ id: 5, from: "table", text: "The master ended its turn without writing anything. Write to it again." });
+        expect(chat.shown().messages.at(-1)).toEqual({ id: 5, from: "table", text: "The master ended its turn without writing anything. Write to it again.", code: "turn-silent" });
     });
 
     it("keeps the turn a host fails while the words are sent", () => {
@@ -460,15 +506,43 @@ describe("the table's chat with the master", () => {
         expect(chat.shown().messages).toEqual([]);
     });
 
+    it("shows why a chat ended with its code and the code's values beside the words, as its driver gave them: a host's words in a value, a code with none", () => {
+        const first = opened();
+        const said = "exit code 1";
+        first.master.emit({ type: "ended", why: "the host's program ended (exit code 1): boom | bang", code: "program-ended", values: { reason: said, why: "boom | bang" } });
+        expect(first.chat.shown().chat).toEqual({
+            host: "claudeCode",
+            model: "sonnet",
+            state: "ended",
+            why: "the host's program ended (exit code 1): boom | bang",
+            code: "program-ended",
+            values: { reason: said, why: "boom | bang" },
+        });
+
+        const second = opened();
+        second.master.emit({ type: "ended", why: "the host did not stop its turn and was closed", code: "not-stopped" });
+        expect(second.chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", state: "ended", why: "the host did not stop its turn and was closed", code: "not-stopped" });
+    });
+
     it("shows the chat ended, with why, no longer active: words are refused, and a new chat opens", () => {
         const { chat, master } = opened();
         master.emit({ type: "ended", why: "Claude Code ended (code 1)." });
         expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", state: "ended", why: "Claude Code ended (code 1)." });
+        expect(logged).toEqual(["The table's chat with Claude Code ended: Claude Code ended (code 1)."]);
         expect(chat.active()).toBe(false);
         expect(chat.owns({ RPG_TABLE_MASTER: "token-1" })).toBe(false);
         expect(chat.say("Hello")).toBe("closed");
         expect(chat.open(choice)).toBeUndefined();
         expect(chat.active()).toBe(true);
+    });
+
+    it("names the file of the table's log to the page where the table keeps one, apart from why a chat ended, and nothing where it keeps none", () => {
+        expect("log" in chatWith().shown()).toBe(false);
+        const chat = chatWith({ logFile: "/data/tables/0123456789abcdef.log" });
+        expect(chat.shown().log).toBe("/data/tables/0123456789abcdef.log");
+        expect(chat.open(choice)).toBeUndefined();
+        masters.at(-1)?.emit({ type: "ended", why: "Claude Code ended (code 1)." });
+        expect(chat.shown()).toMatchObject({ chat: { state: "ended", why: "Claude Code ended (code 1)." }, log: "/data/tables/0123456789abcdef.log" });
     });
 
     it("tells that a chat opened, closed or ended, apart from what changes within it", () => {
@@ -791,8 +865,16 @@ describe("the models a host offers at the table", () => {
         const chat = chatWith();
         chat.shown();
         await new Promise((resolve) => setImmediate(resolve));
-        expect(chat.open({ ...choice, effort: "max" })).toBe("Sonnet 5.5 takes no effort max in Claude Code: choose one of low, medium, high.");
-        expect(chat.open({ ...choice, model: "haiku", effort: "low" })).toBe("Haiku 4.5 takes no effort in Claude Code: leave the effort to the host.");
+        expect(chat.open({ ...choice, effort: "max" })).toEqual({
+            error: "Sonnet 5.5 takes no effort max in Claude Code: choose one of low, medium, high.",
+            code: "effort-not-of-model",
+            values: { model: "Sonnet 5.5", effort: "max", host: "Claude Code", efforts: "low, medium, high" },
+        });
+        expect(chat.open({ ...choice, model: "haiku", effort: "low" })).toEqual({
+            error: "Haiku 4.5 takes no effort in Claude Code: leave the effort to the host.",
+            code: "effort-none",
+            values: { model: "Haiku 4.5", host: "Claude Code" },
+        });
         expect(masters).toEqual([]);
         expect(chat.open({ ...choice, effort: "medium" })).toBeUndefined();
         chat.close();
@@ -863,6 +945,65 @@ describe("the chat's flow in the campaign", () => {
         expect(next.shown().messages.at(-1)).toEqual({ id: 9, from: "player", text: "Look around" });
         expect(flowFiles()).toEqual([name]);
         expect(flowLines(name).at(-1)).toMatchObject({ id: 9, from: "player" });
+    });
+
+    it("keeps the code and values of every line of the table in the file, and the next table's chat reads them back: a code alone, one with values, a model's line", async () => {
+        changing = true;
+        listed = [{ id: "opus", name: "Opus 5.5", efforts: [] }];
+        const { chat, master } = await openedKnowing();
+        master.emit({ type: "session", session: "session-1", model: "claude-sonnet-5" });
+        chat.say("One");
+        master.emit({ type: "turnEnd", reason: "done" });
+        chat.say("Two");
+        master.emit({ type: "turnEnd", reason: "failed", why: "the host's program ended (exit code 1): boom", code: "program-ended", values: { reason: "exit code 1", why: "boom" } });
+        chat.say("Three");
+        master.emit({ type: "permission", name: "run_command", kind: "shell", allowed: false });
+        master.emit({ type: "turnEnd", reason: "done" });
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(chat.changeModel("opus")).toBeUndefined();
+        master.emit({ type: "changeTaken", model: "opus" });
+        const lines = [
+            { id: 2, from: "table", text: "The master ended its turn without writing anything. Write to it again.", code: "turn-silent" },
+            { id: 4, from: "table", text: "the host's program ended (exit code 1): boom", code: "program-ended", values: { reason: "exit code 1", why: "boom" } },
+            {
+                id: 6,
+                from: "table",
+                text: "The master ended its turn without writing anything. Write to it again. It tried to use run_command, which the master may not use here.",
+                code: "turn-silent-tool",
+                values: { tool: "run_command" },
+            },
+            { id: 7, from: "table", text: "From now on the master plays with Opus 5.5.", code: "model", model: "Opus 5.5" },
+        ];
+        expect(chat.shown().messages.filter((message) => message.from === "table")).toEqual(lines);
+        chat.release();
+
+        const next = chatWith();
+        await listen(next);
+        expect(next.shown().messages.filter((message) => message.from === "table")).toEqual(lines);
+    });
+
+    it("reads a line of the table whose code or values are not well formed as its words alone, never refusing the line", async () => {
+        const { chat, master } = opened();
+        master.emit({ type: "session", session: "session-1", model: "claude-sonnet-5" });
+        chat.say("One");
+        master.emit({ type: "turnEnd", reason: "done" });
+        chat.release();
+        const [name] = flowFiles();
+        const written = (line: object): void => writeFileSync(join(flowFolder(), name), `${readFileSync(join(flowFolder(), name), "utf8")}${JSON.stringify(line)}\n`);
+        written({ id: 10, from: "table", text: "A code that is none.", code: "Not A Code" });
+        written({ id: 11, from: "table", text: "Values that are no texts.", code: "turn-failed", values: { why: 3 } });
+        written({ id: 12, from: "table", text: "Values that are a list.", code: "turn-failed", values: ["why"] });
+        written({ id: 13, from: "table", text: "A code of another engine.", code: "newer-code", values: { what: "ever" } });
+
+        const next = chatWith();
+        await listen(next);
+        expect(next.shown().messages.filter((message) => message.id >= 10)).toEqual([
+            { id: 10, from: "table", text: "A code that is none." },
+            { id: 11, from: "table", text: "Values that are no texts." },
+            { id: 12, from: "table", text: "Values that are a list." },
+            // A code this engine has no line for is kept as it is: the page says the words where it does not know it.
+            { id: 13, from: "table", text: "A code of another engine.", code: "newer-code", values: { what: "ever" } },
+        ]);
     });
 
     it("keeps what the master wrote so far as the chat ends, and the player's words only once said", () => {
@@ -1327,7 +1468,7 @@ describe("the hosts' accounts at the table", () => {
         helpers.states.claude = "ready";
         clock = 61_000;
 
-        expect(chat.open(choice)).toEqual({ error: "Claude Code is not signed in on this computer: sign in here, then open the chat.", code: "signin" });
+        expect(chat.open(choice)).toEqual({ error: "Claude Code is not signed in on this computer: sign in here, then open the chat.", code: "signin", values: { host: "Claude Code" } });
         expect(masters).toEqual([]);
         expect(helpers.asked.length).toBeGreaterThan(looks);
         await settle();
@@ -1374,9 +1515,15 @@ describe("the hosts' accounts at the table", () => {
         expect(chat.shown().hosts.find((host) => host.id === "claudeCode")).toMatchObject({ signingIn: true, signInLink: "https://auth.example/claude" });
         expect(chat.hostWish({ signIn: { host: "claudeCode", cancel: true } })).toBeUndefined();
         expect(chat.shown().hosts.find((host) => host.id === "claudeCode")).not.toHaveProperty("signInLink");
-        expect(chat.hostWish({ signIn: { host: "antigravity" } })).toMatch(/^Antigravity signs in from its own app/);
+        // What the accounts' keeper refuses comes with its code and values.
+        expect(chat.hostWish({ signIn: { host: "antigravity" } })).toEqual({
+            error: expect.stringMatching(/^Antigravity signs in from its own app/) as unknown,
+            code: "signin-in-app-account",
+            values: { host: "Antigravity", account: "Google" },
+        });
+        expect(chat.hostWish({ install: { host: "antigravity" } })).toMatchObject({ code: "install-from-page", values: { host: "Antigravity", page: expect.stringMatching(/^https:/) as unknown } });
 
-        expect(chat.hostWish({ install: { host: "claudeCode" } })).toBe("Claude Code is on this computer already: choose it, and open the chat.");
+        expect(chat.hostWish({ install: { host: "claudeCode" } })).toEqual({ error: "Claude Code is on this computer already: choose it, and open the chat.", code: "app-here", values: { host: "Claude Code" } });
         found = false;
         clock = 5000;
         expect(chat.shown().hosts.find((host) => host.id === "claudeCode")?.found).toBe(false);
@@ -1394,7 +1541,10 @@ describe("the hosts' accounts at the table", () => {
         expect(helpers.asked.filter((one) => one.startsWith("look")).length).toBeGreaterThan(before);
         expect(helpers.asked).toEqual(expect.arrayContaining(["login claude", "cancel claude", "install claude"]));
 
-        expect(chatWith().hostWish({ hosts: true })).toBe("This table cannot sign in to the AI apps or install them: start it again with rpg table in the campaign's folder, then try again.");
+        expect(chatWith().hostWish({ hosts: true })).toEqual({
+            error: "This table cannot sign in to the AI apps or install them: start it again with rpg table in the campaign's folder, then try again.",
+            code: "no-access-table",
+        });
     });
 
     it("keeps the sign-in's code of a chat that ended so, and looks at the accounts again", async () => {
@@ -1491,28 +1641,33 @@ describe("another model in the open chat", () => {
     it("is refused while the master answers, their own turn too, and while the host is not ready for it", () => {
         const { chat, master } = opened();
         chat.say("Hello");
-        expect(chat.changeModel("opus")).toBe("The master is answering: change the model once they have finished.");
+        const answering = { error: "The master is answering: change the model once they have finished.", code: "model-while-answering" };
+        expect(chat.changeModel("opus")).toEqual(answering);
         master.emit({ type: "turnEnd", reason: "done" });
         master.emit({ type: "turnStart", by: "host" });
-        expect(chat.changeModel("opus")).toBe("The master is answering: change the model once they have finished.");
+        expect(chat.changeModel("opus")).toEqual(answering);
         master.emit({ type: "turnEnd", reason: "done" });
         expect(master.changed).toEqual([]);
 
         master.takesModels = false;
-        expect(chat.changeModel("opus")).toBe("The master is getting ready: change the model in a moment.");
+        expect(chat.changeModel("opus")).toEqual({ error: "The master is getting ready: change the model in a moment.", code: "master-getting-ready" });
         expect(chat.shown().chat?.model).toBe("sonnet");
     });
 
-    it("checks the model and its effort as the opening does, and says why", async () => {
+    it("checks the model and its effort as the opening does, and says why with the same codes and values", async () => {
         const { chat, master } = await openedKnowing();
-        expect(chat.changeModel("--x")).toBe("That is no name of a model: --x.");
-        expect(chat.changeModel(" ")).toBe("Choose the model Claude Code plays the master with.");
-        expect(chat.changeModel("opus", "max")).toBe("Opus 5.5 takes no effort max in Claude Code: choose one of low, high.");
-        expect(chat.changeModel("haiku", "low")).toBe("Haiku takes no effort in Claude Code: leave the effort to the host.");
+        expect(chat.changeModel("--x")).toEqual({ error: "That is no name of a model: --x.", code: "model-no-name", values: { model: "--x", host: "Claude Code" } });
+        expect(chat.changeModel(" ")).toEqual({ error: "Choose the model Claude Code plays the master with.", code: "model-needed", values: { host: "Claude Code" } });
+        expect(chat.changeModel("opus", "max")).toEqual({
+            error: "Opus 5.5 takes no effort max in Claude Code: choose one of low, high.",
+            code: "effort-not-of-model",
+            values: { model: "Opus 5.5", effort: "max", host: "Claude Code", efforts: "low, high" },
+        });
+        expect(chat.changeModel("haiku", "low")).toEqual({ error: "Haiku takes no effort in Claude Code: leave the effort to the host.", code: "effort-none", values: { model: "Haiku", host: "Claude Code" } });
         expect(master.changed).toEqual([]);
 
         chat.close();
-        expect(chat.changeModel("opus")).toBe("No chat with the master is open: open one first.");
+        expect(chat.changeModel("opus")).toEqual({ error: "No chat with the master is open: open one first.", code: "no-chat" });
     });
 
     it("keeps the effort when none is given and the model takes it, or its efforts are not known yet; leaves it, saying so, where the model takes none", async () => {
@@ -1649,7 +1804,11 @@ describe("another model in the open chat", () => {
         changing = false;
         const { chat } = opened();
         expect(chat.shown().chat).not.toHaveProperty("changes");
-        expect(chat.changeModel("opus")).toBe("Claude Code cannot change its model in an open chat: close the chat, then open it with another model.");
+        expect(chat.changeModel("opus")).toEqual({
+            error: "Claude Code cannot change its model in an open chat: close the chat, then open it with another model.",
+            code: "no-model-change",
+            values: { host: "Claude Code" },
+        });
     });
 });
 
@@ -1666,7 +1825,15 @@ describe("the engine's marks of clocks and turns in the master's words (D-586)",
             return text.includes("[clock") ? { marks: { clocks: [{ ...clock, value }] }, unresolved: ["[clock Nebbia]"] } : { unresolved: [] };
         };
 
-        const { chat, master } = opened({ marks });
+        const kept: (string | undefined)[] = [];
+
+        const { chat, master } = opened({
+            marks,
+            log: (line, inFile) => {
+                logged.push(line);
+                kept.push(inFile);
+            },
+        });
         chat.say("I run.");
         master.emit({ type: "text", block: 0, text: "The bells ring. [clock La marcia] " });
         // While the master writes, the message has no values yet.
@@ -1676,6 +1843,8 @@ describe("the engine's marks of clocks and turns in the master's words (D-586)",
         expect(asked).toEqual(["The bells ring. [clock La marcia] [clock Nebbia] Run."]);
         expect(chat.shown().messages.at(-1)).toEqual({ id: 2, from: "master", text: "The bells ring. [clock La marcia] [clock Nebbia] Run.", marks: { clocks: [clock] } });
         expect(logged).toContain("The master wrote [clock Nebbia] in the story, which stands for nothing the page can show: it shows nothing there.");
+        // The mark is the master's words: the table's log is given a line without it to keep.
+        expect(kept).toEqual(["The master wrote a mark in the story which stands for nothing the page can show: it shows nothing there."]);
 
         // An old message keeps the value of then, as the next table reads it back; one with no marks has none.
         value = 3;

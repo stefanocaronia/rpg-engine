@@ -31,7 +31,7 @@ import {
     windowsNameProblem,
     writeLauncher,
 } from "../src/server/launcher/index.ts";
-import { type Probed, readRefusal, type TablePlace, writeRefusal } from "../src/server/table/index.ts";
+import { type Probed, readRefusal, tableLog, tableLogFile, type TablePlace, type TableRefusal, writeRefusal } from "../src/server/table/index.ts";
 import { readPlace, writePlace } from "../src/server/table/place.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 import { makeTempFolder, testContext } from "./support.ts";
@@ -75,6 +75,20 @@ describe("campaigns that cannot be read", () => {
         expect(listed.find((one) => one.root === folderFile)?.problem).toContain("its campaign.yaml is a folder, not a file. Bring it back");
         expect(listed.find((one) => one.root.endsWith("name"))?.problem).toContain("cannot be read now");
         expect(listed.map((one) => one.problem ?? "").join(" ")).not.toMatch(/EISDIR|ERR_INVALID_ARG/);
+        // Each reason with its own code, and the folder as its value: the page says them in its own language.
+        expect(listed.find((one) => one.root === folderFile)).toMatchObject({ problemCode: "campaign-file-is-folder", problemValues: { root: folderFile } });
+        expect(listed.find((one) => one.root.endsWith("name"))).toMatchObject({ problemCode: "campaign-path-invalid", problemValues: { root: `${userHome}${sep}bad\0name` } });
+        expect(listed.find((one) => one.root === good)).not.toHaveProperty("problemCode");
+    });
+
+    it("lists one whose campaign.yaml does not read with what its reader said, as it said it, in a value", async () => {
+        const broken = await campaignIn(join(makeTempFolder(), "broken"), "Rocca");
+        writeFileSync(join(broken, "campaign.yaml"), "name: [Rocca\n");
+        writeFileSync(join(home, "campaigns.json"), JSON.stringify({ campaigns: [{ root: broken }] }));
+
+        const [listed] = await listCampaigns({ home, userHome, answers: () => Promise.resolve(false) });
+        expect(listed?.problem).toEqual(expect.any(String));
+        expect(listed).toMatchObject({ root: broken, missing: false, problemCode: "campaign-unread", problemValues: { why: listed?.problem } });
     });
 
     it.runIf(process.platform === "win32")("keeps one on a disk that is not there, as missing", async () => {
@@ -90,9 +104,21 @@ describe("campaigns that cannot be read", () => {
         mkdirSync(join(folderFile, "campaign.yaml"), { recursive: true });
         const launcher = await startLauncher();
 
-        expect(holdsCampaign(folderFile)).toEqual({ unreadable: expect.stringContaining("is a folder, not a file") });
-        expect(await call(launcher.url, "POST", "/api/launcher", { add: { root: folderFile } })).toMatchObject({ status: 409, body: { error: expect.stringContaining("is a folder, not a file") } });
-        expect(await call(launcher.url, "POST", "/api/launcher", { open: { root: folderFile } })).toMatchObject({ status: 409, body: { error: expect.stringContaining("is a folder, not a file") } });
+        const unreadable = { error: expect.stringContaining("is a folder, not a file") as unknown, code: "campaign-file-is-folder", values: { root: folderFile } };
+        expect(holdsCampaign(folderFile)).toEqual({ unreadable });
+        expect(await call(launcher.url, "POST", "/api/launcher", { add: { root: folderFile } })).toMatchObject({ status: 409, body: unreadable });
+        expect(await call(launcher.url, "POST", "/api/launcher", { open: { root: folderFile } })).toMatchObject({ status: 409, body: unreadable });
+
+        // A folder with no campaign in it: added, it is no campaign; opened, its campaign is gone.
+        const empty = makeTempFolder();
+        expect(await call(launcher.url, "POST", "/api/launcher", { add: { root: empty } })).toMatchObject({
+            status: 409,
+            body: { error: expect.stringContaining("is no campaign") as unknown, code: "not-a-campaign", values: { root: empty } },
+        });
+        expect(await call(launcher.url, "POST", "/api/launcher", { open: { root: empty } })).toMatchObject({
+            status: 409,
+            body: { error: expect.stringContaining("holds no campaign") as unknown, code: "campaign-gone", values: { root: empty } },
+        });
     });
 
     it("reads a list written with a mark of order at its start, and drops a root that is empty or no whole path", async () => {
@@ -114,7 +140,7 @@ describe("a route that fails", () => {
         });
         const failed = await call(launcher.url, "GET", "/api/launcher");
 
-        expect(failed).toMatchObject({ status: 500, body: { error: expect.stringContaining("run rpg launcher in a terminal and read what it says") } });
+        expect(failed).toMatchObject({ status: 500, body: { error: expect.stringContaining("run rpg launcher in a terminal and read what it says"), code: "launcher-failed" } });
         expect(failed.text).not.toContain("ENOENT");
         expect(logged.join("\n")).toContain("ENOENT");
         expect(await call(launcher.url, "GET", "/api/ping")).toMatchObject({ status: 200, body: { launcher: true, version } });
@@ -134,7 +160,12 @@ describe("a route that fails", () => {
         const tables = fakeTables({});
         const made = await makeCampaign({ name: "Rocca", folder: join(file, "Rocca"), language: "it", system: "fake" }, { userHome, context: testContext(userHome), now: () => new Date(0), tables });
 
-        expect(made).toEqual({ error: expect.stringContaining(`The campaign could not be made in ${join(file, "Rocca")}`) });
+        // The system's error has a code of the launcher's own, by what it was; which one it gives for a file in the path differs by system.
+        expect(made).toEqual({
+            error: expect.stringContaining(`The campaign could not be made in ${join(file, "Rocca")}`),
+            code: expect.stringMatching(/^make-(path-file|disk-gone)$/),
+            values: { folder: join(file, "Rocca") },
+        });
         expect("error" in made && made.error).toMatch(/Choose another folder/);
         expect("error" in made && made.error).not.toMatch(/ENOTDIR|EEXIST|ENOENT|mkdir/);
         expect(tables.starts).toEqual([]);
@@ -183,7 +214,11 @@ describe("a launcher that does not answer", () => {
             wait: (milliseconds) => Promise.resolve(void (now += milliseconds)),
         });
 
-        expect(reached).toEqual({ error: "RPG Engine's launcher, at http://127.0.0.1:5750, is there but does not answer: end its process, 4321, then try again." });
+        expect(reached).toEqual({
+            error: "RPG Engine's launcher, at http://127.0.0.1:5750, is there but does not answer: end its process, 4321, then try again.",
+            code: "launcher-silent",
+            values: { url: "http://127.0.0.1:5750", pid: "4321" },
+        });
         expect(starts).toBe(0);
         expect(readLauncher(home)?.token).toBe("silent");
     });
@@ -349,12 +384,37 @@ describe("a folder however it is written", () => {
 
 describe("a folder Windows cannot use as written", () => {
     it("names the part that ends with a dot or a space, or is a name kept for a device", () => {
-        expect(windowsNameProblem("C:\\Games\\Rocca.")).toBe('C:\\Games\\Rocca.: the folder "Rocca." ends with a dot, which Windows takes off a folder\'s name. Choose a name without it.');
-        expect(windowsNameProblem("C:\\Games \\Rocca")).toContain('the folder "Games " ends with a space');
-        expect(windowsNameProblem("D:\\con\\Rocca")).toContain('"con" is a name Windows keeps for a device');
-        expect(windowsNameProblem("D:\\Games\\COM1.txt")).toContain('"COM1.txt" is a name Windows keeps for a device');
-        expect(windowsNameProblem("\\\\server\\share\\LPT9")).toContain('"LPT9" is a name Windows keeps for a device');
+        expect(windowsNameProblem("C:\\Games\\Rocca.")).toEqual({
+            error: 'C:\\Games\\Rocca.: the folder "Rocca." ends with a dot, which Windows takes off a folder\'s name. Choose a name without it.',
+            code: "folder-ends-dot",
+            values: { folder: "C:\\Games\\Rocca.", part: "Rocca." },
+        });
+        expect(windowsNameProblem("C:\\Games \\Rocca")).toEqual({ error: expect.stringContaining('the folder "Games " ends with a space') as unknown, code: "folder-ends-space", values: { folder: "C:\\Games \\Rocca", part: "Games " } });
+        expect(windowsNameProblem("D:\\con\\Rocca")).toEqual({ error: expect.stringContaining('"con" is a name Windows keeps for a device') as unknown, code: "folder-device-name", values: { folder: "D:\\con\\Rocca", part: "con" } });
+        expect(windowsNameProblem("D:\\Games\\COM1.txt")?.error).toContain('"COM1.txt" is a name Windows keeps for a device');
+        expect(windowsNameProblem("\\\\server\\share\\LPT9")?.error).toContain('"LPT9" is a name Windows keeps for a device');
         expect(windowsNameProblem("D:\\Games\\console\\COM0\\Rocca 2\\.hidden")).toBeUndefined();
+    });
+
+    it("refuses what the player wrote wrong for a campaign with a code and its values, and what only a page that does not work sends in words alone", async () => {
+        const launcher = await startLauncher();
+        const create = (wish: object): Promise<{ status: number; body: unknown; }> => call(launcher.url, "POST", "/api/launcher", { create: { name: "Rocca", language: "it", system: "fake", ...wish } });
+
+        expect(await create({ folder: "relative/folder" })).toMatchObject({ status: 400, body: { error: "Give the folder's whole path, from the root of its disk.", code: "not-full-path", values: { name: "relative/folder" } } });
+        expect(await call(launcher.url, "POST", "/api/launcher", { open: { root: "x".repeat(1001) } })).toMatchObject({ status: 400, body: { code: "path-too-long", values: { most: "1000" } } });
+        expect(await create({ name: "x".repeat(81) })).toMatchObject({ status: 400, body: { error: "Give the campaign a name of 1 to 80 characters.", code: "campaign-name-length", values: { most: "80" } } });
+        // A code with no values.
+        const line = await create({ name: "Two\tparts" });
+        expect(line).toMatchObject({ status: 400, body: { error: expect.stringContaining("on one line") as unknown, code: "campaign-name-line" } });
+        expect(line.body).not.toHaveProperty("values");
+
+        // A language the page lists none such, a body of no shape: words alone, as before.
+        const language = await create({ language: "not a code" });
+        expect(language).toMatchObject({ status: 400, body: { error: expect.stringContaining("language by its code") as unknown } });
+        expect(language.body).not.toHaveProperty("code");
+        const shape = await call(launcher.url, "POST", "/api/launcher", { dance: true });
+        expect(shape).toMatchObject({ status: 400, body: { error: expect.stringContaining("Send one of") as unknown } });
+        expect(shape.body).not.toHaveProperty("code");
     });
 
     it.runIf(process.platform === "win32")("is refused as a new campaign's folder before anything is made, in a sentence; opened, added and forgotten as any other", async () => {
@@ -362,7 +422,9 @@ describe("a folder Windows cannot use as written", () => {
         const launcher = await startLauncher();
 
         for (const [folder, why] of [[join(parent, "Rocca."), "ends with a dot"], [join(parent, "aux"), "a name Windows keeps for a device"], [join(parent, "Rocca "), "ends with a space"]] as const) {
-            expect(await call(launcher.url, "POST", "/api/launcher", { create: { name: "Rocca", folder, language: "it", system: "fake" } }), folder).toMatchObject({ status: 400, body: { error: expect.stringContaining(why) } });
+            const code = why === "ends with a dot" ? "folder-ends-dot" : why === "ends with a space" ? "folder-ends-space" : "folder-device-name";
+            const refused = await call(launcher.url, "POST", "/api/launcher", { create: { name: "Rocca", folder, language: "it", system: "fake" } });
+            expect(refused, folder).toMatchObject({ status: 400, body: { error: expect.stringContaining(why), code, values: { part: expect.any(String) } } });
             expect(await call(launcher.url, "POST", "/api/launcher", { add: { root: folder } }), folder).toMatchObject({ status: 409, body: { error: expect.stringContaining("is no campaign") } });
             expect(await call(launcher.url, "POST", "/api/launcher", { open: { root: folder } }), folder).toMatchObject({ status: 409 });
             expect(await call(launcher.url, "POST", "/api/launcher", { forget: { root: folder } }), folder).toMatchObject({ status: 200 });
@@ -418,7 +480,7 @@ describe("the folder window and the launcher's end", () => {
         const first = call(launcher.url, "POST", "/api/launcher", { pick: true });
         await opened(1);
 
-        expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({ status: 409, body: { error: expect.stringContaining("open already") } });
+        expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({ status: 409, body: { error: expect.stringContaining("open already"), code: "folder-window-open" } });
         windows[0]?.(join(userHome, "Chosen"));
         expect(await first).toMatchObject({ status: 200, body: { folder: join(userHome, "Chosen") } });
 
@@ -435,28 +497,71 @@ describe("the folder window and the launcher's end", () => {
         let looks = 0;
         const tables = { ...fakeTables({}), quitting: () => looks++ > 0 };
 
-        expect(await openCampaign(root, tables)).toEqual({ error: "RPG Engine's launcher is closing: open your campaigns again with rpg open, then this one." });
+        expect(await openCampaign(root, tables)).toEqual({ error: "RPG Engine's launcher is closing: open your campaigns again with rpg open, then this one.", code: "launcher-closing" });
         expect(tables.starts).toEqual([root]);
         expect(tables.clock.now).toBeLessThan(1000);
     });
 
-    it("gives at once why the table it started could not, as the table writes it, and none a table left from an earlier start", async () => {
+    it("gives at once why the table it started could not, as the table writes it with its code and values, and none a table left from an earlier start", async () => {
         const root = await campaignIn(join(makeTempFolder(), "Rocca"), "Rocca");
-        writeRefusal(home, root, "rpg table: an old refusal.");
+        writeRefusal(home, root, { refused: "rpg table: an old refusal.", code: "old" });
         const refusal = "rpg table: a chat of this campaign that is still open, started by an older RPG Engine, serves its page: close that chat's app.";
         const tables = fakeTables({});
 
         tables.start = (started) => {
             tables.starts.push(started);
             expect(readRefusal(home, started)).toBeUndefined();
-            writeRefusal(home, started, refusal);
+            writeRefusal(home, started, { refused: refusal, code: "page-kept-by-chat" });
         };
 
-        expect(await openCampaign(root, tables)).toEqual({ error: refusal.replace("rpg table: ", "") });
+        // The table's words without its command's name, and its code as it wrote it.
+        expect(await openCampaign(root, tables)).toEqual({ error: refusal.replace("rpg table: ", ""), code: "page-kept-by-chat" });
         expect(tables.starts).toEqual([root]);
         expect(tables.clock.now).toBeLessThan(1000);
-        // And the tests' own reading.
-        expect(await openCampaign(root, { ...fakeTables({}), refused: () => "rpg table: no port is free." })).toEqual({ error: "no port is free." });
+        // And the tests' own reading: a code with its values, and words alone, as a table that knows no codes writes them.
+        expect(await openCampaign(root, { ...fakeTables({}), refused: () => noPort(root) })).toEqual({ error: "no port is free.", code: "no-port", values: { root } });
+        expect(await openCampaign(root, { ...fakeTables({}), refused: () => ({ refused: "rpg table: no port is free." }) })).toEqual({ error: "no port is free." });
+    });
+
+    it("names the file of the table's log beside the words, never in them, where the table could not start, did not in time or does not answer, once it wrote one", async () => {
+        const root = await campaignIn(join(makeTempFolder(), "Rocca"), "Rocca");
+        const log = tableLogFile(home, root);
+        const refusing = { ...fakeTables({}), refused: () => noPort(root) };
+
+        // A table there that does not answer.
+        const silent = (): TableStarter => {
+            writePlace(home, placeOf(root, "token"));
+            return fakeTables({ token: "silent" });
+        };
+
+        // No table of the campaign wrote a log yet: the words alone, with their code.
+        expect(await openCampaign(root, refusing)).toEqual({ error: "no port is free.", code: "no-port", values: { root } });
+        tableLog(home, root, () => 0)("rpg table: no port is free.");
+        expect(await openCampaign(root, refusing)).toEqual({ error: "no port is free.", code: "no-port", values: { root }, log });
+        expect(await openCampaign(root, fakeTables({}))).toEqual({ error: expect.stringContaining("did not start within 15 seconds"), code: "table-not-started", values: { root, seconds: "15" }, log });
+        const unanswered = await openCampaign(root, silent());
+        expect(unanswered).toEqual({ error: expect.stringContaining("(process 4242) does not answer"), code: "table-silent", values: { root, pid: "4242" }, log });
+        expect("error" in unanswered && unanswered.error).not.toContain(log);
+
+        // What is no table's doing names none: a launcher that quits, a folder with no campaign.
+        expect(await openCampaign(root, { ...fakeTables({}), quitting: () => true })).toEqual({ error: expect.stringContaining("launcher is closing"), code: "launcher-closing" });
+        const empty = makeTempFolder();
+        expect(await openCampaign(empty, fakeTables({}))).toEqual({ error: expect.stringContaining("holds no campaign"), code: "campaign-gone", values: { root: empty } });
+    });
+
+    it("gives the page the file of the table's log with the refusal, for a campaign opened and for one made whose table could not start", async () => {
+        const root = await campaignIn(join(makeTempFolder(), "Rocca"), "Rocca");
+        // A table that cannot start, as a real one: it says why in its log, and beside its place.
+        const tables: TableStarter = { ...fakeTables({}), start: (started) => tableLog(home, started, () => 0)("rpg table: no port is free."), refused: (started) => noPort(started) };
+        const launcher = await startLauncher({ tables });
+
+        const opened = await call(launcher.url, "POST", "/api/launcher", { open: { root } });
+        expect(opened).toMatchObject({ status: 409, body: { error: "no port is free.", code: "no-port", values: { root }, log: tableLogFile(home, root) } });
+
+        const made = await call(launcher.url, "POST", "/api/launcher", { create: { name: "Torre", language: "it", system: "fake" } });
+        const folder = (made.body as { root: string; }).root;
+        expect(folder.startsWith(join(userHome, "RPG Engine")), folder).toBe(true);
+        expect(made).toMatchObject({ status: 409, body: { error: "no port is free.", code: "no-port", values: { root: folder }, log: tableLogFile(home, folder) } });
     });
 });
 
@@ -494,6 +599,12 @@ async function campaignIn(folder: string, name: string): Promise<string>
 function launcherPlace(): LauncherPlace
 {
     return { pid: 4321, version, url: "http://127.0.0.1:5750", token: "starting" };
+}
+
+/** Why a table could not start, as it writes it beside its place: no port free for its page. */
+function noPort(root: string): TableRefusal
+{
+    return { refused: "rpg table: no port is free.", code: "no-port", values: { root } };
 }
 
 /** A table's place, as a table writes it once it serves. */

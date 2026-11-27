@@ -1,13 +1,13 @@
 // Reading Claude Code's lines: one function per type of message; a line not understood changes nothing.
-import type { ToolKind } from "../chat.ts";
+import type { Failure, ToolKind } from "../chat.ts";
+import { effortNotTaken, hostSaid, modelFailed, modelNotTaken, modelOther, modelStayed, modelSwitched, notSignedIn, ranWithoutAsking, readOutside, toolNotAllowed } from "../failures.ts";
 import { isObject, type Message } from "../lines.ts";
 import { askToStop, endTurn, nextBlock, playing, refused, tell, write } from "../state.ts";
 import { pathOutside } from "./paths.ts";
 import { controlAnswer, controlError, toolLoaders, toolOf } from "./protocol.ts";
 import { changeRefused, effortRefused, modelConfirmed, modelReady, modelRefused, type State, type Turn } from "./state.ts";
 
-// What the table says where Claude Code is not signed in, as it answers a turn with a message of its own instead of the model's.
-const notSignedIn = "Claude Code is not signed in on this computer: sign in here, then open the chat";
+// How Claude Code marks the message of its own it answers a turn with, instead of the model's, where the player is not signed in.
 const authenticationFailed = "authentication_failed";
 
 /** One line of the host, an object: one function per type of message. */
@@ -70,7 +70,7 @@ function readControlResponse(state: State, message: Message): void
         if (response.subtype === "success") {
             modelReady(state);
         } else {
-            effortRefused(state, `the host did not take the effort ${String(state.model.effort)}: ${typeof response.error === "string" ? response.error : "it gave no reason"}`);
+            effortRefused(state, effortNotTaken(String(state.model.effort), typeof response.error === "string" ? response.error : undefined));
         }
 
         return;
@@ -85,14 +85,14 @@ function readControlResponse(state: State, message: Message): void
     const before = state.model.before?.confirmed;
 
     if (response.subtype !== "success") {
-        changeRefused(state, `the host did not take the model ${asked}: ${typeof response.error === "string" ? response.error : "it gave no reason"}`);
+        changeRefused(state, modelNotTaken(asked, typeof response.error === "string" ? response.error : undefined));
     } else if (typeof answered === "string" && (answered === asked || answered.includes(asked))) {
         modelConfirmed(state, answered);
     } else if (typeof answered === "string" && answered === before) {
         // The host stayed on the model it ran: the change was not taken, and the chat goes on with it.
-        changeRefused(state, `the host was asked for the model ${asked} and stayed on ${answered}`);
+        changeRefused(state, modelStayed(asked, answered));
     } else {
-        modelRefused(state, `the host was asked for the model ${asked} and runs ${typeof answered === "string" ? answered : "another, unnamed"}`);
+        modelRefused(state, modelOther(asked, answered));
     }
 }
 
@@ -110,7 +110,7 @@ function readSystem(state: State, message: Message): void
 
     // The same model may be named with a suffix here and without it in the answer, as for a longer context: one name within the other is the same model.
     if (typeof model !== "string" || model === "" || state.model.confirmed === undefined || !(model.includes(state.model.confirmed) || state.model.confirmed.includes(model))) {
-        turn.failure = `the host runs the model ${String(model)} instead of ${String(state.model.confirmed)}`;
+        turn.failure = modelSwitched(String(model), String(state.model.confirmed));
         askToStop(state, turn);
         return;
     }
@@ -161,7 +161,7 @@ function readAssistant(state: State, message: Message): void
     const body = isObject(message.message) ? message.message : undefined;
 
     if (turn !== undefined && message.error === authenticationFailed) {
-        refused(state, notSignedIn, "signin");
+        refused(state, notSignedIn(state.name));
         return;
     }
 
@@ -172,7 +172,7 @@ function readAssistant(state: State, message: Message): void
     // An error of the API the host words itself, as a limit of use reached: the turn fails with its words, once, and they are never the master's.
     if (message.is_api_error_message === true) {
         const said = body.content.filter(isObject).flatMap((block) => (block.type === "text" && typeof block.text === "string" ? [block.text] : [])).join(" ").trim();
-        turn.failure ??= said === "" ? `the host's model failed: ${String(message.error)}` : said;
+        turn.failure ??= said === "" ? modelFailed(String(message.error)) : hostSaid(said);
         return;
     }
 
@@ -210,7 +210,7 @@ function readToolResults(state: State, message: Message): void
             tell(state, { type: "tool", id, name: tool.name, kind: tool.kind, state: block.is_error === true ? "failed" : "done" });
 
             if (block.is_error !== true && tool.refused !== undefined && turn.failure === undefined) {
-                turn.failure = `the host ran a tool without asking: ${tool.refused}`;
+                turn.failure = ranWithoutAsking(tool.refused);
                 askToStop(state, turn);
             }
         }
@@ -218,18 +218,18 @@ function readToolResults(state: State, message: Message): void
 }
 
 /** Why the table does not let the master use a tool: its kind, or a path it reads outside the campaign's folder; undefined where it may, or the tool only loads others. */
-function refusal(state: State, name: string, kind: ToolKind, input: unknown): string | undefined
+function refusal(state: State, name: string, kind: ToolKind, input: unknown): Failure | undefined
 {
     if (toolLoaders.includes(name)) {
         return undefined;
     }
 
     if (!state.allowed.includes(kind)) {
-        return `the table does not let the master use ${name}`;
+        return toolNotAllowed(name);
     }
 
     const outside = kind === "read" ? pathOutside(name, input, state.folder) : undefined;
-    return outside === undefined ? undefined : `${name} read ${outside}, and the table lets the master read only the campaign's folder`;
+    return outside === undefined ? undefined : readOutside(name, outside);
 }
 
 /** The turn's end: done, interrupted when the table asked it, else failed with the host's words. */
@@ -248,7 +248,7 @@ function readResult(state: State, message: Message): void
     } else if (message.subtype === "success" && message.is_error !== true) {
         endTurn(state, "done");
     } else {
-        endTurn(state, "failed", typeof message.result === "string" && message.result.trim() !== "" ? message.result : String(message.subtype));
+        endTurn(state, "failed", hostSaid(typeof message.result === "string" && message.result.trim() !== "" ? message.result : String(message.subtype)));
     }
 }
 

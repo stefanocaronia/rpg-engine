@@ -1,4 +1,5 @@
-// Words to copy as they are, as a command to type in a terminal or the address a phone opens: as code, with a button that copies them.
+// Words to copy as they are, as a command to type in a terminal, the address a phone opens or a file's path: as code, left to right, with a button that
+// copies them.
 import { useState } from "preact/hooks";
 import { t } from "../text.ts";
 
@@ -20,7 +21,7 @@ export function Command({ text, name }: { text: string; name?: string; })
     return (
         <span class="setting-command">
             {/* Its words wrap only between them, never at a hyphen of a package's name; one wider than the line wraps within. */}
-            <code>{text.split(" ").flatMap((word, index) => [index === 0 ? "" : " ", <span key={index} class="command-word">{word}</span>])}</code>
+            <code dir="ltr">{text.split(" ").flatMap((word, index) => [index === 0 ? "" : " ", <span key={index} class="command-word">{word}</span>])}</code>
             <button type="button" class="setting-copy" aria-label={name ?? t("Copy {command}", { command: text })} onClick={() => void copy()}>{copied ? t("Copied") : t("Copy")}</button>
         </span>
     );

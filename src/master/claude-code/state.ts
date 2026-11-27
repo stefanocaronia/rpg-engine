@@ -1,5 +1,6 @@
 // The chat's state as Claude Code's driver keeps it, beside what every driver keeps: the model asked and confirmed, the requests' ids, the turn.
-import type { ToolKind } from "../chat.ts";
+import type { Failure, ToolKind } from "../chat.ts";
+import { modelNotConfirmed } from "../failures.ts";
 import { chatReady, type ChatState, modelChanged, refused, tell, type Turn as SharedTurn, write } from "../state.ts";
 import { controlRequest, userMessage } from "./protocol.ts";
 
@@ -34,7 +35,7 @@ export interface Turn extends SharedTurn
     streamed: Set<string>;
     told: Set<string>;
     /** The tools started, with why the table would not let the master use one, and those ended. */
-    tools: Map<string, { name: string; kind: ToolKind; refused?: string; }>;
+    tools: Map<string, { name: string; kind: ToolKind; refused?: Failure; }>;
     ended: Set<string>;
 }
 
@@ -48,7 +49,7 @@ export function askModel(state: State): void
 {
     state.model.request = nextRequest(state);
     write(state, controlRequest(state.model.request, { subtype: "set_model", model: state.model.asked }));
-    state.cancelReadyWait = state.later(modelWait, () => modelRefused(state, `the host did not confirm the model ${state.model.asked} within ${String(modelWait / 1000)} seconds`));
+    state.cancelReadyWait = state.later(modelWait, () => modelRefused(state, modelNotConfirmed(state.model.asked, modelWait / 1000)));
 }
 
 /** The host took the model: the chat is ready, once it took the effort asked with it, if any. */
@@ -90,40 +91,40 @@ export function changeModel(state: State, model: string, effort: string | undefi
  * The host answered another model asked in the open chat with an error: the chat goes on with the model it ran before, and the table is told. Asked at the
  * opening, or once the host ran a model of its own, the chat cannot play.
  */
-export function changeRefused(state: State, why: string): void
+export function changeRefused(state: State, failure: Failure): void
 {
     const before = state.model.before;
 
     if (before === undefined || state.ready) {
-        modelRefused(state, why);
+        modelRefused(state, failure);
         return;
     }
 
     const asked = state.model.asked;
     state.model = { asked: before.asked, request: "", ...(before.confirmed === undefined ? {} : { confirmed: before.confirmed }) };
-    tell(state, { type: "changeRefused", asked, model: before.asked, ...(before.effort === undefined ? {} : { effort: before.effort }), why });
+    tell(state, { type: "changeRefused", asked, model: before.asked, ...(before.effort === undefined ? {} : { effort: before.effort }), why: failure.why });
     chatReady(state);
 }
 
 /** The host took another model asked in the open chat, not the effort asked with it: the chat goes on with that model and the effort it ran before. */
-export function effortRefused(state: State, why: string): void
+export function effortRefused(state: State, failure: Failure): void
 {
     if (state.model.before === undefined) {
-        modelRefused(state, why);
+        modelRefused(state, failure);
         return;
     }
 
     const asked = state.model.asked;
     state.model.effort = undefined;
-    tell(state, { type: "changeRefused", asked, model: asked, ...(state.effort === undefined ? {} : { effort: state.effort }), why });
+    tell(state, { type: "changeRefused", asked, model: asked, ...(state.effort === undefined ? {} : { effort: state.effort }), why: failure.why });
     modelReady(state);
 }
 
 /** The chat cannot play, unless it is ready already: the turn held ends failed, and the chat ends with its process. */
-export function modelRefused(state: State, why: string): void
+export function modelRefused(state: State, failure: Failure): void
 {
     if (!state.ready) {
-        refused(state, why);
+        refused(state, failure);
     }
 }
 

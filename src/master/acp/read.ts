@@ -1,5 +1,6 @@
 // Reading the agent's lines: answers to the table's requests, the agent's own requests, and the session's updates; a line not understood changes nothing.
-import type { ToolKind } from "../chat.ts";
+import type { Failure, ToolKind } from "../chat.ts";
+import { agentUnasked, modelSwitched, ranWithoutAsking, readOutside, toolNotAllowed } from "../failures.ts";
 import { error, isObject, type Message, result } from "../lines.ts";
 import { inside } from "../paths.ts";
 import { askToStop, nextBlock, playing, tell, write } from "../state.ts";
@@ -54,27 +55,25 @@ function readRequest(state: State, message: Message): void
 }
 
 /** Why the table does not let the master use a tool: its kind, or a path it reads outside the campaign's folder; undefined where it may. */
-function mayRun(state: State, tool: { name: string; kind: ToolKind; }, call: Message): string | undefined
+function mayRun(state: State, tool: { name: string; kind: ToolKind; }, call: Message): Failure | undefined
 {
     if (!state.allowed.includes(tool.kind)) {
-        return `the table does not let the master use ${tool.name}`;
+        return toolNotAllowed(tool.name);
     }
 
-    const outside = tool.kind === "read" ? pathOutside(state, call) : undefined;
-    return outside === undefined ? undefined : `${tool.name} read ${outside}, and the table lets the master read only the campaign's folder`;
-}
+    if (tool.kind !== "read") {
+        return undefined;
+    }
 
-/** The first path a call of kind read asks for outside the campaign's folder; a call that names none is refused as one outside, since nothing says what it reads. */
-function pathOutside(state: State, call: Message): string | undefined
-{
     const paths = state.host.pathsOf(call);
 
+    // A call that names no path is refused as one outside, since nothing says what it reads.
     if (paths.length === 0) {
-        return "a path it did not say";
+        return readOutside(tool.name, undefined);
     }
 
     const outside = paths.find((path) => typeof path !== "string" || !inside(path, state.folder));
-    return outside === undefined ? undefined : pathWords(outside);
+    return outside === undefined ? undefined : readOutside(tool.name, pathWords(outside));
 }
 
 function readUpdate(state: State, params: Message): void
@@ -192,7 +191,7 @@ function readChild(state: State, child: string, update: Message): void
     const starting = [...turn.started].some(([id, tool]) => tool.kind === "agent" && !turn.ended.has(id));
 
     if (!state.children.has(child) && !(starting && state.allowed.includes("agent"))) {
-        turn.failure = "the host ran a subagent the table did not let the master start";
+        turn.failure = agentUnasked();
         askToStop(state, turn);
         return;
     }
@@ -215,10 +214,10 @@ function readChild(state: State, child: string, update: Message): void
 function ranUnasked(state: State, turn: Turn, id: string, call: Message, inners: { name: string; kind: ToolKind; failed: boolean; }[]): void
 {
     const ranInner = inners.find((inner) => !inner.failed && !state.allowed.includes(inner.kind));
-    const why = (ranInner === undefined ? undefined : `the table does not let the master use ${ranInner.name}`) ?? (turn.approved.has(id) ? undefined : mayRun(state, state.host.toolOf(call, state.session), call));
+    const ran = (ranInner === undefined ? undefined : toolNotAllowed(ranInner.name)) ?? (turn.approved.has(id) ? undefined : mayRun(state, state.host.toolOf(call, state.session), call));
 
-    if (why !== undefined) {
-        turn.failure = `the host ran a tool without asking: ${why}`;
+    if (ran !== undefined) {
+        turn.failure = ranWithoutAsking(ran);
         askToStop(state, turn);
     }
 }
@@ -240,7 +239,7 @@ function readConfig(state: State, update: Message): void
     const turn = playing(state);
 
     if (turn !== undefined) {
-        turn.failure = `the host runs the model ${String(model)} instead of ${state.model.confirmed}`;
+        turn.failure = modelSwitched(String(model), state.model.confirmed);
         askToStop(state, turn);
     }
 

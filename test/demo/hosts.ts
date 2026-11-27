@@ -1,7 +1,7 @@
 // The AI apps of the demo's chat and launcher (T-290), kept in memory, with how each stands and what the page asks of them, as a table and the launcher
 // answer (src/helpers/access.ts): the engine installs and signs in to Claude Code and Codex, the other two install from their own site and sign in by
 // themselves, their account never known. An install takes a few seconds, and Codex's first fails; a sign-in waits for the browser a few seconds, its link
-// coming a moment after it starts, and Codex's first does not finish. OpenCode, as the hosts that speak ACP, says the efforts of a model only once it is
+// coming a moment after it starts, and Codex's first does not finish. What fails and what is refused comes with its code and values, as from the engine. OpenCode, as the hosts that speak ACP, says the efforts of a model only once it is
 // chosen. The states to look at, by --hosts:
 //   ready  (the default) Claude Code ready, Codex to set up, Antigravity to install from its site, OpenCode ready with a long list of models
 //   none   nothing installed: the engine installs Claude Code and Codex; Antigravity and OpenCode from their sites
@@ -10,6 +10,7 @@
 //   busy   as none, but Claude Code's first install and first sign-in say they are under way from another window of RPG Engine, with the table's code
 //          `elsewhere`; looking at the apps again a moment later finds that window's install or sign-in done
 // Not part of the tests.
+import { type RefusalBody, refusalWords } from "../../src/core/refusal.ts";
 
 /** The states the demo's apps start in. */
 export type DemoHostsState = "ready" | "none" | "out" | "key" | "busy";
@@ -41,12 +42,14 @@ export interface DemoHost
     signIn?: "page";
     signingIn?: true;
     signInWhy?: string;
-    signInCode?: "elsewhere";
+    signInCode?: string;
+    signInValues?: Record<string, string>;
     signInLink?: string;
     install?: { page: string; engine?: true; };
     installing?: true;
     installWhy?: string;
-    installCode?: "elsewhere";
+    installCode?: string;
+    installValues?: Record<string, string>;
 }
 
 /** What the page asks of an app. */
@@ -57,8 +60,8 @@ export interface DemoHosts
 {
     list(): DemoHost[];
     find(id: string): DemoHost | undefined;
-    /** Does what the page asks of an app; why not, in the table's words, where it cannot. */
-    wish(wish: DemoHostWish): string | undefined;
+    /** Does what the page asks of an app; why not, as the table refuses it, where it cannot. */
+    wish(wish: DemoHostWish): RefusalBody | undefined;
     /** Adds what is told when they change. */
     onChange(listener: () => void): void;
 }
@@ -142,9 +145,12 @@ const linkTime = 800;
 const lookTime = 700;
 
 // Where the hosts that sign in by themselves are told to, as the table says it.
-const ownSignIn: Record<string, string> = {
-    antigravity: "Antigravity signs in from its own app, not from here: open Antigravity, sign in with your Google account there, then look again.",
-    openCode: "OpenCode plays without signing in. To use an account of a provider, sign in from OpenCode itself, then look again.",
+const ownSignIn: Record<string, RefusalBody> = {
+    antigravity: refusalWords("Antigravity signs in from its own app, not from here: open Antigravity, sign in with your Google account there, then look again.", "signin-in-app-account", {
+        host: "Antigravity",
+        account: "Google",
+    }),
+    openCode: refusalWords("OpenCode plays without signing in. To use an account of a provider, sign in from OpenCode itself, then look again.", "signin-not-needed", { host: "OpenCode" }),
 };
 
 /** The efforts an app says of a model only once it is chosen, as OpenCode; none where its list says them. */
@@ -175,13 +181,14 @@ export function demoHosts(state: DemoHostsState = "ready"): DemoHosts
         return tries.get(key) === 1 && (id === "codex" || (state === "busy" && id === "claudeCode"));
     };
 
-    const install = (host: DemoHost): string | undefined => {
+    const install = (host: DemoHost): RefusalBody | undefined => {
         if (host.install?.engine !== true) {
-            return `RPG Engine does not install ${host.name}: install it from ${host.install?.page ?? "its site"}, then look again.`;
+            const page = host.install?.page ?? "its site";
+            return refusalWords(`RPG Engine does not install ${host.name}: install it from ${page}, then look again.`, "install-from-page", { host: host.name, page });
         }
 
         if (host.found) {
-            return `${host.name} is on this computer already: choose it, and open the chat.`;
+            return refusalWords(`${host.name} is on this computer already: choose it, and open the chat.`, "app-here", { host: host.name });
         }
 
         if (host.installing === true) {
@@ -190,12 +197,14 @@ export function demoHosts(state: DemoHostsState = "ready"): DemoHosts
 
         delete host.installWhy;
         delete host.installCode;
+        delete host.installValues;
         host.installing = true;
         later(installTime, () => {
             delete host.installing;
 
             if (firstTry("install", host.id)) {
-                Object.assign(host, host.id === "codex" ? { installWhy: "npm could not reach the registry (ETIMEDOUT): check the connection, then try again." } : { installWhy: elsewhere.install, installCode: "elsewhere" });
+                const said = "npm error network request to https://registry.npmjs.org/@openai%2fcodex failed, reason: connect ETIMEDOUT";
+                Object.assign(host, host.id === "codex" ? { installWhy: `npm said: ${said}`, installCode: "app-install-said", installValues: { why: said } } : { installWhy: elsewhere.install, installCode: "elsewhere" });
             } else {
                 Object.assign(host, { found: true, account: "out" });
             }
@@ -203,9 +212,9 @@ export function demoHosts(state: DemoHostsState = "ready"): DemoHosts
         return undefined;
     };
 
-    const signIn = (host: DemoHost, cancel: boolean): string | undefined => {
+    const signIn = (host: DemoHost, cancel: boolean): RefusalBody | undefined => {
         if (host.signIn === undefined) {
-            return cancel ? `${host.name} signs in from its own app: there is no sign-in here to cancel.` : ownSignIn[host.id];
+            return cancel ? refusalWords(`${host.name} signs in from its own app: there is no sign-in here to cancel.`, "signin-none-to-cancel", { host: host.name }) : ownSignIn[host.id];
         }
 
         if (cancel) {
@@ -215,7 +224,7 @@ export function demoHosts(state: DemoHostsState = "ready"): DemoHosts
         }
 
         if (!host.found) {
-            return `${host.name} is not on this computer: install it first, then sign in.`;
+            return refusalWords(`${host.name} is not on this computer: install it first, then sign in.`, "signin-not-installed", { host: host.name });
         }
 
         if (host.signingIn === true) {
@@ -224,6 +233,7 @@ export function demoHosts(state: DemoHostsState = "ready"): DemoHosts
 
         delete host.signInWhy;
         delete host.signInCode;
+        delete host.signInValues;
         host.signingIn = true;
         // The link comes with the app's first answer, while the player is in the browser.
         later(linkTime, () => {
@@ -240,7 +250,10 @@ export function demoHosts(state: DemoHostsState = "ready"): DemoHosts
             delete host.signInLink;
 
             if (firstTry("signIn", host.id)) {
-                Object.assign(host, host.id === "codex" ? { signInWhy: "the browser was closed before the sign-in ended." } : { signInWhy: elsewhere.signIn, signInCode: "elsewhere" });
+                Object.assign(
+                    host,
+                    host.id === "codex" ? { signInWhy: "the sign-in waited ten minutes, and the player did not finish it", signInCode: "signin-timeout" } : { signInWhy: elsewhere.signIn, signInCode: "elsewhere" },
+                );
             } else {
                 signedIn(host);
             }
@@ -279,7 +292,7 @@ export function demoHosts(state: DemoHostsState = "ready"): DemoHosts
             const host = hosts.find((one) => one.id === id);
 
             if (host === undefined) {
-                return `No app ${id} here.`;
+                return { error: `No app ${id} here.` };
             }
 
             const refused = "install" in wish ? install(host) : signIn(host, wish.signIn.cancel === true);

@@ -95,8 +95,8 @@ describe("another model in an open chat", () => {
             await new Promise((resolve) => setImmediate(resolve));
             expect(host.written.filter((line) => line.type === "user")).toHaveLength(1);
             clock.advance(30_000);
-            const why = "the host did not confirm the model sonnet within 30 seconds";
-            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            const failure = { why: "the host did not confirm the model sonnet within 30 seconds", code: "model-not-confirmed", values: { model: "sonnet", seconds: "30" } };
+            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
         });
 
         it("goes on with the model taken and the effort it ran before when the host does not take the effort", async () => {
@@ -149,7 +149,7 @@ describe("another model in an open chat", () => {
 
             chat.setModel?.("opus");
             await until((all) => all.some((event) => event.type === "ended"));
-            expect(events.at(-1)).toEqual({ type: "ended", why: "the host was asked for the model opus and runs claude-fable-5" });
+            expect(events.at(-1)).toEqual({ type: "ended", why: "the host was asked for the model opus and runs claude-fable-5", code: "model-other", values: { asked: "opus", model: "claude-fable-5" } });
         });
 
         it("is refused once the chat ended, and for a name the program could read as an option", async () => {
@@ -299,7 +299,7 @@ describe("another model in an open chat", () => {
             await until((all) => turnEnds(all).length === 1);
             chat.send(second);
             await until((all) => turnEnds(all).length === 2);
-            expect(turnEnds(events)[1]).toEqual({ type: "turnEnd", reason: "failed", why: "the host runs the model gpt-5.6-luna instead of gpt-6-luna" });
+            expect(turnEnds(events)[1]).toEqual({ type: "turnEnd", reason: "failed", why: "the host runs the model gpt-5.6-luna instead of gpt-6-luna", code: "model-switched", values: { model: "gpt-5.6-luna", asked: "gpt-6-luna" } });
         });
 
         it("is refused while a turn runs", async () => {
@@ -381,8 +381,8 @@ describe("a player not signed in to the host", () => {
         chat.send(playerWords(flow)[0]);
         await until((all) => all.some((event) => event.type === "ended"));
 
-        const why = "Claude Code is not signed in on this computer: sign in here, then open the chat";
-        expect(events.filter((event) => event.type !== "session")).toEqual([{ type: "turnEnd", reason: "failed", why, code: "signin" }, { type: "ended", why, code: "signin" }]);
+        const failure = { why: "Claude Code is not signed in on this computer: sign in here, then open the chat", code: "signin", values: { host: "Claude Code" } };
+        expect(events.filter((event) => event.type !== "session")).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
         expect(JSON.stringify(events)).not.toMatch(/login|terminal/i);
         // Let go to end by itself, as one saving the player's login: never stopped at once.
         expect(host.inputClosed).toBe(true);
@@ -406,7 +406,7 @@ describe("a player not signed in to the host", () => {
         chat.send(playerWords(flow)[0]);
         await until((all) => turnEnds(all).length === 1);
 
-        expect(events.filter((event) => event.type !== "session")).toEqual([{ type: "turnEnd", reason: "failed", why: limit }]);
+        expect(events.filter((event) => event.type !== "session")).toEqual([{ type: "turnEnd", reason: "failed", why: limit, code: "host-said", values: { why: limit } }]);
         expect(host.stopped).toBe(false);
     });
 
@@ -425,8 +425,8 @@ describe("a player not signed in to the host", () => {
         chat.send("Hello");
         await until((all) => all.some((event) => event.type === "ended"));
 
-        const why = "Authentication required: sign in from OpenCode itself, then try again";
-        expect(events.filter((event) => event.type !== "session")).toEqual([{ type: "turnEnd", reason: "failed", why, code: "signin" }, { type: "ended", why, code: "signin" }]);
+        const failure = { why: "Authentication required: sign in from OpenCode itself, then try again", code: "signin", values: { host: "OpenCode", why: "Authentication required" } };
+        expect(events.filter((event) => event.type !== "session")).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
     });
 
     it("in OpenCode, a provider's key refused is a failed turn, never a sign-in to OpenCode; in Antigravity, whose own error is not known, the same words are", async () => {
@@ -434,7 +434,7 @@ describe("a player not signed in to the host", () => {
         const openCode = chatOn("openCode", fakeAgent(refusedTurn(revoked)), { model: "anthropic/x" });
         openCode.chat.send("Hello");
         await openCode.until((all) => turnEnds(all).length === 1);
-        expect(openCode.events.filter((event) => event.type !== "session")).toEqual([{ type: "turnEnd", reason: "failed", why: revoked.message }]);
+        expect(openCode.events.filter((event) => event.type !== "session")).toEqual([{ type: "turnEnd", reason: "failed", why: revoked.message, code: "host-said", values: { why: revoked.message } }]);
 
         const antigravity = openMaster("antigravity", { folder, program: { command: "agy", args: [] }, model: "anthropic/x", allowed: ["rpg"], environment: {}, start: fakeAgent(refusedTurn(revoked)).start });
         const heard = listen(antigravity!);

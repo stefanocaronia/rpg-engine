@@ -5,6 +5,7 @@ import { isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
 import type { ChosenFolder, FolderAsked } from "../../confirm/index.ts";
 import { type HostId, hostIds, hosts } from "../../core/hosts.ts";
+import { type RefusalBody, refusalWords } from "../../core/refusal.ts";
 import { files, FileStore, withFiles } from "../../core/store.ts";
 import type { WindowOpener } from "../../desktop/index.ts";
 import type { AccessKeeper, HostAccess } from "../../helpers/index.ts";
@@ -110,17 +111,26 @@ export async function answerLauncher(request: IncomingMessage, response: ServerR
 
 // A folder the page names: a whole path, of a reasonable length, in one form however it is written, so that the list, the tables' places and their keys see
 // the same folder. Any such path opens, adds or forgets a campaign, so that whatever is in the list can be opened and taken off it.
+// What is wrong with what the player wrote travels with its code and values, as the issue's own: the page says it in its language. What only a page that
+// does not work could send, as a host it does not list, has words alone.
+const longestPath = 1000;
 const folderPath = z.string()
-    .refine((path) => path.length <= 1000, "The folder's path is too long: give one of at most 1000 characters.")
-    .refine((path) => !path.includes("\0") && isAbsolute(path), "Give the folder's whole path, from the root of its disk.")
-    .transform((path) => resolve(path));
+    .refine((path) => path.length <= longestPath, { message: `The folder's path is too long: give one of at most ${longestPath} characters.`, params: { code: "path-too-long", values: { most: String(longestPath) } } })
+    .transform((path, context) => {
+        if (path.includes("\0") || !isAbsolute(path)) {
+            context.addIssue({ code: "custom", message: "Give the folder's whole path, from the root of its disk.", params: { code: "not-full-path", values: { name: path.replaceAll("\0", "") } } });
+            return z.NEVER;
+        }
+
+        return resolve(path);
+    });
 // The folder a campaign is made in: on Windows, one that Windows can use as written.
 const newFolder = folderPath
     .transform((folder, context) => {
         const problem = process.platform === "win32" ? windowsNameProblem(folder) : undefined;
 
         if (problem !== undefined) {
-            context.addIssue({ code: "custom", message: problem });
+            context.addIssue({ code: "custom", message: problem.error, params: { code: problem.code, values: problem.values } });
             return z.NEVER;
         }
 
@@ -132,8 +142,11 @@ const openAsked = z.object({ root: folderPath }).strict();
 const createAsked = z.object({
     name: z.string()
         .trim()
-        .refine((name) => name.length >= 1 && name.length <= 80, "Give the campaign a name of 1 to 80 characters.")
-        .refine((name) => !/[\u0000-\u001f\u007f]/.test(name), "Give the campaign a name on one line, without tabs or other control characters."),
+        .refine((name) => name.length >= 1 && name.length <= 80, { message: "Give the campaign a name of 1 to 80 characters.", params: { code: "campaign-name-length", values: { most: "80" } } })
+        .refine((name) => !/[\u0000-\u001f\u007f]/.test(name), {
+            message: "Give the campaign a name on one line, without tabs or other control characters.",
+            params: { code: "campaign-name-line" },
+        }),
     folder: newFolder.optional(),
     language: z.string().refine((code) => /^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test(code), "Give the campaign's language by its code, such as en or pt-BR."),
     system: word("the game system's name"),
@@ -184,7 +197,7 @@ const shapes = "Send one of { open: { root } }, { create: { name, folder?, langu
     + "{ forget: { root } }, { quit: { token } }, { signIn: { host, cancel? } }, { install: { host } } or { hosts: true }.";
 
 // What the page reads where the launcher was given no programs to ask, as a launcher started by a test.
-const noAccess = "This launcher cannot sign in to or install the AI apps: close it, start it again with rpg launcher, then try again.";
+const noAccess = refusalWords("This launcher cannot sign in to or install the AI apps: close it, start it again with rpg launcher, then try again.", "no-access-launcher");
 
 /** What the page shows: the launcher's engine, the folder of new campaigns, the campaigns, and what a new one may be made with. */
 async function launcherNow(served: LauncherServed): Promise<object>
@@ -207,7 +220,7 @@ async function changeLauncher(request: IncomingMessage, response: ServerResponse
     const parsed = asked.safeParse(body);
 
     if (!parsed.success) {
-        sendJson(response, 400, { error: refusal(body) });
+        sendJson(response, 400, refusal(body));
         return;
     }
 
@@ -261,32 +274,42 @@ function changeAccess(wish: { signIn: z.infer<typeof signInAsked>; } | { install
     const access = served.access;
 
     if (access === undefined) {
-        sendJson(response, 409, { error: noAccess });
+        sendJson(response, 409, noAccess);
         return;
     }
 
-    let refused: string | undefined;
+    let refused: RefusalBody | undefined;
 
     if ("signIn" in wish) {
-        refused = wish.signIn.cancel === true ? access.cancelSignIn(wish.signIn.host) : access.signIn(wish.signIn.host);
+        refused = wish.signIn.cancel === true ? access.tryCancelSignIn(wish.signIn.host) : access.trySignIn(wish.signIn.host);
     } else if ("install" in wish) {
         const host = wish.install.host;
+        const name = hosts[host].name;
         const there = served.hosts().find((one) => one.id === host)?.found === true;
-        refused = there ? `${hosts[host].name} is on this computer already: choose it for a campaign, and play.` : access.install(host);
+        refused = there ? refusalWords(`${name} is on this computer already: choose it for a campaign, and play.`, "app-here", { host: name }) : access.tryInstall(host);
     } else {
         access.lookAgain();
     }
 
-    sendJson(response, refused === undefined ? 200 : 409, refused === undefined ? { hosts: served.hosts() } : { error: refused });
+    sendJson(response, refused === undefined ? 200 : 409, refused ?? { hosts: served.hosts() });
 }
 
-/** Why a body was refused: what is wrong with a part of the right shape, else the shapes. */
-function refusal(body: unknown): string
+/**
+ * Why a body was refused: what is wrong with a part of the right shape, with the code and values its issue carries, where it says something the player
+ * wrote; else the shapes, which only a page that does not work is told.
+ */
+function refusal(body: unknown): RefusalBody
 {
     const keys = typeof body === "object" && body !== null && !Array.isArray(body) ? Object.keys(body) : [];
     const part = keys.length === 1 ? parts[keys[0] ?? ""] : undefined;
     const issue = part?.safeParse((body as Record<string, unknown>)[keys[0] ?? ""]).error?.issues[0];
-    return issue?.code === "custom" ? issue.message : shapes;
+
+    if (issue?.code !== "custom") {
+        return { error: shapes };
+    }
+
+    const { code, values } = (issue.params ?? {}) as { code?: string; values?: Record<string, string>; };
+    return code === undefined ? { error: issue.message } : refusalWords(issue.message, code, values);
 }
 
 /** A folder the player names as a campaign of theirs: remembered when it holds one, refused when not, or when it cannot be read now. */
@@ -295,8 +318,8 @@ async function addCampaign(root: string, response: ServerResponse, served: Launc
     const holds = holdsCampaign(root);
 
     if (holds !== true) {
-        const why = holds === false ? `${root} is no campaign: a campaign's folder holds its campaign.yaml. Choose that folder, or make a new campaign.` : holds.unreadable;
-        sendJson(response, 409, { error: why });
+        const words = `${root} is no campaign: a campaign's folder holds its campaign.yaml. Choose that folder, or make a new campaign.`;
+        sendJson(response, 409, holds === false ? refusalWords(words, "not-a-campaign", { root }) : holds.unreadable);
         return;
     }
 
@@ -309,7 +332,7 @@ async function addCampaign(root: string, response: ServerResponse, served: Launc
 async function pickFolder(asked: FolderAsked, response: ServerResponse, served: LauncherServed): Promise<void>
 {
     if (served.picking) {
-        sendJson(response, 409, { error: "The window to choose a folder is open already: choose the folder there, or close it first." });
+        sendJson(response, 409, refusalWords("The window to choose a folder is open already: choose the folder there, or close it first.", "folder-window-open"));
         return;
     }
 
@@ -317,7 +340,13 @@ async function pickFolder(asked: FolderAsked, response: ServerResponse, served: 
 
     try {
         const chosen = await served.pick(asked);
-        sendJson(response, chosen !== undefined && typeof chosen === "object" ? 409 : 200, chosen === undefined ? { cancelled: true } : typeof chosen === "string" ? { folder: chosen } : { error: chosen.refused });
+
+        if (chosen !== undefined && typeof chosen === "object") {
+            const { refused, code, values } = chosen;
+            sendJson(response, 409, { error: refused, ...(code === undefined ? {} : { code }), ...(values === undefined ? {} : { values }) });
+        } else {
+            sendJson(response, 200, chosen === undefined ? { cancelled: true } : { folder: chosen });
+        }
     } finally {
         served.picking = false;
     }

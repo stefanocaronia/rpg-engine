@@ -8,16 +8,20 @@ import { runCommandLine } from "../../src/cli/command-line.ts";
 import { gitNotes, gitQuestions, picturesNotes } from "../../src/commands/config/dashboard.ts";
 import { playerSettingNames } from "../../src/commands/config/words.ts";
 import type { PlayerSetting } from "../../src/dashboard/data.ts";
+import { doorPhrases } from "../../src/server/dashboard/phone.ts";
 import { masterScreenLine } from "../../src/server/mcp.ts";
 import { makeTempFolder, testContext } from "../support.ts";
 
 /** The page's folder, where its code and its translations (i18n/) are. */
 export const pageFolder = fileURLToPath(new URL("../../src/dashboard/", import.meta.url));
 
-/** Every phrase the page needs translated: its code's, its settings', and the line the server closes each tool's answer with (T-176). */
+/**
+ * Every phrase the page needs translated: its code's, its settings', the line the server closes each tool's answer with (T-176), and what the door to the
+ * phone says to who it does not let in, where there is no page (T-267).
+ */
 export async function pagePhrases(): Promise<Set<string>>
 {
-    return new Set([...codePhrases(), ...await settingPhrases(), masterScreenLine]);
+    return new Set([...codePhrases(), ...await settingPhrases(), masterScreenLine, ...Object.values(doorPhrases)]);
 }
 
 /** Every phrase the page's code gives t() or tParts() as a string of its own. */

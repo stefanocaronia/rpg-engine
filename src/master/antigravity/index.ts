@@ -3,8 +3,8 @@
 import { join } from "node:path";
 import { hosts } from "../../core/hosts.ts";
 import { type AcpHost, acpModels, kindOfCall, openAcp, pathsOfCall } from "../acp/index.ts";
-import type { MasterDriver, ToolKind } from "../chat.ts";
-import { fileOnPath, type FoundProgram, isFile } from "../program.ts";
+import type { Failure, MasterDriver, ToolKind } from "../chat.ts";
+import { fileOnPath, type FoundProgram, lackingServerFile } from "../program.ts";
 
 // What belongs to another chat or shell, never to the master's: the engine's own variables, which the table sets again, and the folders of a shell.
 const dropped = /^(RPG_.*|PWD|OLDPWD|INIT_CWD)$/i;
@@ -47,10 +47,8 @@ export const antigravityAcp: AcpHost = {
 /** Antigravity as the table drives it: the model a new chat proposes is the first Antigravity lists. */
 export const antigravity: MasterDriver = {
     open: (options) => openAcp(options, antigravityAcp),
-    missing: (folder) =>
-        isFile(join(folder, ".agents", "mcp_config.json"))
-            ? undefined
-            : "This campaign has no .agents/mcp_config.json, which tells Antigravity how to start the game's server: run rpg init in the campaign's folder, then try again.",
+    missing: (folder) => lacking(folder)?.why,
+    lacking,
     program: antigravityProgram,
     environment: (environment) => Object.fromEntries(Object.entries(environment).filter(([name]) => !dropped.test(name))),
     models: (options) => acpModels(options, antigravityAcp),
@@ -58,6 +56,12 @@ export const antigravity: MasterDriver = {
     efforts: [],
     effortsOnceChosen: true,
 };
+
+/** What a campaign lacks for Antigravity: the file that names the game's server. */
+function lacking(folder: string): Failure | undefined
+{
+    return lackingServerFile(folder, ".agents/mcp_config.json", hosts.antigravity.name);
+}
 
 /** Antigravity's own program, never a shim that needs a shell: the first found in a folder of the PATH, then where its installer puts it in the player's home. */
 function antigravityProgram(environment: NodeJS.ProcessEnv, platform: string, home: string): FoundProgram | undefined

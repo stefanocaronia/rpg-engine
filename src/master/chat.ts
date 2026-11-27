@@ -4,8 +4,60 @@ import { type LineProcess, startLineProcess } from "../core/process.ts";
 /** What a tool of the host does, so that the table says yes or no without knowing the host. */
 export type ToolKind = "rpg" | "read" | "web" | "fetch" | "agent" | "image" | "shell" | "write" | "other";
 
-/** Why a chat cannot play, beside the words: the player is not signed in to the host, or no longer. */
-export type EndCode = "signin";
+/**
+ * Why a turn failed, a chat ended or cannot open, beside the words, for a page to say it in its own language: each code with its values in failures.ts.
+ * `signin`, the player is not signed in to the host, or no longer.
+ */
+export type EndCode =
+    | "signin"
+    // The host's program and its protocol.
+    | "program-ended"
+    | "not-stopped"
+    | "not-ready"
+    | "no-protocol"
+    | "chat-not-opened"
+    | "chat-not-resumed"
+    | "no-resume"
+    // The model and the effort asked.
+    | "model-not-taken"
+    | "model-not-confirmed"
+    | "model-stayed"
+    | "model-other"
+    | "model-switched"
+    | "effort-not-taken"
+    | "effort-other"
+    | "effort-switched"
+    // A turn the host ended, in its words or by a reason of its protocol.
+    | "host-said"
+    | "model-failed"
+    | "words-not-taken"
+    | "turn-stopped"
+    | "answer-too-long"
+    | "too-many-steps"
+    | "model-refused"
+    // What the host ran that the table does not let the master use.
+    | "tool-unasked"
+    | "read-outside"
+    | "read-unsaid"
+    | "agent-unknown"
+    | "agent-other"
+    | "agent-unasked"
+    // What keeps a chat from opening, known before the host's program starts.
+    | "no-server-file"
+    | "effort-unknown"
+    | "effort-none"
+    | "effort-not-of-model";
+
+/**
+ * Why a turn failed, a chat ended or cannot open: the words, which the table's log and the master read, and their code with its values, which a page says in
+ * its own language. What is not the table's own, as the host's words, a path or a model's id, travels as it is in a value.
+ */
+export interface Failure
+{
+    why: string;
+    code: EndCode;
+    values?: Record<string, string>;
+}
 
 export type MasterEvent =
     /**
@@ -28,10 +80,10 @@ export type MasterEvent =
     | { type: "tool"; id: string; name: string; kind: ToolKind; state: "started" | "done" | "failed"; }
     /** A permission the host asked and the chat answered by its `allowed` kinds. */
     | { type: "permission"; name: string; kind: ToolKind; allowed: boolean; }
-    /** The turn ended: done, stopped by interrupt(), or failed, with why in words a player can read, and its code where it has one. */
-    | { type: "turnEnd"; reason: "done" | "interrupted" | "failed"; why?: string; code?: EndCode; }
-    /** The host's process is gone: nothing comes after. */
-    | { type: "ended"; why: string; code?: EndCode; };
+    /** The turn ended: done, stopped by interrupt(), or failed, with why in words a player can read, and beside them their code and its values. */
+    | { type: "turnEnd"; reason: "done" | "interrupted" | "failed"; why?: string; code?: EndCode; values?: Record<string, string>; }
+    /** The host's process is gone: nothing comes after. Why, in words, with their code and its values. */
+    | { type: "ended"; why: string; code?: EndCode; values?: Record<string, string>; };
 
 export interface MasterChat
 {
@@ -91,6 +143,8 @@ export interface MasterDriver
     open(options: MasterOptions): MasterChat;
     /** What the campaign at `folder` lacks for this host, in words that say how to mend it; undefined where it lacks nothing. */
     missing(folder: string): string | undefined;
+    /** The same, with the code and values of the words beside them. */
+    lacking?(folder: string): Failure | undefined;
     /** The host's own program on this computer, where it is installed by itself; undefined where it is not found. */
     program(environment: NodeJS.ProcessEnv, platform: string, home: string): { command: string; args: string[]; } | undefined;
     /** The environment the host's process gets, from the table's own. */

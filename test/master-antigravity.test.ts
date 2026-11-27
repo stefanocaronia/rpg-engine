@@ -60,7 +60,7 @@ describe("the master in Antigravity", () => {
         const { chat, events, until } = play(flows.prose(), {}, { failing: ["session/set_model"] });
         chat.send("Hello");
         await until(() => events.some((event) => event.type === "ended"));
-        expect(events.at(-1)).toEqual({ type: "ended", why: `the host did not take the model ${model}: session/set_model failed` });
+        expect(events.at(-1)).toEqual({ type: "ended", why: `the host did not take the model ${model}: session/set_model failed`, code: "model-not-taken", values: { model, why: "session/set_model failed" } });
     });
 
     it("never sends words while a turn runs, which the agent would take to steer it: the next words wait for the turn's end", async () => {
@@ -111,7 +111,9 @@ describe("the master in Antigravity", () => {
             ["write_file", "write"],
             ["call_mcp_tool", "other"],
         ]);
-        expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use call_mcp_tool" }]);
+        expect(turnEnds(events)).toEqual([
+            { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use call_mcp_tool", code: "tool-unasked", values: { tool: "call_mcp_tool" } },
+        ]);
         expect(events.filter((event) => event.type === "permission")).toEqual([]);
     });
 
@@ -216,7 +218,9 @@ describe("the master in Antigravity", () => {
         });
 
         it("refuses a timer with any field beside its wait and its words, as one that repeats, and a look at a task by an action not seen", async () => {
-            const stopped = (name: string): MasterEvent[] => [{ type: "turnEnd", reason: "failed", why: `the host ran a tool without asking: the table does not let the master use ${name}` }];
+            const stopped = (name: string): MasterEvent[] => [
+                { type: "turnEnd", reason: "failed", why: `the host ran a tool without asking: the table does not let the master use ${name}`, code: "tool-unasked", values: { tool: name } },
+            ];
             expect((await waited("schedule", { DurationSeconds: 10, Prompt: "Check again.", Recurring: true })).ends).toEqual(stopped("schedule"));
             expect((await waited("schedule", { DurationSeconds: "10", Prompt: "Check again." })).ends).toEqual(stopped("schedule"));
             expect((await waited("manage_task", { Action: "cancel", TaskId: `${session}/task-40` })).ends).toEqual(stopped("manage_task"));
@@ -240,6 +244,8 @@ describe("the master in Antigravity", () => {
                 type: "turnEnd",
                 reason: "failed",
                 why: `the host ran a tool without asking: read_file read ${answers("another-chat")}, and the table lets the master read only the campaign's folder`,
+                code: "read-outside",
+                values: { tool: "read_file", path: answers("another-chat") },
             }]);
         });
     });
@@ -256,6 +262,7 @@ describe("the master in Antigravity", () => {
             type: "ended",
             why: "the host did not open the chat: Authentication required: open Antigravity on this computer and sign in there, then try again",
             code: "signin",
+            values: { host: "Antigravity", why: "Authentication required" },
         });
     });
 

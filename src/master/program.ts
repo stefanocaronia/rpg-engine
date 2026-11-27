@@ -1,6 +1,8 @@
 // A host's own program on this computer, as the table looks for it: in the folders of the PATH, in a folder of the player's home, or as npm installed it.
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import type { Failure } from "./chat.ts";
+import { noServerFile } from "./failures.ts";
 
 /** A program as the table starts it, with no shell: the command, and the arguments before the host's own. */
 export interface FoundProgram
@@ -42,6 +44,15 @@ export function isFile(path: string): boolean
     } catch {
         return false;
     }
+}
+
+/**
+ * What a campaign lacks for a host: the file that tells the host how to start the game's server, named from the campaign's folder with forward slashes;
+ * undefined where it is there.
+ */
+export function lackingServerFile(folder: string, file: string, host: string): Failure | undefined
+{
+    return isFile(join(folder, ...file.split("/"))) ? undefined : noServerFile(file, host);
 }
 
 /** The folders of the PATH, whatever the case of its name, as Windows writes Path. */

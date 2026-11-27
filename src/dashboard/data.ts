@@ -121,9 +121,10 @@ export interface ChatModel
  * efforts it knows, and the models it offers, none until it has answered. `account`, whether the player is signed in to it, unknown when not said;
  * `signIn`, "page" where the page starts the sign-in, in the browser, none where the app signs in by itself; `signingIn` while a sign-in opened from the
  * page waits for the browser, with its link (`signInLink`) for when the browser did not open, `signInWhy` why the last one failed. `install`, where it is
- * installed from, `engine` when the engine installs it; `installing` while it does, `installWhy` why the last install failed. With the code `elsewhere`
- * (`signInCode`, `installCode`) nothing failed: another window of RPG Engine has the sign-in or the install under way. `metered`, signed in with an
- * API key in place of a plan: each answer is paid apart.
+ * installed from, `engine` when the engine installs it; `installing` while it does, `installWhy` why the last install failed. Each why is the engine's
+ * words, with their code and its values beside them (`signInCode`, `signInValues`, `installCode`, `installValues`), which the page says in its own. With the
+ * code `elsewhere` nothing failed: another window of RPG Engine has the sign-in or the install under way. `metered`, signed in with an API key in place of
+ * a plan: each answer is paid apart.
  */
 export interface ChatHost
 {
@@ -139,13 +140,15 @@ export interface ChatHost
     signIn?: "page";
     signingIn?: true;
     signInWhy?: string;
-    signInCode?: "elsewhere";
+    signInCode?: string;
+    signInValues?: Record<string, string>;
     /** The sign-in's own link, for when the browser did not open by itself. */
     signInLink?: string;
     install?: { page: string; engine?: true; };
     installing?: true;
     installWhy?: string;
-    installCode?: "elsewhere";
+    installCode?: string;
+    installValues?: Record<string, string>;
 }
 
 /**
@@ -157,14 +160,16 @@ export type ChatMessage = ChatSaid | ChatAsked | ChatRoll;
 /**
  * Words of the player's, the master's or the table's. A line of the table's about the master's model says it beside its English, for the page's own words:
  * `model`, the model changed to, by the name to show, with the effort it plays with, or `dropped` where an effort asked or held before does not hold, the
- * effort then the one still in force; `model-kept`, a change the app did not take, `asked` the model asked and `model` the one that stays.
+ * effort then the one still in force; `model-kept`, a change the app did not take, `asked` the model asked and `model` the one that stays. Any other
+ * line of the table's has its code and the code's `values`, as a turn that failed with why.
  */
 export interface ChatSaid
 {
     id: number;
     from: "player" | "master" | "table";
     text: string;
-    code?: "model" | "model-kept";
+    code?: string;
+    values?: Record<string, string>;
     model?: string;
     asked?: string;
     effort?: string;
@@ -219,8 +224,9 @@ export interface ChatChoice
  * messages, and whether a chat opened by hand plays the campaign. The open chat's model is the one the player chose, `runs` the app's own name for the one
  * it runs, once the app said it; `cutShort` while the chat taken up was cut as the game was closed, until the next turn begins; `takenUp` while a chat
  * taken up from the app's own session has no words of the player's yet, never with `cutShort`. `changes` when its model can change while it is open;
- * `efforts`, the levels of thinking of the model it runs, where the app says them only once that model is chosen; `code` "signin" beside `why` when it
- * ended as the app's sign-in ran out.
+ * `efforts`, the levels of thinking of the model it runs, where the app says them only once that model is chosen; beside `why`, the engine's words for
+ * why it ended, their `code` and its `values`, "signin" when the app's sign-in ran out. `log`, the file of the table's log on the computer, where it keeps
+ * one, which the page names for a report.
  */
 export interface MasterShown
 {
@@ -233,13 +239,15 @@ export interface MasterShown
         takenUp?: true;
         state: "idle" | "turn" | "ended";
         why?: string;
-        code?: "signin";
+        code?: string;
+        values?: Record<string, string>;
         tool?: string;
         answers?: true;
         changes?: true;
     };
     messages: ChatMessage[];
     elsewhere: boolean;
+    log?: string;
 }
 
 /** What the page reads of the master's chat: nothing of it where no table keeps one, as when a chat serves the page. */

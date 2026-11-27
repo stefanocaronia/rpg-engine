@@ -120,7 +120,26 @@ describe("the programs in the engine's folder (D-425)", () => {
     it("tells a sign-in that fails at once as failed, with what it said, never as open", async () => {
         const script = join(makeTempFolder(), "fail.js");
         writeFileSync(script, "console.error('Error: address already in use 127.0.0.1:1455'); process.exit(1);");
-        expect(await startLogin("claude", `"${process.execPath}" "${script}"`)).toEqual({ state: "failed", why: "it said: Error: address already in use 127.0.0.1:1455" });
+        // What the program said last travels as it came, in a value beside the code.
+        const said = "Error: address already in use 127.0.0.1:1455";
+        expect(await startLogin("claude", `"${process.execPath}" "${script}"`)).toEqual({ state: "failed", why: `it said: ${said}`, code: "signin-said", values: { why: said } });
+    });
+
+    it("tells a sign-in whose program stops without a word as stopped, a code with no values", async () => {
+        const script = join(makeTempFolder(), "silent.js");
+        writeFileSync(script, "process.exit(1);");
+        expect(await startLogin("codex", `"${process.execPath}" "${script}"`)).toEqual({ state: "failed", why: "the sign-in stopped", code: "signin-stopped" });
+    });
+
+    it("says a program that is not on this computer by its name for the player, never its internal one, and starts nothing; the page reads its code", async () => {
+        // A failure an earlier sign-in of this file left to tell is forgotten first.
+        cancelLogin("claude");
+        const helpers = computerHelpers(makeTempFolder(), { PATH: "" });
+        expect(await helpers.login("claude")).toEqual({ state: "failed", why: "Claude Code is not on this computer", code: "app-missing", values: { host: "Claude Code" } });
+
+        const keeper = accessKeeper({ helpers, changed: () => undefined });
+        expect(keeper.signIn("claudeCode")).toBeUndefined();
+        await vi.waitFor(() => expect(keeper.known("claudeCode")).toMatchObject({ signInWhy: "Claude Code is not on this computer", signInCode: "app-missing", signInValues: { host: "Claude Code" } }), { timeout: 5000 });
     });
 
     it("tells who listens how the sign-in ended, once the player finished it after its first answer", async () => {
@@ -157,14 +176,21 @@ describe("the programs in the engine's folder (D-425)", () => {
         await login;
         // Stopped after the few seconds it has to end by itself, as one saving the player's sign-in (T-301).
         await vi.waitFor(() => expect(fake.started().filter((one) => one.asked === "auth login" && alive(one.pid))).toEqual([]), { timeout: 8000 });
-    }, 15_000);
+        // Ended for the engine too, or the next test's sign-in finds this one still ending on a slow machine.
+        await vi.waitFor(() => expect(signInRuns("claude")).toBe(false), { timeout: 8000 });
+    }, 20_000);
 
     it("starts no second sign-in of a program while the one cancelled still ends, as two would write the same sign-in (T-301)", async () => {
         const fake = fakeProgram("claude", "if (asked === 'auth login') { console.error('Go to https://auth.example/now'); setTimeout(() => {}, 60000); }");
         const helpers = computerHelpers(fake.tools, { PATH: "" });
         expect(await helpers.login("claude")).toMatchObject({ state: "waiting" });
         helpers.cancel("claude");
-        expect(await helpers.login("claude")).toEqual({ state: "failed", why: "the sign-in to Claude Code just stopped is still ending: try again in a few seconds" });
+        expect(await helpers.login("claude")).toEqual({
+            state: "failed",
+            why: "the sign-in to Claude Code just stopped is still ending: try again in a few seconds",
+            code: "signin-ending",
+            values: { host: "Claude Code" },
+        });
         expect(fake.started().filter((one) => one.asked === "auth login")).toHaveLength(1);
         // Once it is gone, the next sign-in starts.
         await vi.waitFor(() => expect(fake.started().filter((one) => one.asked === "auth login" && alive(one.pid))).toEqual([]), { timeout: 8000 });
@@ -184,12 +210,17 @@ describe("one sign-in and one installation on this computer, whatever window of 
         writeFileSync(join(fake.tools, "marks", "login-claude"), String(another()));
         const helpers = computerHelpers(fake.tools, { PATH: "" });
         const login = await helpers.login("claude");
-        expect(login).toEqual({ state: "failed", why: "a sign-in to Claude Code is already under way in another window of RPG Engine: finish it there, or close that window, then try again" });
+        expect(login).toEqual({
+            state: "failed",
+            why: "a sign-in to Claude Code is already under way in another window of RPG Engine: finish it there, or close that window, then try again",
+            code: "elsewhere",
+            values: { host: "Claude Code" },
+        });
         expect(fake.started().filter((one) => one.asked === "auth login")).toEqual([]);
 
         const keeper = accessKeeper({ helpers, changed: () => undefined });
         expect(keeper.signIn("claudeCode")).toBeUndefined();
-        await vi.waitFor(() => expect(keeper.known("claudeCode")).toMatchObject({ signInCode: "elsewhere", signInWhy: login.state === "failed" ? login.why : "" }), { timeout: 5000 });
+        await vi.waitFor(() => expect(keeper.known("claudeCode")).toMatchObject({ signInCode: "elsewhere", signInValues: { host: "Claude Code" }, signInWhy: login.state === "failed" ? login.why : "" }), { timeout: 5000 });
         expect(keeper.known("claudeCode")).not.toHaveProperty("signingIn");
     });
 
@@ -208,9 +239,17 @@ describe("one sign-in and one installation on this computer, whatever window of 
         const tools = makeTempFolder();
         mkdirSync(join(tools, "marks"));
         writeFileSync(join(tools, "marks", "install"), String(another()));
-        const why = await computerHelpers(tools, { PATH: "" }).install("codex");
+        const helpers = computerHelpers(tools, { PATH: "" });
+        const why = await helpers.install("codex");
         expect(why).toBe("an installation is already under way in another window of RPG Engine: wait for it to end there, then try again");
         expect(existsSync(join(tools, "node_modules"))).toBe(false);
+        // Asked with its code, as the page asks: the same words, and that it goes on elsewhere.
+        expect(await helpers.tryInstall?.("codex")).toEqual({ why, code: "elsewhere" });
+
+        const keeper = accessKeeper({ helpers, changed: () => undefined });
+        expect(keeper.install("codex")).toBeUndefined();
+        await vi.waitFor(() => expect(keeper.known("codex")).toMatchObject({ installWhy: why, installCode: "elsewhere" }), { timeout: 5000 });
+        expect(keeper.known("codex")).not.toHaveProperty("installValues");
     });
 });
 

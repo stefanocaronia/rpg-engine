@@ -6,8 +6,18 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { networkInterfaces } from "node:os";
 import qrcode from "qrcode-generator";
 import { z } from "zod";
+import { findCampaign, readTextSetting } from "../../campaign/index.ts";
+import { pagePhrase } from "../../commands/shared/books/words.ts";
+import { type RefusalBody, refusalWords } from "../../core/refusal.ts";
+import { withFiles } from "../../core/store.ts";
 import { readBody, send, sendJson } from "../page/index.ts";
 import type { Served } from "./index.ts";
+
+/** What the door says to a browser it does not let in, as plain text with no page around it: in the campaign's language, so the page's translations hold them. */
+export const doorPhrases = {
+    elsewhere: "This door answers only at the address of its QR code.",
+    unpaired: "This phone is not paired: scan the QR code in the game's Settings on the computer.",
+};
 
 /** The door on the home network while it is open: where it listens, and the code that pairs a phone. */
 export interface PhoneDoor
@@ -63,7 +73,7 @@ export async function changePhone(request: IncomingMessage, response: ServerResp
     }
 
     if (parsed.data.open && served.phone === undefined) {
-        const opened = await openDoor(served.homeAddresses(), admit);
+        const opened = await openDoor(served.homeAddresses(), admit, (phrase) => inCampaignLanguage(served, phrase));
 
         if ("refused" in opened) {
             sendJson(response, 409, opened.refused);
@@ -114,6 +124,9 @@ export function fromPhone(request: IncomingMessage, served: Served): boolean
 /** What answers a request let in, with the dashboard's own routes and page. */
 export type Admit = (request: IncomingMessage, response: ServerResponse) => Promise<void>;
 
+/** A phrase of the door as it is said to who is not let in. */
+type Say = (phrase: string) => string;
+
 /** The computer's IPv4 addresses on a private network (192.168/16, 10/8, 172.16/12), where a phone on the same Wi-Fi reaches it. */
 export function homeAddresses(): string[]
 {
@@ -127,13 +140,29 @@ function pairingLink(door: PhoneDoor): string
 }
 
 /**
+ * A phrase of the door in the campaign's language, as the page behind it speaks: a language package's, the page's own, this computer's translation; English
+ * before the campaign has a language, where none has the phrase, or where they do not read.
+ */
+function inCampaignLanguage(served: Served, phrase: string): string
+{
+    try {
+        return withFiles(served.session, () => {
+            const root = findCampaign(served.context.folder);
+            return pagePhrase({ ...served.context, pageFolder: served.page }, root === undefined ? undefined : readTextSetting(root, "language"), phrase);
+        });
+    } catch {
+        return phrase;
+    }
+}
+
+/**
  * Opens the door at one home address alone, the one the computer reaches the network by where it is among them (not a virtual switch's, as WSL's), at a
  * port the system gives, with a new code; or why it could not.
  */
-async function openDoor(addresses: string[], admit: Admit): Promise<PhoneDoor | { refused: { error: string; code: string; }; }>
+async function openDoor(addresses: string[], admit: Admit, say: Say): Promise<PhoneDoor | { refused: RefusalBody; }>
 {
     if (addresses.length === 0) {
-        return { refused: { error: "This computer has no address on a home network: connect it to the same Wi-Fi as the phone, then try again.", code: "offline" } };
+        return { refused: refusalWords("This computer has no address on a home network: connect it to the same Wi-Fi as the phone, then try again.", "offline") };
     }
 
     const routed = await routeAddress();
@@ -148,13 +177,13 @@ async function openDoor(addresses: string[], admit: Admit): Promise<PhoneDoor | 
     });
 
     if (typeof listened === "string") {
-        return { refused: { error: `The door to the phone could not open at ${address} (${listened}): check the computer's network, then try again.`, code: "listen" } };
+        return { refused: refusalWords(`The door to the phone could not open at ${address} (${listened}): check the computer's network, then try again.`, "listen", { address, why: listened }) };
     }
 
     const port = listened;
     const door: PhoneDoor = { server, port, address, code: randomBytes(24).toString("base64url") };
     server.on("request", (request: IncomingMessage, response: ServerResponse) => {
-        answerAtDoor(request, response, door, admit).catch((error: unknown) => {
+        answerAtDoor(request, response, door, admit, say).catch((error: unknown) => {
             send(response, 500, "text/plain; charset=utf-8", error instanceof Error ? error.message : String(error));
         });
     });
@@ -168,13 +197,13 @@ async function openDoor(addresses: string[], admit: Admit): Promise<PhoneDoor | 
  * The door's gate: the pairing address with its code gives the phone its cookie and sends it to the page; anything else needs that cookie, at the door's own
  * address, and, as on the computer, comes from the page itself: another site may open the page, never read the API.
  */
-async function answerAtDoor(request: IncomingMessage, response: ServerResponse, door: PhoneDoor, admit: Admit): Promise<void>
+async function answerAtDoor(request: IncomingMessage, response: ServerResponse, door: PhoneDoor, admit: Admit, say: Say): Promise<void>
 {
     const host = `${door.address}:${door.port}`;
     const url = URL.parse(request.url ?? "/", `http://${host}`);
 
     if (request.headers.host !== host || url === null) {
-        send(response, 403, "text/plain; charset=utf-8", "This door answers only at the address of its QR code.");
+        send(response, 403, "text/plain; charset=utf-8", say(doorPhrases.elsewhere));
         return;
     }
 
@@ -190,7 +219,7 @@ async function answerAtDoor(request: IncomingMessage, response: ServerResponse, 
     const foreign = !visit && (site === "cross-site" || site === "same-site");
 
     if (!cookiesOf(request, cookieName(door)).some((given) => sameCode(given, door.code)) || (origin !== undefined && origin !== `http://${host}`) || foreign) {
-        send(response, 403, "text/plain; charset=utf-8", "This phone is not paired: scan the QR code in the game's Settings on the computer.");
+        send(response, 403, "text/plain; charset=utf-8", say(doorPhrases.unpaired));
         return;
     }
 

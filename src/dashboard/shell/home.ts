@@ -1,6 +1,7 @@
 // The way from a campaign's page back to the campaigns of this computer (D-582), the launcher's page, at a campaign's table alone: the launcher reached, and
 // started from the page where none answers; and, once the page has lost its table for good, the way to have the launcher open the campaign again.
 import { useEffect, useRef, useState } from "preact/hooks";
+import { refusalText, type Refused } from "../parts/refusals.ts";
 import { t } from "../text.ts";
 import { markedAddress } from "./window.ts";
 
@@ -30,16 +31,14 @@ export async function readHome(): Promise<Home>
 
 /**
  * The launcher reached, started first where none answers, which takes some seconds, and its page opened by the table in a window of its own: the link, and
- * whether that window opened; or why not, in the table's words.
+ * whether that window opened; or why not, in the page's words by its code, else in the table's.
  */
 export async function reachHome(): Promise<{ url: string; window: boolean; } | { error: string; }>
 {
     try {
         const response = await fetch("/api/home", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ start: true }) });
-        const body = await response.json().catch(() => ({})) as { url?: unknown; window?: unknown; error?: unknown; };
-        return response.ok && typeof body.url === "string"
-            ? { url: body.url, window: body.window === true }
-            : { error: typeof body.error === "string" ? body.error : t("It did not reach the game: try again.") };
+        const body = await response.json().catch(() => ({})) as { url?: unknown; window?: unknown; } & Refused;
+        return response.ok && typeof body.url === "string" ? { url: body.url, window: body.window === true } : { error: refusalText(body, t("It did not reach the game: try again.")) };
     } catch {
         return { error: t("It did not reach the game: try again.") };
     }
@@ -60,7 +59,7 @@ export interface HomeWays
     go(): void;
     /** The launcher is being reached. */
     busy: boolean;
-    /** Why it could not be reached, in the table's words. */
+    /** Why it could not be reached. */
     problem: string | undefined;
     /** The launcher's address that opens this campaign again, once the page has lost its table and knows the launcher. */
     reopen: string | undefined;

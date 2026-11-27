@@ -1,5 +1,6 @@
 // Getting the chat ready: the protocol begun, the session opened or taken up, the model and effort set and confirmed before the player's first words.
-import type { EndCode } from "../chat.ts";
+import type { Failure } from "../chat.ts";
+import { answerTooLong, asNotSignedIn, chatNotOpened, effortNotTaken, effortOther, hostSaid, modelNotTaken, modelOther, modelRefusal, modelStayed, noProtocol, noResume, notReady, tooManySteps, turnStopped } from "../failures.ts";
 import { failureOf, isObject, type Message } from "../lines.ts";
 import { chatReady, endTurn, modelChanged, refused, tell } from "../state.ts";
 import { configOption, effortsOf, initializeParams } from "./protocol.ts";
@@ -13,10 +14,8 @@ export function begin(state: State): void
 {
     waitReady(state);
     state.requests.ask("initialize", initializeParams(), (answer) => {
-        const why = failureWords(state, answer);
-
-        if (why !== undefined || !isObject(answer.result)) {
-            refused(state, `the host did not begin the protocol: ${why ?? "its answer is no answer"}`, signInCode(state, answer));
+        if (failureOf(answer) !== undefined || !isObject(answer.result)) {
+            refused(state, answerFailure(state, answer, noProtocol));
             return;
         }
 
@@ -60,7 +59,7 @@ export function writePrompt(state: State, turn: Turn, text: string): void
 function waitReady(state: State): void
 {
     state.cancelReadyWait?.();
-    state.cancelReadyWait = state.later(readyWait, () => refused(state, `the host was not ready to play with the model ${state.model.asked} within ${String(readyWait / 1000)} seconds`));
+    state.cancelReadyWait = state.later(readyWait, () => refused(state, notReady(state.model.asked, readyWait / 1000)));
 }
 
 /** A new session, or the one taken up: by loading it, or resuming it where the agent cannot load. */
@@ -77,18 +76,17 @@ function openSession(state: State): void
     } else if (sessions.resume !== undefined) {
         state.requests.ask("session/resume", { ...where, sessionId: resumed }, (answer) => sessionOpened(state, answer));
     } else {
-        refused(state, "the host cannot take a chat up again: open a new one");
+        refused(state, noResume());
     }
 }
 
 function sessionOpened(state: State, answer: Message): void
 {
-    const why = failureWords(state, answer);
     const opened = isObject(answer.result) ? answer.result : {};
     const session = state.resumed ?? opened.sessionId;
 
-    if (why !== undefined || typeof session !== "string") {
-        refused(state, `the host did not open the chat: ${why ?? "it named no session"}`, signInCode(state, answer));
+    if (failureOf(answer) !== undefined || typeof session !== "string") {
+        refused(state, answerFailure(state, answer, (why) => chatNotOpened(why, "it named no session")));
         return;
     }
 
@@ -111,10 +109,8 @@ function askModel(state: State): void
     } else {
         // Without such an option, the protocol's own call: its success is the confirmation, and a host that has no such call says so in its error.
         state.requests.ask("session/set_model", { sessionId: state.session, modelId: asked }, (answer) => {
-            const why = failureWords(state, answer);
-
-            if (why !== undefined) {
-                notTaken(state, "model", `the host did not take the model ${asked}: ${why}`, signInCode(state, answer));
+            if (failureOf(answer) !== undefined) {
+                notTaken(state, "model", answerFailure(state, answer, (why) => modelNotTaken(asked, why)));
                 return;
             }
 
@@ -154,11 +150,10 @@ function modelReady(state: State): void
 function setOption(state: State, id: string, value: string, what: "model" | "effort", confirmed: (value: string) => void): void
 {
     state.requests.ask("session/set_config_option", { sessionId: state.session, configId: id, value }, (answer) => {
-        const why = failureWords(state, answer);
         const result = isObject(answer.result) ? answer.result : {};
 
-        if (why !== undefined) {
-            notTaken(state, what, `the host did not take the ${what} ${value}: ${why}`, signInCode(state, answer));
+        if (failureOf(answer) !== undefined) {
+            notTaken(state, what, answerFailure(state, answer, (why) => (what === "model" ? modelNotTaken(value, why) : effortNotTaken(value, why))));
             return;
         }
 
@@ -175,9 +170,9 @@ function setOption(state: State, id: string, value: string, what: "model" | "eff
             confirmed(value);
         } else if (what === "model" && now !== undefined && now === state.model.before?.confirmed) {
             // The agent stayed on the model it ran: the change was not taken, and the chat goes on with it.
-            notTaken(state, what, `the host was asked for the model ${value} and stayed on ${String(now)}`);
+            notTaken(state, what, modelStayed(value, String(now)));
         } else {
-            refused(state, `the host was asked for the ${what} ${value} and runs ${typeof now === "string" ? now : "another, unnamed"}`);
+            refused(state, what === "model" ? modelOther(value, now) : effortOther(value, now));
         }
     });
 }
@@ -186,12 +181,12 @@ function setOption(state: State, id: string, value: string, what: "model" | "eff
  * The agent answered the model or effort asked with an error: asked in the open chat, the chat goes on with the model it ran before, or with the model
  * taken and the effort it ran before, and the table is told; asked at the opening, or for a player no longer signed in, the chat cannot play.
  */
-function notTaken(state: State, what: "model" | "effort", why: string, code?: EndCode): void
+function notTaken(state: State, what: "model" | "effort", failure: Failure): void
 {
     const before = state.model.before;
 
-    if (before === undefined || code !== undefined) {
-        refused(state, why, code);
+    if (before === undefined || failure.code === "signin") {
+        refused(state, failure);
         return;
     }
 
@@ -199,13 +194,13 @@ function notTaken(state: State, what: "model" | "effort", why: string, code?: En
 
     if (what === "model") {
         state.model = { ...before };
-        tell(state, { type: "changeRefused", asked, model: before.asked, ...(before.effort === undefined ? {} : { effort: before.effort }), why });
+        tell(state, { type: "changeRefused", asked, model: before.asked, ...(before.effort === undefined ? {} : { effort: before.effort }), why: failure.why });
         chatReady(state);
         return;
     }
 
     state.model.effort = before.effort;
-    tell(state, { type: "changeRefused", asked, model: asked, ...(before.effort === undefined ? {} : { effort: before.effort }), why });
+    tell(state, { type: "changeRefused", asked, model: asked, ...(before.effort === undefined ? {} : { effort: before.effort }), why: failure.why });
     modelReady(state);
 }
 
@@ -216,46 +211,63 @@ function promptAnswered(state: State, turn: Turn, answer: Message): void
         return;
     }
 
-    const why = failureWords(state, answer);
+    const why = failureOf(answer);
     const reason = isObject(answer.result) ? answer.result.stopReason : undefined;
 
     if (turn.failure !== undefined) {
         endTurn(state, "failed", turn.failure);
     } else if (turn.interrupted || reason === "cancelled") {
         endTurn(state, "interrupted");
-    } else if (why !== undefined && signInCode(state, answer) !== undefined) {
+    } else if (why !== undefined && isNotSignedIn(state, answer)) {
         // The player is no longer signed in: no turn plays until they are, so the chat ends saying so.
-        refused(state, why, "signin");
+        refused(state, answerFailure(state, answer, (said) => hostSaid(said ?? why)));
     } else if (why !== undefined) {
-        endTurn(state, "failed", why);
+        endTurn(state, "failed", hostSaid(why));
     } else if (reason === "end_turn") {
         endTurn(state, "done");
     } else {
-        endTurn(state, "failed", stopWords[String(reason)] ?? `the host stopped the turn: ${String(reason)}`);
+        endTurn(state, "failed", stopFailure(reason));
     }
 }
 
-// Why the agent stopped a turn, in words a player can read.
-const stopWords: Record<string, string> = {
-    max_tokens: "the master's answer reached the longest its model may write",
-    max_turn_requests: "the master took more steps than one turn allows",
-    refusal: "the model refused to go on",
-};
+/** Why the agent stopped a turn, by the protocol's reason: in words a player can read where the table knows it, else the reason as the agent named it. */
+function stopFailure(reason: unknown): Failure
+{
+    switch (reason) {
+        case "max_tokens":
+            return answerTooLong();
+        case "max_turn_requests":
+            return tooManySteps();
+        case "refusal":
+            return modelRefusal();
+        default:
+            return turnStopped("stopped", String(reason));
+    }
+}
 
 // The protocol's error for an agent whose player is not signed in.
 const authRequired = -32000;
 
-/** Why an answer failed, undefined where it did not: for a host not signed in, with how to sign it in. */
-function failureWords(state: State, answer: Message): string | undefined
+/**
+ * The failure `told` makes of why an answer failed, undefined for an answer that failed in no words of its own. For a host not signed in, its words end
+ * with how to sign it in, and its code says so, with what the host said.
+ */
+function answerFailure(state: State, answer: Message, told: (why: string | undefined) => Failure): Failure
 {
     const why = failureOf(answer);
-    return why !== undefined && signInCode(state, answer) !== undefined ? `${why}: ${state.host.login}` : why;
+
+    if (why === undefined || !isNotSignedIn(state, answer)) {
+        return told(why);
+    }
+
+    const withLogin = `${why}: ${state.host.login}`;
+    return asNotSignedIn(told(withLogin), state.name, why);
 }
 
-/** The code of an answer that failed as the player is not signed in to the host: the protocol's own error, or the host's words for it; undefined for any other. */
-function signInCode(state: State, answer: Message): EndCode | undefined
+/** Whether an answer failed as the player is not signed in to the host: by the protocol's own error, or by the host's words for it. */
+function isNotSignedIn(state: State, answer: Message): boolean
 {
     const why = failureOf(answer);
     const code = isObject(answer.error) ? answer.error.code : undefined;
-    return why !== undefined && (code === authRequired || state.host.signInWords?.test(why) === true) ? "signin" : undefined;
+    return why !== undefined && (code === authRequired || state.host.signInWords?.test(why) === true);
 }

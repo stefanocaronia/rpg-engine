@@ -5,6 +5,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { HostWish } from "../api.ts";
 import type { ChatHost } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
+import { installWhy, signInWhy } from "../parts/refusals.ts";
 import { t, tParts } from "../text.ts";
 import { hostFacts, type HostState, hostState, hostStateWords, installSiteWords } from "./chat.ts";
 
@@ -288,14 +289,14 @@ function Said({ words, calm = false }: { words: string; calm?: boolean; })
     );
 }
 
-/** Why the app's last install failed; none where it did not, or goes on in another window. */
+/** Why the app's last install failed, in the page's words by its code, else as the engine said it; none where it did not, or goes on in another window. */
 function installFailed(host: ChatHost): string | undefined
 {
-    return host.installCode === "elsewhere" ? undefined : host.installWhy;
+    return host.installCode === "elsewhere" ? undefined : installWhy(host.installCode, host.installValues) ?? host.installWhy;
 }
 
-/** Why the app's last sign-in failed; none where it did not, or goes on in another window. */
+/** Why the app's last sign-in failed, in the page's words by its code, else as the engine said it; none where it did not, or goes on in another window. */
 function signInFailed(host: ChatHost): string | undefined
 {
-    return host.signInCode === "elsewhere" ? undefined : host.signInWhy;
+    return host.signInCode === "elsewhere" ? undefined : signInWhy(host.signInCode, host.signInValues, host.name) ?? host.signInWhy;
 }

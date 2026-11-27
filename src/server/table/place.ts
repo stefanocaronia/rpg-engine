@@ -76,17 +76,36 @@ export function writeTableFile(home: string, file: string, content: unknown): vo
     writeDataFile(file, content);
 }
 
-/** Writes why a campaign's table could not start, beside its place, for the launcher that started it apart and sees none of its words. */
-export function writeRefusal(home: string, root: string, refusal: string): void
+/**
+ * Why a campaign's table could not start: its words, as `rpg table` says them in a terminal, and their code with its values, for the launcher's page to say
+ * them in its own language.
+ */
+export interface TableRefusal
 {
-    writeTableFile(home, refusalFile(home, root), { refused: refusal });
+    refused: string;
+    code?: string;
+    values?: Record<string, string>;
 }
 
-/** Why a campaign's table last could not start; undefined where none says so, or the file does not read. */
-export function readRefusal(home: string, root: string): string | undefined
+/** Writes why a campaign's table could not start, beside its place, for the launcher that started it apart and sees none of its words. */
+export function writeRefusal(home: string, root: string, refusal: TableRefusal): void
 {
-    const read = readDataFile(refusalFile(home, root)) as { refused?: unknown; } | null | undefined;
-    return typeof read?.refused === "string" ? read.refused : undefined;
+    const { refused, code, values } = refusal;
+    writeTableFile(home, refusalFile(home, root), { refused, ...(code === undefined ? {} : { code }), ...(values === undefined ? {} : { values }) });
+}
+
+/** Why a campaign's table last could not start; undefined where none says so, or the file does not read. A code or values not well formed are left out. */
+export function readRefusal(home: string, root: string): TableRefusal | undefined
+{
+    const read = readDataFile(refusalFile(home, root)) as { refused?: unknown; code?: unknown; values?: unknown; } | null | undefined;
+
+    if (typeof read?.refused !== "string") {
+        return undefined;
+    }
+
+    const values = typeof read.values === "object" && read.values !== null && !Array.isArray(read.values) ? read.values as Record<string, unknown> : undefined;
+    const texts = values !== undefined && Object.values(values).every((value) => typeof value === "string");
+    return { refused: read.refused, ...(typeof read.code === "string" ? { code: read.code, ...(texts ? { values: values as Record<string, string> } : {}) } : {}) };
 }
 
 /** Takes away why a campaign's table could not start: before a new start, and once a table serves. */

@@ -153,16 +153,16 @@ describe("the master in Codex", () => {
 
         it("ends the chat, writing none of the player's words, when the thread runs another model or effort than those asked", async () => {
             for (
-                const [fake, why] of [
-                    [{ models: { [model]: "gpt-6.1-sol" } }, `the host was asked for the model ${model} and runs gpt-6.1-sol`],
-                    [{ efforts: { low: "high" } }, "the host was asked for the effort low and runs high"],
-                ] as [FakeCodexOptions, string][]
+                const [fake, failure] of [
+                    [{ models: { [model]: "gpt-6.1-sol" } }, { why: `the host was asked for the model ${model} and runs gpt-6.1-sol`, code: "model-other", values: { asked: model, model: "gpt-6.1-sol" } }],
+                    [{ efforts: { low: "high" } }, { why: "the host was asked for the effort low and runs high", code: "effort-other", values: { asked: "low", effort: "high" } }],
+                ] as [FakeCodexOptions, object][]
             ) {
                 for (const session of [undefined, "thr_old"]) {
                     const { chat, host, events, until } = play([...begin(), ...threadStart(), ...turn("Hello", delta("leaked"))], { effort: "low", ...(session === undefined ? {} : { session }) }, fake);
                     chat.send("Hello");
                     await until(() => events.some((event) => event.type === "ended"));
-                    expect(events).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+                    expect(events).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
                     expect(host.written.some(isTurnStart)).toBe(false);
                     expect(host.inputClosed).toBe(true);
                     expect(host.stopped).toBe(false);
@@ -175,15 +175,44 @@ describe("the master in Codex", () => {
             const { chat, events, until } = play(flow);
             chat.send("Hello");
             await until(() => events.some((event) => event.type === "ended"));
-            const why = "Codex is not signed in on this computer: sign in here, then open the chat";
-            expect(events).toEqual([{ type: "turnEnd", reason: "failed", why, code: "signin" }, { type: "ended", why, code: "signin" }]);
-            expect(why).not.toMatch(/terminal/);
+            // The sign-in's code keeps its meaning, and names the app in a value.
+            const failure = { why: "Codex is not signed in on this computer: sign in here, then open the chat", code: "signin", values: { host: "Codex" } };
+            expect(events).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
+            expect(failure.why).not.toMatch(/terminal/);
         });
 
         it("ends the chat with Codex's words when it opens no thread", async () => {
             const { events, until } = play(begin(), {}, { failing: ["thread/start"] });
             await until(() => events.some((event) => event.type === "ended"));
-            expect(events).toEqual([{ type: "ended", why: "the host did not open the chat: thread/start failed" }]);
+            expect(events).toEqual([{ type: "ended", why: "the host did not open the chat: thread/start failed", code: "chat-not-opened", values: { why: "thread/start failed" } }]);
+        });
+
+        it("says with a code and Codex's words as its value why the protocol does not begin, a chat is not taken up, the player's words are not taken", async () => {
+            const noProtocol = play(begin(), {}, { failing: ["initialize"] });
+            await noProtocol.until(() => noProtocol.events.some((event) => event.type === "ended"));
+            expect(noProtocol.events).toEqual([{ type: "ended", why: "the host did not begin the protocol: initialize failed", code: "no-protocol", values: { why: "initialize failed" } }]);
+
+            const notResumed = play(begin(), { session: "thr_old" }, { failing: ["thread/resume"] });
+            await notResumed.until(() => notResumed.events.some((event) => event.type === "ended"));
+            expect(notResumed.events).toEqual([{ type: "ended", why: "the host did not take the chat up again: thread/resume failed", code: "chat-not-resumed", values: { why: "thread/resume failed" } }]);
+
+            const notTaken = play([...begin(), ...threadStart()], {}, { failing: ["turn/start"] });
+            notTaken.chat.send("Hello");
+            await notTaken.until(() => turnEnds(notTaken.events).length === 1);
+            expect(turnEnds(notTaken.events)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host did not take the player's words: turn/start failed", code: "words-not-taken", values: { why: "turn/start failed" } }]);
+        });
+
+        it("fails the turn whose effort Codex changes, and one it ends with a status and no words, each with its code", async () => {
+            const changed = notice("thread/settings/updated", { threadSettings: { model, effort: "high" } });
+            const switched = play([...begin(), ...threadStart(), ...turn("Hello", changed)], { effort: "low" });
+            switched.chat.send("Hello");
+            await switched.until(() => turnEnds(switched.events).length === 1);
+            expect(turnEnds(switched.events)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host runs the effort high instead of low", code: "effort-switched", values: { effort: "high", asked: "low" } }]);
+
+            const stopped = play([...begin(), ...threadStart(), ...turn("Hello", { status: "failed", error: null })]);
+            stopped.chat.send("Hello");
+            await stopped.until(() => turnEnds(stopped.events).length === 1);
+            expect(turnEnds(stopped.events)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host ended the turn: failed", code: "turn-stopped", values: { why: "failed" } }]);
         });
 
         it("ends the chat when Codex is not ready within 60 seconds", async () => {
@@ -194,8 +223,8 @@ describe("the master in Codex", () => {
             clock.advance(59_999);
             expect(events).toEqual([]);
             clock.advance(1);
-            const why = `the host was not ready to play with the model ${model} within 60 seconds`;
-            expect(events).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            const failure = { why: `the host was not ready to play with the model ${model} within 60 seconds`, code: "not-ready", values: { model, seconds: "60" } };
+            expect(events).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
             // Its input closed, it has ten seconds to end by itself before it is stopped.
             expect(host.inputClosed).toBe(true);
             clock.advance(9999);
@@ -209,7 +238,7 @@ describe("the master in Codex", () => {
             const { chat, host, events, until } = play([...begin(), ...threadStart(), ...turn("Hello", delta("Fine"), changed, delta("leaked"))]);
             chat.send("Hello");
             await until(() => turnEnds(events).length === 1);
-            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: `the host runs the model gpt-6.1-sol instead of ${model}` }]);
+            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: `the host runs the model gpt-6.1-sol instead of ${model}`, code: "model-switched", values: { model: "gpt-6.1-sol", asked: model } }]);
             expect(events.filter((event) => event.type === "text").map((event) => event.type === "text" && event.text)).toEqual(["Fine"]);
             expect(host.written.filter((message) => message.method === "turn/interrupt")).toMatchObject([{ params: { threadId: thread, turnId: "turn_1" } }]);
         });
@@ -257,7 +286,7 @@ describe("the master in Codex", () => {
             const { chat, events, until } = play([...begin(), ...threadStart(), ...turn("Hello", { status: "failed", error: { message: "You've hit your usage limit." } })]);
             chat.send("Hello");
             await until(() => turnEnds(events).length === 1);
-            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: "You've hit your usage limit." }]);
+            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: "You've hit your usage limit.", code: "host-said", values: { why: "You've hit your usage limit." } }]);
         });
 
         it("stops the turn, failed, where a tool the table does not allow ran without asking", async () => {
@@ -267,7 +296,9 @@ describe("the master in Codex", () => {
             chat.send("Hello");
             await until(() => turnEnds(events).length === 1);
             expect(events.filter((event) => event.type === "tool").map((event) => event.type === "tool" && [event.kind, event.state])).toEqual([["shell", "started"], ["shell", "done"]]);
-            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use commandExecution" }]);
+            expect(turnEnds(events)).toEqual([
+                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use commandExecution", code: "tool-unasked", values: { tool: "commandExecution" } },
+            ]);
             expect(host.written.some((message) => message.method === "turn/interrupt")).toBe(true);
             expect(events.some((event) => event.type === "text")).toBe(false);
         });
@@ -279,7 +310,13 @@ describe("the master in Codex", () => {
             chat.send("Hello");
             await until(() => turnEnds(events).length === 1);
             expect(turnEnds(events)).toEqual([
-                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: commandExecution read /etc/passwd, and the table lets the master read only the campaign's folder" },
+                {
+                    type: "turnEnd",
+                    reason: "failed",
+                    why: "the host ran a tool without asking: commandExecution read /etc/passwd, and the table lets the master read only the campaign's folder",
+                    code: "read-outside",
+                    values: { tool: "commandExecution", path: "/etc/passwd" },
+                },
             ]);
         });
 
@@ -294,7 +331,9 @@ describe("the master in Codex", () => {
             };
 
             expect(await opened(tableKinds)).toEqual([{ type: "turnEnd", reason: "done" }]);
-            expect(await opened(["rpg", "read", "web"])).toEqual([{ type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use webSearch" }]);
+            expect(await opened(["rpg", "read", "web"])).toEqual([
+                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use webSearch", code: "tool-unasked", values: { tool: "webSearch" } },
+            ]);
         });
 
         it("reads a picture Codex painted as failed only where it says its failure, whatever its status says", async () => {
@@ -369,7 +408,7 @@ describe("the master in Codex", () => {
 
         it("fails the turn where the agent started is not the character's", async () => {
             const { events } = await played(voice, { [child]: "worker" });
-            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table lets the master start only the agent that plays a character" }]);
+            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table lets the master start only the agent that plays a character", code: "agent-other" }]);
         });
 
         it("holds what a subagent's thread ran without asking to the master's limits, and never tells its words", async () => {
@@ -400,6 +439,8 @@ describe("the master in Codex", () => {
                 type: "turnEnd",
                 reason: "failed",
                 why: "the host ran a tool without asking: the table does not let the master use commandExecution",
+                code: "tool-unasked",
+                values: { tool: "commandExecution" },
             }]);
         });
     });
@@ -492,7 +533,7 @@ describe("the master in Codex", () => {
             chat.interrupt();
             expect(host.written.filter((message) => message.method === "turn/interrupt").map((message) => message.params)).toEqual([{ threadId: thread, turnId: "turn_1" }]);
             clock.advance(10_000);
-            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "interrupted" }, { type: "ended", why: "the host did not stop its turn and was closed" }]);
+            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "interrupted" }, { type: "ended", why: "the host did not stop its turn and was closed", code: "not-stopped" }]);
             expect(host.stopped).toBe(true);
         });
 
@@ -518,8 +559,9 @@ describe("the master in Codex", () => {
             host.complain("Error: stream disconnected before completion");
             host.complain("Reconnecting... 5/5");
             host.end("exit code 1");
-            const why = "the host's program ended (exit code 1): Error: stream disconnected before completion | Reconnecting... 5/5";
-            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            const said = "Error: stream disconnected before completion | Reconnecting... 5/5";
+            const failure = { why: `the host's program ended (exit code 1): ${said}`, code: "program-ended", values: { reason: "exit code 1", why: said } };
+            expect(events.slice(-2)).toEqual([{ type: "turnEnd", reason: "failed", ...failure }, { type: "ended", ...failure }]);
             expect(host.stops).toBe(0);
         });
 
@@ -592,6 +634,9 @@ describe("Codex as the table drives it", () => {
     it("says what a campaign lacks for it, and how to mend it: its .codex/config.toml", () => {
         expect(codex.missing(folderWith(join(".codex", "config.toml")))).toBeUndefined();
         expect(codex.missing(makeTempFolder())).toContain("no .codex/config.toml");
+        // The file as the words name it, with forward slashes on every system.
+        expect(codex.lacking?.(folderWith(join(".codex", "config.toml")))).toBeUndefined();
+        expect(codex.lacking?.(makeTempFolder())).toMatchObject({ code: "no-server-file", values: { file: ".codex/config.toml", host: "Codex" } });
     });
 
     it("gives Codex the table's environment without what belongs to a Codex thread it runs in, in a copy", () => {

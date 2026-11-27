@@ -219,8 +219,19 @@ export type HelperName = "codex" | "claude";
 /** How a helper program stands: not on this computer, there without the player's login, signed in with an API key, which the engine never uses, or ready. */
 export type HelperState = "missing" | "logged out" | "api key" | "ready";
 
+/**
+ * Why a helper program's sign-in or installation failed or did not start: the words, and where whoever tells it knows them, their code and its values, for a
+ * page to say them in its own language; what the program or npm said travels as it is, in a value.
+ */
+export interface HelperFailure
+{
+    why: string;
+    code?: string;
+    values?: Record<string, string>;
+}
+
 /** The player's sign-in of a helper program: waiting for them in the browser, with the link it gave; done; or failed, and why. */
-export type HelperLogin = { state: "waiting"; link?: string; } | { state: "done"; } | { state: "failed"; why: string; };
+export type HelperLogin = { state: "waiting"; link?: string; } | { state: "done"; } | ({ state: "failed"; } & HelperFailure);
 
 /**
  * The chat of an MCP server, kept across its calls: the master's calls running now, the Codex thread of the last one, and what the dashboard does as each
@@ -251,6 +262,8 @@ export interface Helpers
     look(name: HelperName): Promise<HelperState>;
     /** Installs a program in the engine's folder, one installation on this computer at a time: undefined once it answers there, else why not. */
     install(name: HelperName): Promise<string | undefined>;
+    /** As install, why not with its code and values: what a page asks, to say it in its own language. Without it, install's words stand alone. */
+    tryInstall?(name: HelperName): Promise<HelperFailure | undefined>;
     /**
      * Starts the sign-in once, kept alive for ten minutes, and tells how it stands once it gave its link or ended, or after a few seconds; `ended` hears how it
      * ends, done or failed, and a failure it heard is not told again. Failed at once where another process of the engine has one of that program under way.

@@ -1778,7 +1778,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/config", { setting: "companions", value: "none" })).status).toBe(403);
         const precedents = await send("POST", "/api/config", { setting: "precedents", add: "Avvelenato: svantaggio" });
         expect(precedents.status).toBe(403);
-        expect(JSON.parse(precedents.body)).toEqual({ error: "precedents is the master's to change, in the chat." });
+        expect(JSON.parse(precedents.body)).toEqual({ error: "precedents is the master's to change, in the chat.", code: "masters-setting", values: { setting: "precedents" } });
         expect((await send("POST", "/api/config", { setting: "difficulty", value: "impossibile" })).status).toBe(400);
         expect((await send("POST", "/api/config", { setting: "harshness", add: "gentle" })).status).toBe(400);
         expect((await send("POST", "/api/config", { setting: "difficulty", value: "easy", add: "ragni" })).status).toBe(400);
@@ -1880,7 +1880,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(JSON.parse(permadeath.body).error).toMatch(/^With saves permadeath, the game never goes back, but to its start with reset when the player wants to start over\./);
         const unnamed = await send("POST", "/api/saves", { action: "reset", campaign: "Guado" });
         expect(unnamed.status).toBe(400);
-        expect(JSON.parse(unnamed.body)).toEqual({ error: "Write the campaign's name, Guadoscuro, to start it over. Nothing changed." });
+        expect(JSON.parse(unnamed.body)).toEqual({ error: "Write the campaign's name, Guadoscuro, to start it over. Nothing changed.", code: "start-over-name", values: { name: "Guadoscuro" } });
         expect(dashboard.news().lines).toEqual([]);
         const unsaved = await send("POST", "/api/saves", { action: "reset", campaign: "Guadoscuro", to: "session zero" });
         expect(unsaved.status).toBe(400);
@@ -1906,7 +1906,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         const asked = await waitAsked();
         const waiting = await send("POST", "/api/saves", { action: "reset", campaign: "Guadoscuro" });
         expect(waiting.status).toBe(409);
-        expect(JSON.parse(waiting.body)).toEqual({ error: "The master is asking you something: answer it first, then go back." });
+        expect(JSON.parse(waiting.body)).toEqual({ error: "The master is asking you something: answer it first, then go back.", code: "go-back-question" });
         expect((await send("POST", "/api/answer", { asked: asked.id, choice: 2 })).status).toBe(202);
         await asking;
         page.close();
@@ -1914,7 +1914,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         served.chat = { calls: 1 };
         const working = await send("POST", "/api/saves", { action: "load", save: 1 });
         expect(working.status).toBe(409);
-        expect(JSON.parse(working.body)).toEqual({ error: "The master is working on the game now: go back once they have answered." });
+        expect(JSON.parse(working.body)).toEqual({ error: "The master is working on the game now: go back once they have answered.", code: "go-back-working" });
         served.chat = undefined;
         // Anything else sent changes nothing.
         expect((await send("POST", "/api/saves", { action: "load", save: "last" })).status).toBe(400);
@@ -1994,7 +1994,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/notes", { id: "", title: "", text: "Vuota" })).status).toBe(400);
         const long = await send("POST", "/api/notes", { title: "", text: "\u0001".repeat(11_000) });
         expect(long.status).toBe(400);
-        expect(JSON.parse(long.body)).toEqual({ error: "The note did not come whole: it may be too long, so shorten it." });
+        expect(JSON.parse(long.body)).toEqual({ error: "The note did not come whole: it may be too long, so shorten it.", code: "note-not-whole" });
         // Only the page writes them: a request with no origin is refused.
         expect((await send("GET", "/api/notes", undefined)).status).toBe(200);
         expect((await sendWithout("POST", "/api/notes", { title: "", text: "Da fuori" })).status).toBe(405);
@@ -2036,7 +2036,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/story", { text: "   " })).status).toBe(400);
         // With more than one player character, each story is its own, by who (VIEW-12).
         await runCommandLine(["write", "Mira", "--type", "character", "--set", "role=pc"], served);
-        expect(JSON.parse((await send("POST", "/api/story", { text: "Figlia del mugnaio." })).body)).toEqual({ error: "Give who, whose story it is: Ettore or Mira." });
+        expect(JSON.parse((await send("POST", "/api/story", { text: "Figlia del mugnaio." })).body)).toEqual({ error: "Give who, whose story it is: Ettore or Mira.", code: "story-whose", values: { names: "Ettore, Mira" } });
         expect((await send("POST", "/api/story", { text: "Figlia del mugnaio.", who: "Mira" })).status).toBe(200);
         expect(dashboard.news().lines.at(-1)).toMatch(/^The player proposes a story for Mira, in their own words:\n> Figlia del mugnaio\./);
         expect(JSON.parse((await send("GET", "/api/story?who=Mira")).body)).toEqual({ proposed: "Figlia del mugnaio." });

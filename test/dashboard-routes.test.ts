@@ -217,7 +217,7 @@ describe("the chat with the master in the page", () => {
 
     it("says there is no table where none keeps a chat, and refuses every write saying how to start one", async () => {
         expect(await json("GET", port)).toEqual({ status: 200, body: { table: false } });
-        const refused = { error: "The chat with the master in the page needs the campaign's table: start it with rpg table in the campaign's folder." };
+        const refused = { error: "The chat with the master in the page needs the campaign's table: start it with rpg table in the campaign's folder.", code: "no-table" };
         expect(await json("POST", port, { say: "Hello" })).toEqual({ status: 409, body: refused });
         expect(await json("POST", port, { close: true })).toEqual({ status: 409, body: refused });
     });
@@ -242,19 +242,21 @@ describe("the chat with the master in the page", () => {
             },
         });
 
-        masters[0].emit({ type: "turnEnd", reason: "failed", why: "Claude Code ended before the turn did." });
-        masters[0].emit({ type: "ended", why: "Claude Code ended (code 1)." });
+        // As a driver tells them: the words, and beside them their code and its values, which reach the page on the table's line and on the chat.
+        const ended = { why: "the host's program ended (exit code 1): boom", code: "program-ended" as const, values: { reason: "exit code 1", why: "boom" } };
+        masters[0].emit({ type: "turnEnd", reason: "failed", ...ended });
+        masters[0].emit({ type: "ended", ...ended });
         expect(await json("GET", masterPort)).toEqual({
             status: 200,
             body: {
                 table: true,
                 hosts: hostsShown,
                 last: { host: "claudeCode", model: "sonnet", effort: "high", resumable: true },
-                chat: { host: "claudeCode", model: "sonnet", effort: "high", runs: "claude-sonnet-5", state: "ended", why: "Claude Code ended (code 1)." },
+                chat: { host: "claudeCode", model: "sonnet", effort: "high", runs: "claude-sonnet-5", state: "ended", ...ended },
                 messages: [
                     { id: 1, from: "player", text: "I open the door." },
                     { id: 2, from: "master", text: "The door creaks open." },
-                    { id: 3, from: "table", text: "Claude Code ended before the turn did." },
+                    { id: 3, from: "table", text: ended.why, code: "program-ended", values: ended.values },
                 ],
                 elsewhere: false,
             },
@@ -265,11 +267,12 @@ describe("the chat with the master in the page", () => {
         const opened = await json("POST", masterPort, { open: { host: "claudeCode", model: "sonnet" } });
         expect(opened).toMatchObject({ status: 200, body: { table: true, chat: { host: "claudeCode", model: "sonnet", state: "idle" } } });
         const again = await json("POST", masterPort, { open: { host: "claudeCode", model: "sonnet", fresh: true } });
-        expect(again).toMatchObject({ status: 409, body: { error: "A chat with the master is open already: close it first.", table: true } });
+        // The refusal on the wire: the words, their code, and the chat as it stands beside them.
+        expect(again).toMatchObject({ status: 409, body: { error: "A chat with the master is open already: close it first.", code: "chat-open", table: true } });
 
         expect(await json("POST", masterPort, { say: "  Hello  " })).toMatchObject({ status: 202, body: { chat: { state: "turn" }, messages: [{ id: 1, from: "player", text: "Hello" }] } });
         expect(masters[0].sent).toEqual(["Hello"]);
-        expect(await json("POST", masterPort, { say: "Again" })).toMatchObject({ status: 409, body: { error: "The master is still answering: wait, or stop the turn." } });
+        expect(await json("POST", masterPort, { say: "Again" })).toMatchObject({ status: 409, body: { error: "The master is still answering: wait, or stop the turn.", code: "master-answering", table: true } });
         expect(await json("POST", masterPort, { stop: true })).toMatchObject({ status: 200, body: { chat: { state: "turn" } } });
         expect(masters[0].interrupted).toBe(1);
         masters[0].emit({ type: "turnEnd", reason: "interrupted" });
@@ -277,7 +280,7 @@ describe("the chat with the master in the page", () => {
         const closed = await json("POST", masterPort, { close: true });
         expect(closed.status).toBe(200);
         expect(closed.body).not.toHaveProperty("chat");
-        expect(await json("POST", masterPort, { say: "Hello" })).toMatchObject({ status: 409, body: { error: "No chat with the master is open." } });
+        expect(await json("POST", masterPort, { say: "Hello" })).toMatchObject({ status: 409, body: { error: "No chat with the master is open.", code: "no-chat", table: true } });
     });
 
     it("refuses a body of no shape it takes, saying the eight", async () => {
@@ -619,7 +622,7 @@ describe("what the engine tells the table's chat: the master's questions on the 
             const asking = ask.run(ask.input.parse({ question: "Una sosta: quanti dadi spendi?", recipe: "breather" }), table);
             const asked = await waitAsked();
             expect((await shown()).chat?.answers).toBeUndefined();
-            expect(await json("POST", masterPort, { say: "Riposo." })).toMatchObject({ status: 409, body: { error: "The master asks a question its buttons answer: answer it there." } });
+            expect(await json("POST", masterPort, { say: "Riposo." })).toMatchObject({ status: 409, body: { error: "The master asks a question its buttons answer: answer it there.", code: "question-waits" } });
             expect((await json("POST", masterPort, { asked: asked.id, choice: 0 }, "/api/answer")).status).toBe(202);
             await asking;
         } finally {
@@ -758,7 +761,10 @@ describe("the AI apps and the open chat's model, asked from the campaign's page"
         expect(read.hosts.find((host) => host.id === "codex")).toMatchObject({ account: "in" });
 
         const refused = await json("POST", at, { open: { host: "claudeCode", model: "opus" } });
-        expect(refused).toMatchObject({ status: 409, body: { error: "Claude Code is not signed in on this computer: sign in here, then open the chat.", code: "signin", table: true } });
+        expect(refused).toMatchObject({
+            status: 409,
+            body: { error: "Claude Code is not signed in on this computer: sign in here, then open the chat.", code: "signin", values: { host: "Claude Code" }, table: true },
+        });
         expect(fakes).toEqual([]);
     });
 
@@ -767,9 +773,12 @@ describe("the AI apps and the open chat's model, asked from the campaign's page"
         expect(started.status).toBe(200);
         expect((started.body as Shown).hosts.find((host) => host.id === "claudeCode")).toMatchObject({ signingIn: true });
         expect((await json("POST", at, { signIn: { host: "claudeCode", cancel: true } })).status).toBe(200);
-        expect(await json("POST", at, { signIn: { host: "antigravity" } })).toMatchObject({ status: 409, body: { error: expect.stringMatching(/^Antigravity signs in from its own app/) as unknown } });
+        expect(await json("POST", at, { signIn: { host: "antigravity" } })).toMatchObject({
+            status: 409,
+            body: { error: expect.stringMatching(/^Antigravity signs in from its own app/) as unknown, code: "signin-in-app-account", values: { host: "Antigravity", account: "Google" }, table: true },
+        });
 
-        expect(await json("POST", at, { install: { host: "codex" } })).toMatchObject({ status: 409, body: { error: "Codex is on this computer already: choose it, and open the chat." } });
+        expect(await json("POST", at, { install: { host: "codex" } })).toMatchObject({ status: 409, body: { error: "Codex is on this computer already: choose it, and open the chat.", code: "app-here", values: { host: "Codex" } } });
         codexHere = false;
         const installing = await json("POST", at, { install: { host: "codex" } });
         expect(installing.status).toBe(200);
@@ -793,7 +802,10 @@ describe("the AI apps and the open chat's model, asked from the campaign's page"
         expect(taken.messages.at(-1)?.text).toBe("From now on the master plays with GPT A, effort high.");
 
         await json("POST", at, { say: "Hello" });
-        expect(await json("POST", at, { model: { model: "gpt-a", effort: "low" } })).toMatchObject({ status: 409, body: { error: "The master is answering: change the model once they have finished." } });
+        expect(await json("POST", at, { model: { model: "gpt-a", effort: "low" } })).toMatchObject({
+            status: 409,
+            body: { error: "The master is answering: change the model once they have finished.", code: "model-while-answering", table: true },
+        });
         expect(await json("POST", at, { model: { model: "gpt-a", effort: "max" } })).toMatchObject({ status: 409 });
     });
 });

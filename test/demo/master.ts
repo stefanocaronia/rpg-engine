@@ -1,13 +1,15 @@
 // A master of the demo's own, for the chat in the page (D-582) with no program started and nothing spent: it opens, answers each sentence with a prose that
 // comes in pieces over a couple of seconds, through a command, stops, closes, as the table's chat does (src/server/table/chat.ts). A word in the player's
 // sentence shows the other states:
-//   fail       the turn fails, with the table's word
-//   crash      the program ends, with why
+//   fail       the turn fails, with the table's word and its code
+//   silent     the turn ends without a word of the master's, and the table says so; with "tool", after a tool the table refused
+//   crash      the program ends, with why and its code; the table's log is named for a report
 //   long       a long answer, to read back while it comes
 //   elsewhere  the chat closes, and for a while a chat opened by hand plays the campaign
 //   missing    the chat closes, and the app is no longer on this computer; said again in a new chat, it is back
 //   codex      Codex signed in, or out again
 //   expired    the chat ends as the app's sign-in ran out, which the page is told by its code; the app is to set up again
+//   broken     the chat closes, and the app's program does not start at the next opening, once: the table refuses it with why and its code
 //   signout    the chat closes, and the app's sign-in runs out unseen: the page still reads it signed in, and opening the chat again with it is refused
 //              with the code of the sign-in, as the table finds it out
 //   ask        the master asks the player the demo's first question, as with the ask command, and waits for the answer; then goes on. With a number,
@@ -23,6 +25,7 @@
 // chat keeps them: a question waits, then is answered or left; the player's words in the chat answer the one that takes them. In the middle of an answer
 // the master rolls where the player may see, where the demo gives it the means, and its words after hold the engine's mark of that roll, [roll <id>].
 // Not part of the tests.
+import { refusalWords } from "../../src/core/refusal.ts";
 import type { ModelMark, PageChat, PageMaster, PageMessage } from "../../src/server/dashboard/index.ts";
 import type { ResolvedMarks } from "../../src/server/table/marks.ts";
 import { type DemoHosts, demoHosts, effortsOnceChosen } from "./hosts.ts";
@@ -51,7 +54,8 @@ interface Chat
     efforts?: string[];
     state: "idle" | "turn" | "ended";
     why?: string;
-    code?: "signin";
+    code?: string;
+    values?: Record<string, string>;
     tool?: string;
 }
 
@@ -73,6 +77,8 @@ const sessionAfter = 500;
 // The model and the effort the demo's Claude Code does not take in an open chat.
 const refusedModel = "claude-fable-5-2";
 const refusedEffort = "max";
+// The file of the table's log, as a table the launcher started names it.
+const logFile = String.raw`C:\Users\Ada\AppData\Roaming\rpg-engine\tables\9f2c41d07ab3e5c8.log`;
 
 const answer = [
     "La porta della locanda cigola, e il vento del guado entra prima di te: sa di *fango e di legna bagnata*.",
@@ -153,6 +159,8 @@ export function demoMaster(
     let missing = false;
     // The app whose sign-in ran out while the page still reads it signed in.
     let signedOut: string | undefined;
+    // The app's program does not start at the next opening.
+    let broken = false;
     // The change of model asked of the open chat that its app has not answered yet.
     let pending: Pending | undefined;
 
@@ -340,12 +348,25 @@ export function demoMaster(
         const said = text.toLowerCase();
 
         if (/\bfail\b/.test(said)) {
+            const why = "upstream connect error or disconnect/reset before headers";
             later(900, () => {
                 open.state = "idle";
-                add("table", "The master's turn failed: the app answered nothing. Say it again.");
+                messages.push({ id: ++lastId, from: "table", text: `the host did not take the player's words: ${why}`, code: "words-not-taken", values: { why } });
+            });
+        } else if (/\bsilent\b/.test(said)) {
+            const silent = "The master ended its turn without writing anything. Write to it again.";
+            const tool = /\btool\b/.test(said);
+            later(900, () => {
+                open.state = "idle";
+                messages.push(
+                    tool
+                        ? { id: ++lastId, from: "table", text: `${silent} It tried to use Bash, which the master may not use here.`, code: "turn-silent-tool", values: { tool: "Bash" } }
+                        : { id: ++lastId, from: "table", text: silent, code: "turn-silent" },
+                );
             });
         } else if (/\bcrash\b/.test(said)) {
-            later(900, () => Object.assign(open, { state: "ended", why: "the app closed by itself (exit code 1)." }));
+            const why = "Error: read ECONNRESET | at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)";
+            later(900, () => Object.assign(open, { state: "ended", why: `the host's program ended (exit code 1): ${why}`, code: "program-ended", values: { reason: "exit code 1", why } }));
         } else if (/\belsewhere\b/.test(said)) {
             later(400, () => {
                 chat = undefined;
@@ -376,6 +397,11 @@ export function demoMaster(
             const signed = codex?.account !== "in";
             Object.assign(codex ?? {}, { account: signed ? "in" : "out" });
             tell(open, [signed ? "Ora *Codex* è pronta, quando la chat è chiusa." : "Ora Codex è di nuovo da attivare."]);
+        } else if (/\bbroken\b/.test(said)) {
+            later(400, () => {
+                chat = undefined;
+                broken = true;
+            });
         } else if (/\bsignout\b/.test(said)) {
             later(400, () => {
                 chat = undefined;
@@ -383,7 +409,7 @@ export function demoMaster(
             });
         } else if (/\bexpired\b/.test(said)) {
             later(900, () => {
-                Object.assign(open, { state: "ended", why: "the app answered 401 Unauthorized.", code: "signin" });
+                Object.assign(open, { state: "ended", why: "the app answered 401 Unauthorized.", code: "signin", values: { host: hosts.find(open.host)?.name ?? open.host } });
                 Object.assign(hosts.find(open.host) ?? {}, { account: "out" });
             });
         } else {
@@ -403,11 +429,11 @@ export function demoMaster(
             const open = chat;
 
             if (open === undefined || open.state === "ended") {
-                return "No chat with the master is open: open one first.";
+                return refusalWords("No chat with the master is open: open one first.", "no-chat");
             }
 
             if (open.state === "turn") {
-                return "The master is answering: change the model once they have finished.";
+                return refusalWords("The master is answering: change the model once they have finished.", "model-while-answering");
             }
 
             const host = hosts.find(open.host);
@@ -418,9 +444,10 @@ export function demoMaster(
             const name = listed?.name ?? model;
 
             if (effort !== undefined && !takes(effort)) {
+                const app = host?.name ?? open.host;
                 return efforts.length === 0
-                    ? `${name} takes no effort in ${host?.name ?? open.host}: leave the effort to the host.`
-                    : `${name} takes no effort ${effort} in ${host?.name ?? open.host}: choose one of ${efforts.join(", ")}.`;
+                    ? refusalWords(`${name} takes no effort in ${app}: leave the effort to the host.`, "effort-none", { model: name, host: app })
+                    : refusalWords(`${name} takes no effort ${effort} in ${app}: choose one of ${efforts.join(", ")}.`, "effort-not-of-model", { model: name, effort, host: app, efforts: efforts.join(", ") });
             }
 
             // A change asked and not taken yet is the one the next starts from, as at the table.
@@ -462,28 +489,37 @@ export function demoMaster(
                     }),
                 messages: messages.map((message) => ({ ...message })),
                 elsewhere,
+                log: logFile,
             }) as PageChat,
         open: (choice) => {
             if (chat !== undefined && chat.state !== "ended") {
-                return "A chat with the master is open already: close it first.";
+                return refusalWords("A chat with the master is open already: close it first.", "chat-open");
             }
 
             if (elsewhere) {
-                return "A chat opened by hand plays this campaign: close it, then open the chat here.";
+                return refusalWords("A chat opened by hand plays this campaign: close it, then open the chat here.", "chat-by-hand");
             }
 
             if (choice.host === "claudeCode" && missing) {
-                return "Claude Code is not on this computer: install it, then try again.";
+                return refusalWords("Claude Code is not on this computer: install it, then try again.", "app-missing", { host: "Claude Code" });
             }
 
             const host = hosts.find(choice.host);
+
+            // The app's program does not start, once: the table refuses with why, as the system said it.
+            if (broken) {
+                broken = false;
+                const name = host?.name ?? choice.host;
+                const why = "spawn claude ENOENT";
+                return refusalWords(`${name} could not start: ${why}.`, "host-not-started", { host: name, why });
+            }
 
             // A sign-in that ran out unseen: the table finds it out now, and the page reads the app to set up.
             if (host !== undefined && (host.account === "out" || signedOut === choice.host)) {
                 signedOut = undefined;
                 host.account = "out";
                 changed();
-                return { error: `${host.name} is not signed in on this computer: sign in here, then open the chat.`, code: "signin" };
+                return refusalWords(`${host.name} is not signed in on this computer: sign in here, then open the chat.`, "signin", { host: host.name });
             }
 
             if (choice.fresh === true || last?.host !== choice.host) {

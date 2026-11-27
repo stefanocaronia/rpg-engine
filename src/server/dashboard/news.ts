@@ -9,6 +9,7 @@ import { campaignWorld } from "../../commands/shared/campaign/world.ts";
 import { knownText, playerKnowledge, playerStory } from "../../commands/shared/characters/knowledge.ts";
 import { knownNamedPage } from "../../commands/view/page.ts";
 import { hosts } from "../../core/hosts.ts";
+import { type RefusalBody, refusalBody, refusalWords } from "../../core/refusal.ts";
 import { withFiles } from "../../core/store.ts";
 import { comparableText } from "../../core/text.ts";
 import { playerCharacters } from "../../pages/index.ts";
@@ -74,7 +75,7 @@ export async function notes(request: IncomingMessage, response: ServerResponse, 
     const body = request.method === "GET" ? undefined : await readBody(request, 64_000);
 
     if (request.method !== "GET" && body === undefined) {
-        sendJson(response, 400, { error: "The note did not come whole: it may be too long, so shorten it." });
+        sendJson(response, 400, refusalWords("The note did not come whole: it may be too long, so shorten it.", "note-not-whole"));
         return;
     }
 
@@ -120,7 +121,7 @@ export async function notes(request: IncomingMessage, response: ServerResponse, 
             const note = readNotes(root).find((one) => one.id === id);
 
             if (note === undefined) {
-                return { status: 400, body: { error: "There is no such note: reload the page." } };
+                return { status: 400, body: refusalWords("There is no such note: reload the page.", "no-note") };
             }
 
             if ("share" in change) {
@@ -152,7 +153,7 @@ export async function story(request: IncomingMessage, response: ServerResponse, 
     const body = request.method === "GET" ? undefined : await readBody(request, 64_000);
 
     if (request.method !== "GET" && body === undefined) {
-        sendJson(response, 400, { error: "The story did not come whole: it may be too long, so shorten it." });
+        sendJson(response, 400, refusalWords("The story did not come whole: it may be too long, so shorten it.", "story-not-whole"));
         return;
     }
 
@@ -174,8 +175,11 @@ export async function story(request: IncomingMessage, response: ServerResponse, 
             const pc = who === undefined ? (players.length === 1 ? players[0] : undefined) : players.find((player) => comparableText(player.name) === comparableText(who));
 
             if (pc === undefined) {
-                const error = players.length === 0 ? "There is no player character yet: make it with the master first." : `Give who, whose story it is: ${players.map((player) => player.name).join(" or ")}.`;
-                return { status: 400, body: { error } };
+                const names = players.map((player) => player.name);
+                const refused = players.length === 0
+                    ? refusalWords("There is no player character yet: make it with the master first.", "no-character")
+                    : refusalWords(`Give who, whose story it is: ${names.join(" or ")}.`, "story-whose", { names: names.join(", ") });
+                return { status: 400, body: refused };
             }
 
             // A proposal ends when the master writes the story.
@@ -216,7 +220,7 @@ export async function setupWord(request: IncomingMessage, response: ServerRespon
     const left = "leave" in parsed.data ? await setupQuestionNamed(served, parsed.data.leave) : undefined;
 
     if (left !== undefined && "refused" in left) {
-        sendJson(response, 400, { error: left.refused });
+        sendJson(response, 400, left.refused);
         return;
     }
 
@@ -447,7 +451,7 @@ export function keepProblems(served: Served, result: unknown): void
 }
 
 /** A question of the setup by its name, as the setup asks it now; refused, with the questions there are, for any other. */
-async function setupQuestionNamed(served: Served, given: string): Promise<{ name: string; } | { refused: string; }>
+async function setupQuestionNamed(served: Served, given: string): Promise<{ name: string; } | { refused: RefusalBody; }>
 {
     try {
         await served.session.ready();
@@ -456,9 +460,10 @@ async function setupQuestionNamed(served: Served, given: string): Promise<{ name
             return setupQuestions(root, served.context, campaignWorld(root, served.context).pages.length > 0).map((question) => question.name);
         });
         const name = names.find((one) => comparableText(one) === comparableText(given));
-        return name === undefined ? { refused: `${given} is no question of the setup: leave one of ${names.join(", ")}.` } : { name };
+        const questions = names.join(", ");
+        return name === undefined ? { refused: refusalWords(`${given} is no question of the setup: leave one of ${questions}.`, "no-setup-question", { question: given, questions }) } : { name };
     } catch (error) {
-        return { refused: error instanceof Error ? error.message : String(error) };
+        return { refused: refusalBody(error) };
     }
 }
 

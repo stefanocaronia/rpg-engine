@@ -2,8 +2,11 @@
 // and the folder it opens in come in the environment or as arguments, never inside a script.
 import { type DialogCommand, plainText, runDialog } from "./confirm.ts";
 
-/** What the window gave: the folder chosen, undefined when the player cancelled, or a refusal in words where this system shows no such window. */
-export type ChosenFolder = string | undefined | { refused: string; };
+/**
+ * What the window gave: the folder chosen, undefined when the player cancelled, or a refusal where this system shows no such window: its words, and their
+ * code with its values, for a page to say them in its own language; what the window's program said travels as it is, in the value `why`.
+ */
+export type ChosenFolder = string | undefined | { refused: string; code?: string; values?: Record<string, string>; };
 
 /** What the window shows: its title, in the player's language, and the folder it opens in; the system's own where either is left out. */
 export interface FolderAsked
@@ -26,7 +29,7 @@ export async function chooseFolder(platform: string, env: Record<string, string 
         }
     }
 
-    return { refused: noWindow(platform) };
+    return noWindow(platform);
 }
 
 /** The programs that may show the window on this system, in turn: none on a Linux without a desktop. */
@@ -77,14 +80,25 @@ export function folderAnswer(command: DialogCommand, ran: { code: number | null;
     const windows = command.file.toLowerCase().endsWith("powershell.exe");
     const mac = command.file.endsWith("osascript");
     const cancelled = windows ? ran.code === 11 : mac ? (ran.err ?? "").includes("(-128)") : ran.code === 1;
-    return cancelled ? undefined : { refused: `The window to choose a folder could not open${(ran.err ?? "").trim() === "" ? "" : `: ${plainText(ran.err ?? "", 200)}`}. Write the folder's path instead.` };
+
+    if (cancelled) {
+        return undefined;
+    }
+
+    // What the window's program said as it failed, where it said anything.
+    const why = (ran.err ?? "").trim() === "" ? undefined : plainText(ran.err ?? "", 200);
+    return {
+        refused: `The window to choose a folder could not open${why === undefined ? "" : `: ${why}`}. Write the folder's path instead.`,
+        code: "folder-window-failed",
+        ...(why === undefined ? {} : { values: { why } }),
+    };
 }
 
-function noWindow(platform: string): string
+function noWindow(platform: string): { refused: string; code: string; }
 {
     return platform === "linux"
-        ? "This computer has no window to choose a folder: install zenity or kdialog, or write the folder's path instead."
-        : "This computer shows no window to choose a folder: write the folder's path instead.";
+        ? { refused: "This computer has no window to choose a folder: install zenity or kdialog, or write the folder's path instead.", code: "folder-window-missing" }
+        : { refused: "This computer shows no window to choose a folder: write the folder's path instead.", code: "folder-window-none" };
 }
 
 // Explorer's own window to choose a folder, through the shell's IFileOpenDialog. Its owner is an invisible window on top of the others, near the pointer:

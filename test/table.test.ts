@@ -18,7 +18,7 @@ import { type Served, startDashboard } from "../src/server/dashboard/index.ts";
 import { dashboardOpener } from "../src/server/dashboard/opener.ts";
 import { subagentRefusal } from "../src/server/subagent.ts";
 import { chatEnvironmentNames } from "../src/server/table/hello.ts";
-import { openTable, pipeHere, pipeToTable, readPlace, readRefusal, runTable, runTableStop, stopTable, type Table, tableBusy, tableEnded, type TableOptions, type TablePlace } from "../src/server/table/index.ts";
+import { openTable, pipeHere, pipeToTable, readPlace, readRefusal, runTable, runTableStop, stopTable, type Table, tableBusy, tableEnded, tableLogFile, type TableOptions, type TablePlace } from "../src/server/table/index.ts";
 import { tableSocket, writePlace } from "../src/server/table/place.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 import { type FakeHost, fakeHost, loadFlow, manualClock } from "./master/fake-host.ts";
@@ -409,11 +409,13 @@ describe("the table of a campaign", () => {
             expect(page?.url).toBe(`http://127.0.0.1:${at}`);
             expect(await openTable(tableOptions({ dashboard: { ports: [at], page: pageFolder } }))).toEqual({
                 refused: expect.stringContaining("a chat of this campaign that is still open serves its page and did not give it"),
+                // A code with no values.
+                code: "page-kept-by-chat",
             });
             expect((await get(page?.url ?? "", "/api/view")).status).toBe(200);
             // rpg table writes it beside its place, for the launcher that started it apart.
             expect(await runTable(folder, { ...tableOptions({ dashboard: { ports: [at], page: pageFolder }, log: () => undefined }), exit: vi.fn() })).toBe(1);
-            expect(readRefusal(home, folder)).toContain("close that chat's app");
+            expect(readRefusal(home, folder)).toEqual({ refused: expect.stringMatching(/^rpg table: .*close that chat's app/) as unknown, code: "page-kept-by-chat" });
         } finally {
             await page?.close();
             older.close();
@@ -803,7 +805,11 @@ describe("what the table keeps from going wrong", () => {
         const place = placeOf();
         // A program at the place's socket that takes the knock and never answers.
         await listenerAt(place, () => undefined);
-        expect(await openTable(tableOptions())).toEqual({ refused: expect.stringContaining(`(process ${place.pid}) does not answer: end that process, then run rpg table again`) });
+        expect(await openTable(tableOptions())).toEqual({
+            refused: expect.stringContaining(`(process ${place.pid}) does not answer: end that process, then run rpg table again`),
+            code: "table-silent",
+            values: { root: folder, pid: String(place.pid) },
+        });
     });
 
     it("reads no place of another campaign, and starts no table where another program listens at its socket (defect 8)", async () => {
@@ -821,7 +827,7 @@ describe("what the table keeps from going wrong", () => {
         await listenerAt(place, () => undefined);
         const time = clock();
         const refused = await openTable(tableOptions({ now: () => (time.pass(500), time.now()) }));
-        expect(refused).toEqual({ refused: expect.stringContaining(`another program listens at ${place.socket}`) });
+        expect(refused).toEqual({ refused: expect.stringContaining(`another program listens at ${place.socket}`), code: "socket-taken", values: { socket: place.socket, root: folder } });
     });
 
     it.skipIf(process.platform === "win32")("keeps its token for the player alone, and takes away a socket file nothing answers at (defect 8)", async () => {
@@ -874,6 +880,55 @@ describe("what the table keeps from going wrong", () => {
 
         expect(process.listeners("unhandledRejection")).toEqual(before.rejected);
         expect(process.listeners("uncaughtException")).toEqual(before.thrown);
+    });
+
+    it("rpg table: keeps what it says in the file of its log beside its place, each line with its time, and names the file to the page", async () => {
+        const said: string[] = [];
+        const written = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+        const time = clock();
+        const file = tableLogFile(home, folder);
+        const running = runTable(folder, { ...tableOptions({ idle: 1000, idleEvery: 10, now: time.now, log: (line) => said.push(line) }), exit: vi.fn(), programsWait: 5000 });
+        let token = "";
+
+        try {
+            await until(() => readPlace(home, folder) !== undefined, "the table's place");
+            token = readPlace(home, folder)?.token ?? "";
+            expect(JSON.parse((await get(readPlace(home, folder)?.url ?? "", "/api/master")).body)).toMatchObject({ table: true, log: file });
+        } finally {
+            time.pass(2000);
+            expect(await running).toBe(0);
+            written.mockRestore();
+        }
+
+        // Every line said is kept, in order: with the table's clock before it, or with the time it came with.
+        const kept = readFileSync(file, "utf8").split("\n").slice(0, -1);
+        const timed = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z /;
+        expect(said.length).toBeGreaterThanOrEqual(3);
+        expect(kept.map((line) => line.replace(timed, ""))).toEqual(said.map((line) => line.replace(timed, "")));
+        expect(kept.every((line) => timed.test(line))).toBe(true);
+        expect(kept[0]).toBe(`${new Date(1_000_000).toISOString()} ${said[0]}`);
+        expect(kept[0]).toContain("serves its page at");
+        expect(kept.some((line) => line.includes("ended: no chat and no page for 1 s."))).toBe(true);
+        // The table's token, which whoever knocks must read in its place alone, is no line of it.
+        expect(token).toHaveLength(32);
+        expect(readFileSync(file, "utf8")).not.toContain(token);
+    });
+
+    it("rpg table: keeps in its log why it could not start, after the lines of the table before it; none where its folder is no campaign", async () => {
+        // A table there that does not answer: a program at its place's socket that takes the knock and says nothing.
+        await listenerAt(placeOf(), () => undefined);
+        const file = tableLogFile(home, folder);
+        writeFileSync(file, "2026-11-26T10:00:00.000Z The table before it.\n");
+
+        expect(await runTable(folder, { ...tableOptions({ log: () => undefined }), exit: vi.fn() })).toBe(1);
+        const kept = readFileSync(file, "utf8").split("\n").slice(0, -1);
+        expect(kept).toEqual(["2026-11-26T10:00:00.000Z The table before it.", expect.stringMatching(/Z rpg table: the table of .+ does not answer: end that process, then run rpg table again\.$/)]);
+        // And beside its place for the launcher, with the code and values of those words.
+        expect(readRefusal(home, folder)).toEqual({ refused: kept[1]?.replace(/^\S+ /, ""), code: "table-silent", values: { root: folder, pid: "4242" } });
+
+        const outside = makeTempFolder();
+        expect(await runTable(outside, { ...tableOptions({ log: () => undefined }), exit: vi.fn() })).toBe(1);
+        expect(readdirSync(join(home, "tables")).filter((name) => name.endsWith(".log"))).toHaveLength(1);
     });
 });
 
@@ -1052,6 +1107,36 @@ describe("the table's own chat with the master", () => {
             expect(await running).toBe(0);
             written.mockRestore();
         }
+    });
+
+    it("rpg table: keeps in its log no word of the chat, of a mark of the master's only that there was one, and why its chat ended", async () => {
+        const said: string[] = [];
+        const written = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+        const time = clock();
+        const running = runTable(folder, { ...tableOptions(withMaster({ idle: 1000, idleEvery: 10, now: time.now, log: (line) => said.push(line) })), exit: vi.fn(), programsWait: 5000 });
+
+        try {
+            await until(() => readPlace(home, folder) !== undefined, "the table's place");
+            const url = readPlace(home, folder)?.url ?? "";
+            expect((await get(url, "/api/master", "POST", { open: { host: "claudeCode", model: "sonnet" } })).status).toBe(200);
+            expect((await get(url, "/api/master", "POST", { say: "I light the lantern of Bruma." })).status).toBe(202);
+            masters[0].emit({ type: "text", block: 0, text: "The fog of Nebbiafonda rises. [clock Nebbiafonda]" });
+            masters[0].emit({ type: "turnEnd", reason: "done" });
+            masters[0].emit({ type: "ended", why: "Claude Code ended (code 1)." });
+        } finally {
+            time.pass(2000);
+            expect(await running).toBe(0);
+            written.mockRestore();
+        }
+
+        const kept = readFileSync(tableLogFile(home, folder), "utf8");
+        // The terminal reads the mark; the file only that there was one.
+        expect(said).toContain("The master wrote [clock Nebbiafonda] in the story, which stands for nothing the page can show: it shows nothing there.");
+        expect(kept).toContain("Z The master wrote a mark in the story which stands for nothing the page can show: it shows nothing there.\n");
+        expect(kept).toContain("Z The table's chat with Claude Code ended: Claude Code ended (code 1).\n");
+        expect(kept).not.toContain("Nebbiafonda");
+        expect(kept).not.toContain("Bruma");
+        expect(kept).not.toContain("lantern");
     });
 
     it("keeps its chat's flow in the campaign, and the next table takes the chat up by itself as its first page listens, once", async () => {

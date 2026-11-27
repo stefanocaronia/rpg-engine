@@ -4,7 +4,7 @@ import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { accessSync, constants, existsSync, readFileSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
-import type { HelperLogin, HelperName, Helpers, HelperState, PicturesReady } from "../core/context.ts";
+import type { HelperFailure, HelperLogin, HelperName, Helpers, HelperState, PicturesReady } from "../core/context.ts";
 import type { HostId } from "../core/hosts.ts";
 import { claimMark, releaseMark } from "../core/process-mark.ts";
 import { endingOf, stopGently, stopTree, whenEnded } from "../core/process.ts";
@@ -13,9 +13,33 @@ import { endingOf, stopGently, stopTree, whenEnded } from "../core/process.ts";
 const packages: Record<HelperName, string> = { codex: "@openai/codex", claude: "@anthropic-ai/claude-code" };
 const programNames: Record<HelperName, string> = { codex: "Codex", claude: "Claude Code" };
 
+/**
+ * Why a sign-in failed or did not start, beside the words, for a page to say it in its own language: `elsewhere`, another window of the engine has it under
+ * way, and nothing failed; with `signin-said` what the program said last, and with `signin-failed` any other words, as an error's, are the value `why`.
+ */
+export type SignInCode = "elsewhere" | "signin-ending" | "app-missing" | "signin-timeout" | "signin-stopped" | "signin-said" | "signin-failed";
+
+/** Why an installation failed or did not start, as for a sign-in: with `app-install-said` what npm said last is the value `why`. */
+export type InstallCode = "elsewhere" | "app-install-stopped" | "app-install-said" | "app-install-failed";
+
+// Why a sign-in fails or does not start, and an installation fails, each written once: the words with their code and its values. The program's name for the
+// player is the value `host`; what the program or npm said last is the value `why`, as it came.
+const signInFailure = (code: SignInCode, why: string, values?: Record<string, string>): HelperFailure => ({ why, code, ...(values === undefined ? {} : { values }) });
+const installFailure = (code: InstallCode, why: string, values?: Record<string, string>): HelperFailure => ({ why, code, ...(values === undefined ? {} : { values }) });
+const named = (name: HelperName): Record<string, string> => ({ host: programNames[name] });
+
 // What a sign-in and an installation answer where another process of the engine has one under way.
-const signInElsewhere = (name: HelperName): string => `a sign-in to ${programNames[name]} is already under way in another window of RPG Engine: finish it there, or close that window, then try again`;
-const installElsewhere = "an installation is already under way in another window of RPG Engine: wait for it to end there, then try again";
+const signInElsewhere = (name: HelperName): HelperFailure =>
+    signInFailure("elsewhere", `a sign-in to ${programNames[name]} is already under way in another window of RPG Engine: finish it there, or close that window, then try again`, named(name));
+const installElsewhere = installFailure("elsewhere", "an installation is already under way in another window of RPG Engine: wait for it to end there, then try again");
+
+const signInEnding = (name: HelperName): HelperFailure => signInFailure("signin-ending", `the sign-in to ${programNames[name]} just stopped is still ending: try again in a few seconds`, named(name));
+const notHere = (name: HelperName): HelperFailure => signInFailure("app-missing", `${programNames[name]} is not on this computer`, named(name));
+const signInTimedOut = signInFailure("signin-timeout", "the sign-in waited ten minutes, and the player did not finish it");
+const signInStopped = signInFailure("signin-stopped", "the sign-in stopped");
+const signInSaid = (said: string): HelperFailure => signInFailure("signin-said", `it said: ${said}`, { why: said });
+const npmStopped = (name: HelperName): HelperFailure => installFailure("app-install-stopped", `npm stopped without installing ${packages[name]}`, { package: packages[name] });
+const npmSaid = (said: string): HelperFailure => installFailure("app-install-said", `npm said: ${said}`, { why: said });
 
 // How long the player has to sign in, in the browser that opened (neither program stops waiting by itself).
 const loginWait = 10 * 60 * 1000;
@@ -40,7 +64,7 @@ const ownGroup = process.platform !== "win32";
 const logins = new Map<HelperName, LoginRun>();
 // The programs whose sign-in program still runs, cancelled or out of time ones too, as it ends gently: another started meanwhile would write the same sign-in.
 const signingIn = new Map<HelperName, ChildProcess>();
-const installs = new Map<HelperName, Promise<string | undefined>>();
+const installs = new Map<HelperName, Promise<HelperFailure | undefined>>();
 const states = new Map<HelperName, HelperState>();
 let changes = 0;
 let installsHere = 0;
@@ -63,15 +87,18 @@ export const hostHelper: Partial<Record<HostId, HelperName>> = { claudeCode: "cl
 /** Codex and Claude Code on this computer, the engine's own folder in `folder`, found in the folders of the `environment`'s PATH. */
 export function computerHelpers(folder = toolsFolder(), environment: NodeJS.ProcessEnv = process.env): Helpers
 {
+    const tryInstall = (name: HelperName): Promise<HelperFailure | undefined> => {
+        // One installation of a program at a time: a call the host gave up on and asked again waits for the first.
+        const running = installs.get(name) ?? installAlone(name, folder).finally(() => installs.delete(name));
+        installs.set(name, running);
+        return running;
+    };
+
     return {
         state: (name) => helperState(name, folder, environment).state,
         look: async (name) => noteState(name, await lookAtHelper(name, folder, environment)),
-        install: (name) => {
-            // One installation of a program at a time: a call the host gave up on and asked again waits for the first.
-            const running = installs.get(name) ?? installAlone(name, folder).finally(() => installs.delete(name));
-            installs.set(name, running);
-            return running;
-        },
+        install: async (name) => (await tryInstall(name))?.why,
+        tryInstall,
         login: async (name, ended) => {
             const run = logins.get(name);
 
@@ -90,21 +117,21 @@ export function computerHelpers(folder = toolsFolder(), environment: NodeJS.Proc
             }
 
             if (signingIn.has(name)) {
-                return { state: "failed", why: `the sign-in to ${programNames[name]} just stopped is still ending: try again in a few seconds` };
+                return { state: "failed", ...signInEnding(name) };
             }
 
             // Found without starting anything, so that the sign-in starts in this very call, where a cancel at once reaches it.
             const line = helperLine(name, folder, environment);
 
             if (line === undefined) {
-                return { state: "failed", why: `${name} is not on this computer` };
+                return { state: "failed", ...notHere(name) };
             }
 
             // One sign-in of a program on this computer: another window of the engine, a table or the launcher, may have one under way.
             const mark = markFile(folder, `login-${name}`);
 
             if (!claimMark(mark)) {
-                return { state: "failed", why: signInElsewhere(name) };
+                return { state: "failed", ...signInElsewhere(name) };
             }
 
             try {
@@ -116,12 +143,6 @@ export function computerHelpers(folder = toolsFolder(), environment: NodeJS.Proc
         },
         cancel: cancelLogin,
     };
-}
-
-/** Whether why a sign-in or an installation did not start says that another window of the engine has one under way: nothing failed, it goes on there. */
-export function isUnderWayElsewhere(why: string): boolean
-{
-    return why === installElsewhere || (Object.keys(programNames) as HelperName[]).some((name) => why === signInElsewhere(name));
 }
 
 /** Stops the sign-in of a program under way, its program and all it started, and forgets it; nothing where none is. */
@@ -366,7 +387,7 @@ export function startLogin(name: HelperName, line: string, wait = linkWait, ende
     // Out of time or cancelled, the program ends gently first: it may be saving the player's sign-in (T-301).
     const timer = setTimeout(() => {
         void stopGently(ending);
-        end({ state: "failed", why: "the sign-in waited ten minutes, and the player did not finish it" });
+        end({ state: "failed", ...signInTimedOut });
     }, loginWait);
 
     // Cancelled: forgotten already, so its close tells nobody; the first answer still comes, as it stood.
@@ -386,7 +407,7 @@ export function startLogin(name: HelperName, line: string, wait = linkWait, ende
     child.on("close", (code) => {
         release();
         const last = said.trim().split("\n").filter((one) => one.trim() !== "").at(-1)?.trim();
-        end(code === 0 ? { state: "done" } : { state: "failed", why: last === undefined ? "the sign-in stopped" : `it said: ${last}` });
+        end(code === 0 ? { state: "done" } : { state: "failed", ...(last === undefined ? signInStopped : signInSaid(last)) });
     });
 
     return new Promise((done) => {
@@ -489,7 +510,7 @@ function packageBin(name: HelperName, modules: string): string | undefined
  * Installs a program as installHelper does, one installation in the engine's folder on this computer: another window of the engine, a table or the launcher,
  * may have one under way in the same folder, which npm cannot share.
  */
-async function installAlone(name: HelperName, folder: string): Promise<string | undefined>
+async function installAlone(name: HelperName, folder: string): Promise<HelperFailure | undefined>
 {
     const mark = markFile(folder, "install");
 
@@ -518,7 +539,7 @@ function markFile(folder: string, work: string): string
 }
 
 /** Installs a program in the engine's folder with npm, never globally (D-425): undefined once it answers there, else why not. */
-function installHelper(name: HelperName, folder: string): Promise<string | undefined>
+function installHelper(name: HelperName, folder: string): Promise<HelperFailure | undefined>
 {
     return new Promise((done) => {
         const child = spawn(`npm install --prefix "${folder}" ${packages[name]} --no-audit --no-fund --loglevel=error`, {
@@ -544,7 +565,7 @@ function installHelper(name: HelperName, folder: string): Promise<string | undef
             }
 
             const said = errors.trim().split("\n").filter((one) => one.trim() !== "").at(-1)?.trim();
-            done(said === undefined ? `npm stopped without installing ${packages[name]}` : `npm said: ${said}`);
+            done(said === undefined ? npmStopped(name) : npmSaid(said));
         });
     });
 }

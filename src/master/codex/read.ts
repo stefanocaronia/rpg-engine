@@ -1,4 +1,6 @@
 // Reading Codex's lines: answers to the table's requests, Codex's own requests, and the thread's notifications; a line not understood changes nothing.
+import type { Failure } from "../chat.ts";
+import { agentOther, agentUnknown, effortSwitched, modelSwitched, ranWithoutAsking, readOutside, toolNotAllowed } from "../failures.ts";
 import { error, isObject, type Message, result } from "../lines.ts";
 import { inside } from "../paths.ts";
 import { askToStop, nextBlock, playing, tell, write } from "../state.ts";
@@ -134,7 +136,7 @@ function readItem(state: State, item: unknown, completed: boolean, own = true): 
 function askRole(state: State, turn: Turn, thread: unknown): void
 {
     if (typeof thread !== "string") {
-        failTurn(state, turn, "the host ran a tool without asking: the table does not know which agent the master started");
+        failTurn(state, turn, ranWithoutAsking(agentUnknown()));
         return;
     }
 
@@ -145,15 +147,15 @@ function askRole(state: State, turn: Turn, thread: unknown): void
     state.agents.add(thread);
     state.requests.ask("thread/read", { threadId: thread, includeTurns: false }, (answer) => {
         if (!isCharacterAgent(answer) && playing(state) === turn) {
-            failTurn(state, turn, "the host ran a tool without asking: the table lets the master start only the agent that plays a character");
+            failTurn(state, turn, ranWithoutAsking(agentOther()));
         }
     });
 }
 
-function failTurn(state: State, turn: Turn, why: string): void
+function failTurn(state: State, turn: Turn, failure: Failure): void
 {
     if (turn.failure === undefined) {
-        turn.failure = why;
+        turn.failure = failure;
         askToStop(state, turn);
     }
 }
@@ -181,9 +183,7 @@ function toolEnded(state: State, turn: Turn, id: string, tool: CodexTool, ran: b
 
     if (ran && !mayUse && !turn.approved.has(id) && turn.failure === undefined) {
         const outside = state.allowed.includes(tool.kind) ? pathOutside(state, tool) : undefined;
-        turn.failure = outside === undefined
-            ? `the host ran a tool without asking: the table does not let the master use ${tool.name}`
-            : `the host ran a tool without asking: ${tool.name} read ${outside}, and the table lets the master read only the campaign's folder`;
+        turn.failure = ranWithoutAsking(outside === undefined ? toolNotAllowed(tool.name) : readOutside(tool.name, outside));
         askToStop(state, turn);
     }
 }
@@ -220,10 +220,10 @@ function readModel(state: State, model: unknown, effort: unknown): void
     }
 
     if (typeof model === "string" && model !== confirmed) {
-        turn.failure = `the host runs the model ${model} instead of ${confirmed}`;
+        turn.failure = modelSwitched(model, confirmed);
         askToStop(state, turn);
     } else if (asked !== undefined && typeof effort === "string" && effort !== asked) {
-        turn.failure = `the host runs the effort ${effort} instead of ${asked}`;
+        turn.failure = effortSwitched(effort, asked);
         askToStop(state, turn);
     }
 }

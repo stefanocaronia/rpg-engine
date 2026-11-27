@@ -5,8 +5,9 @@ import type { Opened, RunOptions, TableOptions } from "./serve.ts";
 
 export { type Probed, probeTable } from "./hello.ts";
 export { type LastChat, readLastChat, writeLastChat } from "./last-chat.ts";
+export { tableLog, tableLogFile, tableLogWritten } from "./log.ts";
 export { pipeHere, type PipeOptions, pipeToTable, tableBusy, tableEnded } from "./pipe.ts";
-export { readPlace, readRefusal, removePlace, removeRefusal, type TablePlace, tablePlaces, writeRefusal } from "./place.ts";
+export { readPlace, readRefusal, removePlace, removeRefusal, type TablePlace, tablePlaces, type TableRefusal, writeRefusal } from "./place.ts";
 export type { Opened, RunOptions, Table, TableOptions } from "./serve.ts";
 export { programsWait, runTableStop, type StopOptions, stopTable, type TableStop } from "./stop.ts";
 

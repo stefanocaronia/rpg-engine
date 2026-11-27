@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { HostId } from "../src/core/hosts.ts";
 import { claudeModels } from "../src/master/claude-code/models.ts";
-import { hostsOffered, type MasterDriver, masterDriver, type MasterModel, modelKeeper } from "../src/master/index.ts";
+import { effortFailure, effortRefused, hostsOffered, type MasterDriver, masterDriver, type MasterModel, modelKeeper } from "../src/master/index.ts";
 import { fakeHost, type FlowEntry, manualClock } from "./master/fake-host.ts";
 
 // The models a host offers: Claude Code's, asked of a fake host; kept by the keeper; and every host of the registry as the page offers it.
@@ -393,5 +393,47 @@ describe("the hosts the page offers", () => {
             ["antigravity", true, false, []],
             ["openCode", true, false, []],
         ]);
+    });
+});
+
+describe("an effort a model of a host cannot take", () => {
+    const driver: MasterDriver = {
+        open: () => expect.fail("no chat opens"),
+        missing: () => undefined,
+        program: () => undefined,
+        environment: (given) => given,
+        models: () => Promise.resolve([]),
+        model: "sonnet",
+        efforts: ["low", "high"],
+    };
+    const known = [{ id: "opus", name: "Opus 5.5", efforts: ["low", "max"] }, { id: "haiku", name: "Haiku 4.5", efforts: [] }];
+
+    it("is refused in words, and with a code and its values: the app, the model's name, the effort and those it may take", () => {
+        expect(effortFailure("claudeCode", driver, known, "typed-by-hand", "max")).toEqual({
+            why: "Claude Code knows no effort max: choose one of low, high.",
+            code: "effort-unknown",
+            values: { host: "Claude Code", effort: "max", efforts: "low, high" },
+        });
+        expect(effortFailure("claudeCode", driver, known, "opus", "high")).toEqual({
+            why: "Opus 5.5 takes no effort high in Claude Code: choose one of low, max.",
+            code: "effort-not-of-model",
+            values: { model: "Opus 5.5", effort: "high", host: "Claude Code", efforts: "low, max" },
+        });
+        expect(effortFailure("claudeCode", driver, known, "haiku", "low")).toEqual({
+            why: "Haiku 4.5 takes no effort in Claude Code: leave the effort to the host.",
+            code: "effort-none",
+            values: { model: "Haiku 4.5", host: "Claude Code" },
+        });
+    });
+
+    it("is none for an effort the model takes, for no effort, and for a host that says a model's efforts only once it is chosen", () => {
+        expect(effortFailure("claudeCode", driver, known, "opus", "max")).toBeUndefined();
+        expect(effortFailure("claudeCode", driver, known, "haiku", undefined)).toBeUndefined();
+        expect(effortFailure("openCode", { ...driver, effortsOnceChosen: true }, known, "haiku", "low")).toBeUndefined();
+    });
+
+    it("says the words alone to who asks only for them", () => {
+        expect(effortRefused("claudeCode", driver, known, "opus", "high")).toBe("Opus 5.5 takes no effort high in Claude Code: choose one of low, max.");
+        expect(effortRefused("claudeCode", driver, known, "opus", "max")).toBeUndefined();
     });
 });

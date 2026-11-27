@@ -11,6 +11,7 @@
 import { readFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { join } from "node:path";
+import { refusalWords } from "../../src/core/refusal.ts";
 import { builtPage, fromOwnPage, launcherHtml, pageFile, pagePolicy, pageWrites, picturePolicy, readBody, securityHeaders, send, sendFile, sendJson, vendorModule } from "../../src/server/page/index.ts";
 import { type DemoHosts, demoHosts, type DemoHostWish } from "./hosts.ts";
 
@@ -35,6 +36,8 @@ interface Listed
     open: boolean;
     missing: boolean;
     problem?: string;
+    problemCode?: string;
+    problemValues?: Record<string, string>;
     colours?: { light: { body: string; ink: string; }; dark: { body: string; ink: string; }; };
     character?: { name: string; portrait?: string; };
 }
@@ -71,8 +74,22 @@ export async function serveDemoLauncher(campaign: string, empty = false, page = 
         },
         { root: tower, name: "La Torre Rotta", system: "free", language: "en", opened: ago(16), open: false, missing: false },
         { root: join(home, "Vecchie", "Il Passo del Corvo"), name: "Il Passo del Corvo", opened: ago(140), open: false, missing: true },
-        { root: join(folder, "Cripta"), name: "Cripta", open: false, missing: false, problem: "campaign.yaml does not read: bad indentation of a mapping entry at line 3." },
+        {
+            root: join(folder, "Cripta"),
+            name: "Cripta",
+            open: false,
+            missing: false,
+            problem: `${join(folder, "Cripta")} cannot be read now: its disk or its network share does not answer. Bring it back and open the launcher again, or take it off the list.`,
+            problemCode: "campaign-away",
+            problemValues: { root: join(folder, "Cripta") },
+        },
     ];
+
+    // A table that does not start, as the launcher refuses it: its words, their code and values, and the file of the table's log.
+    const notStarted = (root: string): object => ({
+        ...refusalWords(`The table of ${root} did not start within 15 seconds: run rpg table in that folder to see why.`, "table-not-started", { root, seconds: "15" }),
+        log: join(home, "AppData", "Roaming", "rpg-engine", "tables", "c0ffee41d07ab3e5.log"),
+    });
     const pages = new Set<ServerResponse>();
     let campaignUrl = "";
     let picks = 0;
@@ -111,13 +128,13 @@ export async function serveDemoLauncher(campaign: string, empty = false, page = 
 
         if (wish.signIn !== undefined || wish.install !== undefined || wish.hosts !== undefined) {
             const refused = hosts.wish(wish as DemoHostWish);
-            sendJson(response, refused === undefined ? 200 : 409, refused === undefined ? { hosts: hosts.list() } : { error: refused });
+            sendJson(response, refused === undefined ? 200 : 409, refused ?? { hosts: hosts.list() });
         } else if (wish.open !== undefined) {
             await later(openTime);
             const listed = campaigns.find((one) => one.root === wish.open?.root);
 
             if (wish.open.root === tower) {
-                sendJson(response, 409, { error: `The table of ${tower} did not start within 15 seconds: look at table.log in the engine's data folder, then open the campaign again.` });
+                sendJson(response, 409, notStarted(tower));
             } else {
                 remember(wish.open.root, listed?.name ?? wish.open.root, { ...listed, opened: ago(0), open: true });
                 sendJson(response, 200, { url: campaignUrl });
@@ -127,10 +144,10 @@ export async function serveDemoLauncher(campaign: string, empty = false, page = 
             const root = wish.create.folder ?? join(folder, wish.create.name);
 
             if (/fail/i.test(wish.create.name)) {
-                sendJson(response, 409, { error: `${root} already holds files: choose an empty folder, or a new one.` });
+                sendJson(response, 409, refusalWords(`${root} already holds files: choose an empty folder, or a new one.`, "folder-not-empty", { folder: root }));
             } else if (/half/i.test(wish.create.name)) {
                 remember(root, wish.create.name, { system: wish.create.system, language: wish.create.language });
-                sendJson(response, 409, { root, error: `The table of ${root} did not start within 15 seconds: look at table.log in the engine's data folder, then open the campaign again.` });
+                sendJson(response, 409, { root, ...notStarted(root) });
             } else {
                 remember(root, wish.create.name, { system: wish.create.system, language: wish.create.language, open: true });
                 sendJson(response, 200, { url: campaignUrl, root });
@@ -142,7 +159,8 @@ export async function serveDemoLauncher(campaign: string, empty = false, page = 
                 remember(wish.add.root, name);
                 sendJson(response, 200, { campaigns });
             } else {
-                sendJson(response, 409, { error: `${wish.add.root} is no campaign: a campaign's folder holds its campaign.yaml. Choose that folder, or make a new campaign.` });
+                const words = `${wish.add.root} is no campaign: a campaign's folder holds its campaign.yaml. Choose that folder, or make a new campaign.`;
+                sendJson(response, 409, refusalWords(words, "not-a-campaign", { root: wish.add.root }));
             }
         } else if (wish.pick !== undefined) {
             await later(pickTime);

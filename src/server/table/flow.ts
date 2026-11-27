@@ -4,7 +4,7 @@
 import { join } from "node:path";
 import { sessionsFolderName } from "../../campaign/index.ts";
 import { FileStore } from "../../core/store.ts";
-import type { MarkedClock, MarkedTurns, ModelMark, PageMessage, StoryMarks } from "../dashboard/index.ts";
+import type { LineMark, MarkedClock, MarkedTurns, ModelMark, PageMessage, StoryMarks } from "../dashboard/index.ts";
 
 /** The folder of the campaign's `sessions/` where the table keeps its chats. */
 export const flowFolderName = "table-chats";
@@ -156,7 +156,7 @@ function flowMessage(line: string): PageMessage | undefined
         return marks === undefined ? { id, from, text } : { id, from, text, marks };
     }
 
-    return from === "table" ? { id, from, text, ...modelMark(parsed) } : { id, from, text };
+    return from === "table" ? { id, from, text, ...lineMark(parsed) } : { id, from, text };
 }
 
 /** The values a master's message keeps of its marks, as the file keeps them; none where it holds none, or they are not well formed. */
@@ -197,12 +197,33 @@ function markedTurns({ order, turn, round }: MarkedTurns): MarkedTurns
     return { order: [...order], turn, ...(round === undefined ? {} : { round }) };
 }
 
-/** The mark of a line of the table about the master's model, as the file keeps it; none where it holds none, or one not well formed. */
-function modelMark(parsed: Record<string, unknown>): ModelMark
+/**
+ * The mark of a line of the table, as the file keeps it: a line about the master's model with its own fields; any other with its code and the code's values;
+ * none where the line holds none, or one not well formed, and the page then says the line's own words.
+ */
+function lineMark(parsed: Record<string, unknown>): LineMark
 {
-    const { code, model, asked, effort, dropped } = parsed;
-    const valid = (code === "model" || code === "model-kept") && typeof model === "string" && optionalText(asked) && optionalText(effort)
-        && (dropped === undefined || dropped === true);
+    const { code, values } = parsed;
+
+    if (code === "model" || code === "model-kept") {
+        return modelMark(code, parsed);
+    }
+
+    if (typeof code !== "string" || !/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/.test(code) || code.length > 60) {
+        return {};
+    }
+
+    if (values === undefined) {
+        return { code };
+    }
+
+    return isRecord(values) && Object.values(values).every((value) => typeof value === "string") ? { code, values: { ...values } as Record<string, string> } : {};
+}
+
+function modelMark(code: "model" | "model-kept", parsed: Record<string, unknown>): ModelMark
+{
+    const { model, asked, effort, dropped } = parsed;
+    const valid = typeof model === "string" && optionalText(asked) && optionalText(effort) && (dropped === undefined || dropped === true);
     return valid
         ? {
             code,

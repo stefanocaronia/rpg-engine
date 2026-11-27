@@ -4,12 +4,14 @@
 // with, and what closes it; where the app lets the model change in an open chat, the model is a button that opens its list (T-290). The app's name is
 // words: to play in another app the player closes the chat, and chooses where one is opened (T-307). On a phone the box is a bar as wide as the window,
 // and nothing stands under it: one button at its start opens the chat's own sheet, with what it plays with and what closes it (T-321); on a phone's
-// keyboard Enter starts a new line and the button alone sends, and what is touched beside the field leaves the keyboard where it is.
-import type { ComponentChildren } from "preact";
+// keyboard Enter starts a new line and the button alone sends, and what is touched beside the field leaves the keyboard where it is. As the player types,
+// `<<`, `>>` and `--` become the signs of a story's dialogue, «, » and —, which a keyboard lacks; Backspace right after gives the two keys back (T-326).
+import type { ComponentChildren, TargetedInputEvent } from "preact";
 import { useRef } from "preact/hooks";
 import { Icon } from "../parts/icons.tsx";
 import { t } from "../text.ts";
-import { sendsWords, wordsToSend } from "./chat.ts";
+import { sendsWords, takesSignBack, typedSign, typesKey, wordsToSend } from "./chat.ts";
+import type { TypedSign } from "./chat.ts";
 import { useShades } from "./shades.ts";
 import { ChatSheet } from "./sheet.tsx";
 
@@ -47,6 +49,35 @@ export function ChatWords({ text, state, answers, sending, plays, app, model, sh
     const phone = sheet !== undefined;
     // What the field is, said where it is empty: the player's words, or the answer in words to what the master asks.
     const what = answers ? t("Or write what you do…") : t("Your words to the master");
+    // The sign that last took the place of two keys typed, while Backspace still gives them back.
+    const sign = useRef<TypedSign | undefined>(undefined);
+
+    // The second key of a sign's two leaves the sign in their place. Putting it is an input of its own, which comes here first and forgets the sign: it is
+    // kept after.
+    const write = (event: TargetedInputEvent<HTMLTextAreaElement>): void => {
+        const box = event.currentTarget;
+        const typed = typesKey(event) ? typedSign(box.value, box.selectionStart) : undefined;
+
+        if (typed !== undefined) {
+            putWords(box, typed.start, typed.start + typed.keys.length, typed.sign);
+        }
+
+        sign.current = typed;
+        onText(box.value);
+    };
+
+    // Backspace right after a sign gives its two keys back in place of erasing it.
+    const erase = (event: TargetedInputEvent<HTMLTextAreaElement>): void => {
+        const box = event.currentTarget;
+        const typed = sign.current;
+
+        if (event.inputType === "deleteContentBackward" && box.selectionStart === box.selectionEnd && takesSignBack(typed, box.value, box.selectionStart)) {
+            event.preventDefault();
+            putWords(box, typed.start, typed.start + typed.sign.length, typed.keys);
+            sign.current = undefined;
+            onText(box.value);
+        }
+    };
 
     const send = (event: Event): void => {
         event.preventDefault();
@@ -81,7 +112,8 @@ export function ChatWords({ text, state, answers, sending, plays, app, model, sh
                     maxLength={mostWords}
                     placeholder={what}
                     value={text}
-                    onInput={(event) => onText(event.currentTarget.value)}
+                    onInput={write}
+                    onBeforeInput={erase}
                     onKeyDown={(event) => {
                         if (sendsWords(event, matchMedia(touchPhone).matches)) {
                             send(event);
@@ -117,4 +149,15 @@ export function ChatWords({ text, state, answers, sending, plays, app, model, sh
             {sheet === true && <ChatSheet plays={plays} app={app} model={model} turn={turn} onClose={() => onSheet?.(false)} onEnd={onClose} />}
         </form>
     );
+}
+
+// Puts words in a field in place of those from `start` to `end`, the caret after them, as if typed: so the field's own undo takes them back, and keeps
+// what was written before. Where a browser will not, they are set, and the undo starts again from there.
+function putWords(box: HTMLTextAreaElement, start: number, end: number, words: string): void
+{
+    box.setSelectionRange(start, end);
+
+    if (!document.execCommand("insertText", false, words)) {
+        box.setRangeText(words, start, end, "end");
+    }
 }

@@ -3,6 +3,8 @@
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { join } from "node:path";
+import { codeAndBase } from "../../core/language.ts";
+import type { RefusalBody } from "../../core/refusal.ts";
 import { files } from "../../core/store.ts";
 import { builtPage, send, sendJson } from "../page/index.ts";
 
@@ -10,8 +12,8 @@ import { builtPage, send, sendJson } from "../page/index.ts";
 export interface WaitingPage
 {
     url: string;
-    /** The launcher's link, or why it was not reached: the window goes there, or says it. */
-    reached(answer: { url: string; } | { error: string; }): void;
+    /** The launcher's link, or why it was not reached: the window goes there, or says why in its language, `said` beside the refusal's words, code and values. */
+    reached(answer: { url: string; } | RefusalBody): void;
     /** Done once the window took the answer, or after `keep` ms where none asked for it, as where no window opened; the page's server closed. */
     ended: Promise<void>;
 }
@@ -20,12 +22,24 @@ export interface WaitingPage
 const askEvery = 200;
 const keepWait = 15_000;
 
-/** Serves the page of the wait on a port of this machine, in the language given, as the launcher's page would speak it. */
-export async function serveWaitingPage(language: string = systemLanguage(), keep = keepWait): Promise<WaitingPage>
+// The languages the page ships that are written from right to left, and the two marks that set a value apart in them: U+2068 before it, U+2069 after.
+const rightToLeft = ["ar", "he"];
+const isolateStart = String.fromCodePoint(0x2068);
+const isolateEnd = String.fromCodePoint(0x2069);
+
+/** What the window of the wait says for each reason the launcher was not reached, by its code: the launcher's page's own phrases, which its translations hold. */
+export const waitingRefusals = new Map([
+    ["launcher-not-started", "RPG Engine did not start within {seconds} seconds: try again. If it happens again, type rpg launcher in a terminal to see why."],
+    ["launcher-silent", "RPG Engine is already running, at {url}, but does not answer: end its process, {pid}, or restart the computer, then try again."],
+    ["launcher-not-quit", "RPG Engine {version} is still running, at {url}, and did not close: end its process, {pid}, or restart the computer, then try again."],
+]);
+
+/** Serves the page of the wait on a port of this machine, in the language given, as the launcher's page would speak it, from the built page's words. */
+export async function serveWaitingPage(language: string = systemLanguage(), keep = keepWait, built: string = builtPage): Promise<WaitingPage>
 {
-    const words = waitingWords(language);
+    const words = waitingWords(language, built);
     const page = waitingHtml(words.text, words.language);
-    let answer: { url: string; } | { error: string; } | undefined;
+    let answer: { url: string; } | (RefusalBody & { said: string; }) | undefined;
     let taken = (): void => undefined;
     const ended = new Promise<void>((done) => (taken = done));
 
@@ -55,7 +69,7 @@ export async function serveWaitingPage(language: string = systemLanguage(), keep
     return {
         url: `http://127.0.0.1:${String(port)}/`,
         reached: (given) => {
-            answer = given;
+            answer = "error" in given ? { ...given, said: waitingRefusal(given, words.language, built) } : given;
             setTimeout(taken, keep).unref();
         },
         ended: closed,
@@ -63,25 +77,50 @@ export async function serveWaitingPage(language: string = systemLanguage(), keep
 }
 
 /** The words of the wait in a language the page ships, its base language's, else English: the launcher's own phrase for a campaign being opened. */
-export function waitingWords(language: string): { text: string; language: string; }
+export function waitingWords(language: string, built: string = builtPage): { text: string; language: string; }
 {
     const phrase = "Opening {name}: it can take a few seconds…";
-    const asked = language.toLowerCase();
+    const own = shippedPhrase(phrase, language, built);
+    return { text: (own?.text ?? phrase).replace("{name}", "RPG Engine"), language: own?.code ?? "en" };
+}
 
-    for (const code of [asked, asked.split("-")[0]]) {
+// Why the launcher was not reached, as its page says it by the refusal's code, in the window's language, else in the page's English; the engine's words
+// for a code with no phrase here, or where a value of the phrase did not come.
+function waitingRefusal(refusal: RefusalBody, language: string, built: string): string
+{
+    const phrase = waitingRefusals.get(refusal.code ?? "");
+    const values = refusal.values ?? {};
+    const names = phrase === undefined ? [] : [...phrase.matchAll(/\{(\w+)\}/g)].map((found) => found[1]);
+
+    if (phrase === undefined || names.some((name) => values[name] === undefined)) {
+        return refusal.error;
+    }
+
+    // As on the page, each value keeps its own order in a window written from right to left.
+    const isolated = (value: string): string => (rightToLeft.includes(language) ? `${isolateStart}${value}${isolateEnd}` : value);
+    return (shippedPhrase(phrase, language, built)?.text ?? phrase).replace(/\{(\w+)\}/g, (whole, name: string) => (values[name] === undefined ? whole : isolated(values[name])));
+}
+
+// A phrase in the first file of the page's words for a language that has it, with that file's code: the language's own, then its base language's where
+// written in the same script, as the page reads them; undefined where none has it, or reads.
+function shippedPhrase(phrase: string, language: string, built: string): { text: string; code: string; } | undefined
+{
+    const codes = codeAndBase(language);
+
+    for (const code of [...codes, codes.at(-1) === "no" ? "nb" : ""].filter((one) => /^[a-z]{2,3}(-[a-z0-9]{2,8})*$/.test(one))) {
         try {
-            const phrases = JSON.parse(files().text(join(builtPage, "i18n", `${code}.json`)) ?? "{}") as Record<string, string>;
-            const own = phrases[phrase];
+            const read: unknown = JSON.parse(files().text(join(built, "i18n", `${code}.json`)) ?? "null");
+            const text = typeof read === "object" && read !== null && Object.hasOwn(read, phrase) ? (read as Record<string, unknown>)[phrase] : undefined;
 
-            if (own !== undefined && /^[a-z]{2,3}$/.test(code)) {
-                return { text: own.replace("{name}", "RPG Engine"), language: code };
+            if (typeof text === "string" && text !== "") {
+                return { text, code };
             }
         } catch {
-            // A language the page does not ship: the next, else English.
+            // A file that does not read: the next, else English.
         }
     }
 
-    return { text: phrase.replace("{name}", "RPG Engine"), language: "en" };
+    return undefined;
 }
 
 // The language this computer speaks, as the browser would take it.
@@ -97,16 +136,15 @@ function waitingHtml(text: string, language: string): { html: string; policy: st
     const script = [
         `const ask = () => fetch("/ready").then((r) => r.json()).then((a) => {`,
         `  if (a.url) { location.replace(a.url.replace(/\\/$/, "") + "/" + location.search); }`,
-        `  else if (a.error) { document.querySelector("p").textContent = a.error; document.body.classList.add("failed"); }`,
+        `  else if (a.error) { document.querySelector("p").textContent = a.said || a.error; document.body.classList.add("failed"); }`,
         `  else { setTimeout(ask, ${String(askEvery)}); }`,
         `}, () => setTimeout(ask, ${String(askEvery)}));`,
         "ask();",
     ].join("\n");
     const hash = createHash("sha256").update(script).digest("base64");
-    const rightToLeft = ["ar", "he"].includes(language);
     const html = [
         "<!doctype html>",
-        `<html lang="${language}" translate="no"${rightToLeft ? ' dir="rtl"' : ""}>`,
+        `<html lang="${language}" translate="no"${rightToLeft.includes(language) ? ' dir="rtl"' : ""}>`,
         '<meta charset="utf-8">',
         '<meta name="color-scheme" content="light dark">',
         "<title>RPG Engine</title>",
