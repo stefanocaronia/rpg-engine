@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,399391de,b9b941d4 f2f35057,dcb833ce,3661674f 128c5761,5e6cbafc,cd16e5a6,df844d16,54eb7440,cb3f91d5 5faea867,7780116a,257e14ef,8b9540c8,e6bcc348,b21fdaf2,a9023962,dc851a2f,4e73872a,3321ea83,cc411520,38b42932,07c079ea,1e1ebddd,5776f364,99bad4f2,b3bfa381,d81788dc,06d7d789,95f63083,fcd9d9f2,cc9c5926,da22506b,a0f716e2,2d41ef42,92cd7d18,cb3f91d5 09eaf555,63d0c1fb,5a20c405,46692547,2429eeb8,d53b8017,6e4bdfd4,84538436,b0846f60,d476cb45,5145bf8e,bdf76e0b,ed46bb4c,6b0f127a,dacddf54,f1889524,64f26156,26b982a6,9f64dfc4,d7cd4a76,fa2e4d86,d55cf2ad,32cb68d5,25225259,e99d4a68,b639004d,f8693a91,6a5febbd,8f855240,63cce6bb,67f31729,cb3f91d5 ec2eeb06,d286e13a,48eb825c,9df7b51c,f7a4bf33,449b1e27,cb3f91d5 5c9936b5,4cb1181b,c29efa25,6970b493,25f5a468,e6d01ec3,cb3f91d5 7157db71,74001149,243b9ac3,47fbf52f,cb3f91d5 3cb2d6e9,9ae16b8f. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,399391de,b9b941d4 f2f35057,5d444eaa,3661674f 128c5761,5e6cbafc,cd16e5a6,df844d16,54eb7440,cb3f91d5 5faea867,7780116a,257e14ef,8b9540c8,e6bcc348,b21fdaf2,b215d13b,dc851a2f,4e73872a,3321ea83,cc411520,38b42932,07c079ea,1e1ebddd,5776f364,99bad4f2,b3bfa381,d81788dc,06d7d789,95f63083,fcd9d9f2,cc9c5926,da22506b,a0f716e2,2d41ef42,92cd7d18,cb3f91d5 09eaf555,63d0c1fb,5a20c405,46692547,2429eeb8,d53b8017,6e4bdfd4,84538436,b0846f60,d476cb45,5145bf8e,bdf76e0b,ed46bb4c,6b0f127a,dacddf54,f1889524,64f26156,26b982a6,9f64dfc4,d7cd4a76,fa2e4d86,d55cf2ad,32cb68d5,25225259,e99d4a68,b639004d,f8693a91,6a5febbd,8f855240,63cce6bb,67f31729,cb3f91d5 ec2eeb06,d286e13a,48eb825c,9df7b51c,f7a4bf33,449b1e27,cb3f91d5 5c9936b5,4cb1181b,c29efa25,6970b493,25f5a468,e6d01ec3,cb3f91d5 7157db71,74001149,243b9ac3,47fbf52f,cb3f91d5 3cb2d6e9,9ae16b8f. Change the English, then run it again. -->
 # RPG Engine: 전체 가이드
 
 **RPG Engine**으로 **AI를 GM**으로 두고 테이블탑 롤플레잉 게임을 즐길 수 있어요. 플레이는 **대시보드**에서 해요. 컴퓨터의 창 하나에 캐릭터 시트, 주사위, 지도, 일지, 그리고 GM과 나누는 **채팅**이 모여 있어요.
@@ -9,7 +9,7 @@
 
 1. [nodejs.org](https://nodejs.org)에서 **Node.js**를 설치해요(LTS 버전).
 2. 새 터미널을 열고 `npm install -g rpg-engine`을 입력해요. Windows에서 스크립트 실행이 비활성화되어 있다고 나오면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`를 입력하고, 예라고 답한 뒤 다시 시도해요.
-3. `rpg open`을 입력해요. 바탕화면에 아이콘을 둘지 물어보면 Enter를 눌러요([2.2](#22-installing)). 그다음부터는 아이콘으로 RPG Engine을 시작해요.
+3. `rpg open`을 입력해요. 바탕화면에 RPG Engine 아이콘이 생겨요([2.2](#22-installing)). 그다음부터는 아이콘으로 RPG Engine을 시작해요.
 4. **새 캠페인**을 누르고 이름을 정한 뒤 **만들기**를 눌러요([2.3](#23-a-new-campaign)).
 5. 채팅에서 AI 앱과 모델을 골라요([2.4](#24-connect-your-ai)). Claude Code는 유료 Claude 요금제가, Codex는 무료든 유료든 ChatGPT 계정이 필요해요. **채팅 열기**를 누르고 **시작**을 눌러요.
 
@@ -53,7 +53,7 @@ rpg open
 
 첫 번째 줄은 RPG Engine을 설치해요. npm이 스스로 업데이트하겠냐고 물어도 무시해도 돼요.
 
-`rpg open`은 RPG Engine 창을 열어요. 처음에는 바탕화면과 메뉴에 아이콘을 추가할지 물어봐요. 예라면 Enter를 눌러요. 그다음부터는 아이콘으로 시작해요.
+`rpg open`은 RPG Engine 창을 열어요. 처음에는 바탕화면과 메뉴에 아이콘도 추가해요. 그다음부터는 아이콘으로 시작해요. 아이콘을 없애려면 `rpg icon --remove`를 입력해요.
 
 설치에 실패하면 `node --version`이 24 이상으로 나오는지 확인해요. Windows에서 스크립트 실행이 비활성화되어 있다고 나오면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`를 입력하고 예라고 답해요. Windows에서는 RPG Engine과 캠페인을 `&`가 들어간 경로에 두지 마세요.
 

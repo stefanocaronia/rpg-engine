@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,399391de,b9b941d4 f2f35057,dcb833ce,3661674f 128c5761,5e6cbafc,cd16e5a6,df844d16,54eb7440,cb3f91d5 5faea867,7780116a,257e14ef,8b9540c8,e6bcc348,b21fdaf2,a9023962,dc851a2f,4e73872a,3321ea83,cc411520,38b42932,07c079ea,1e1ebddd,5776f364,99bad4f2,b3bfa381,d81788dc,06d7d789,95f63083,fcd9d9f2,cc9c5926,da22506b,a0f716e2,2d41ef42,92cd7d18,cb3f91d5 09eaf555,63d0c1fb,5a20c405,46692547,2429eeb8,d53b8017,6e4bdfd4,84538436,b0846f60,d476cb45,5145bf8e,bdf76e0b,ed46bb4c,6b0f127a,dacddf54,f1889524,64f26156,26b982a6,9f64dfc4,d7cd4a76,fa2e4d86,d55cf2ad,32cb68d5,25225259,e99d4a68,b639004d,f8693a91,6a5febbd,8f855240,63cce6bb,67f31729,cb3f91d5 ec2eeb06,d286e13a,48eb825c,9df7b51c,f7a4bf33,449b1e27,cb3f91d5 5c9936b5,4cb1181b,c29efa25,6970b493,25f5a468,e6d01ec3,cb3f91d5 7157db71,74001149,243b9ac3,47fbf52f,cb3f91d5 3cb2d6e9,9ae16b8f. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,399391de,b9b941d4 f2f35057,5d444eaa,3661674f 128c5761,5e6cbafc,cd16e5a6,df844d16,54eb7440,cb3f91d5 5faea867,7780116a,257e14ef,8b9540c8,e6bcc348,b21fdaf2,b215d13b,dc851a2f,4e73872a,3321ea83,cc411520,38b42932,07c079ea,1e1ebddd,5776f364,99bad4f2,b3bfa381,d81788dc,06d7d789,95f63083,fcd9d9f2,cc9c5926,da22506b,a0f716e2,2d41ef42,92cd7d18,cb3f91d5 09eaf555,63d0c1fb,5a20c405,46692547,2429eeb8,d53b8017,6e4bdfd4,84538436,b0846f60,d476cb45,5145bf8e,bdf76e0b,ed46bb4c,6b0f127a,dacddf54,f1889524,64f26156,26b982a6,9f64dfc4,d7cd4a76,fa2e4d86,d55cf2ad,32cb68d5,25225259,e99d4a68,b639004d,f8693a91,6a5febbd,8f855240,63cce6bb,67f31729,cb3f91d5 ec2eeb06,d286e13a,48eb825c,9df7b51c,f7a4bf33,449b1e27,cb3f91d5 5c9936b5,4cb1181b,c29efa25,6970b493,25f5a468,e6d01ec3,cb3f91d5 7157db71,74001149,243b9ac3,47fbf52f,cb3f91d5 3cb2d6e9,9ae16b8f. Change the English, then run it again. -->
 # RPG Engine: eksiksiz kılavuz
 
 **RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyunu **gösterge panelinde** oynarsın: bilgisayarındaki bu pencerede karakter kağıdın, zarlar, haritalar, günlüğün ve oyun yöneticisiyle **sohbetin** bulunur.
@@ -9,7 +9,7 @@ Bu kılavuz nasıl oynayacağını anlatır. Sayfa kendi düğmelerini kendisi a
 
 1. [nodejs.org](https://nodejs.org) adresinden **Node.js** kur (LTS sürümü).
 2. Yeni bir terminal aç ve `npm install -g rpg-engine` yaz. Windows betiklerin çalıştırılmasının devre dışı olduğunu söylerse `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` yaz, evet de ve yeniden dene.
-3. `rpg open` yaz. Masaüstüne simge eklemeyi önerdiğinde Enter'a bas ([2.2](#22-installing)). Bundan sonra RPG Engine'i simgesinden başlatırsın.
+3. `rpg open` yaz: RPG Engine'in simgesi masaüstüne eklenir ([2.2](#22-installing)). Bundan sonra RPG Engine'i simgesinden başlatırsın.
 4. **Yeni kampanya**'ya bas, bir ad ver ve **Oluştur**'a bas ([2.3](#23-a-new-campaign)).
 5. Sohbette yapay zekâ uygulamanı ve modelini seç ([2.4](#24-connect-your-ai)): Claude Code için ücretli bir Claude planı, Codex için ücretsiz ya da ücretli bir ChatGPT hesabı gerekir. **Sohbeti aç**'a, sonra **Başla**'ya bas.
 
@@ -53,7 +53,7 @@ rpg open
 
 İlk satır RPG Engine'i kurar. npm kendini güncellemeyi önerirse bunu yok sayabilirsin.
 
-`rpg open`, RPG Engine'in penceresini açar. İlk seferde masaüstüne ve menüne bir simge eklemeyi önerir: evet için Enter'a bas. Bundan sonra RPG Engine'i simgesinden başlatırsın.
+`rpg open`, RPG Engine'in penceresini açar. İlk seferde masaüstüne ve menüne de bir simge ekler: bundan sonra RPG Engine'i simgesinden başlatırsın. Simgeyi kaldırmak için `rpg icon --remove` yaz.
 
 Kurulum başarısız olursa `node --version` komutunun 24 ya da daha yüksek bir sürüm yazdığını kontrol et. Windows betiklerin çalıştırılmasının devre dışı olduğunu söylerse `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` yaz ve evet de. Windows'ta RPG Engine'i ve kampanyalarını içinde `&` olan yollardan uzak tut.
 

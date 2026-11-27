@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,399391de,b9b941d4 f2f35057,dcb833ce,3661674f 128c5761,5e6cbafc,cd16e5a6,df844d16,54eb7440,cb3f91d5 5faea867,7780116a,257e14ef,8b9540c8,e6bcc348,b21fdaf2,a9023962,dc851a2f,4e73872a,3321ea83,cc411520,38b42932,07c079ea,1e1ebddd,5776f364,99bad4f2,b3bfa381,d81788dc,06d7d789,95f63083,fcd9d9f2,cc9c5926,da22506b,a0f716e2,2d41ef42,92cd7d18,cb3f91d5 09eaf555,63d0c1fb,5a20c405,46692547,2429eeb8,d53b8017,6e4bdfd4,84538436,b0846f60,d476cb45,5145bf8e,bdf76e0b,ed46bb4c,6b0f127a,dacddf54,f1889524,64f26156,26b982a6,9f64dfc4,d7cd4a76,fa2e4d86,d55cf2ad,32cb68d5,25225259,e99d4a68,b639004d,f8693a91,6a5febbd,8f855240,63cce6bb,67f31729,cb3f91d5 ec2eeb06,d286e13a,48eb825c,9df7b51c,f7a4bf33,449b1e27,cb3f91d5 5c9936b5,4cb1181b,c29efa25,6970b493,25f5a468,e6d01ec3,cb3f91d5 7157db71,74001149,243b9ac3,47fbf52f,cb3f91d5 3cb2d6e9,9ae16b8f. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,399391de,b9b941d4 f2f35057,5d444eaa,3661674f 128c5761,5e6cbafc,cd16e5a6,df844d16,54eb7440,cb3f91d5 5faea867,7780116a,257e14ef,8b9540c8,e6bcc348,b21fdaf2,b215d13b,dc851a2f,4e73872a,3321ea83,cc411520,38b42932,07c079ea,1e1ebddd,5776f364,99bad4f2,b3bfa381,d81788dc,06d7d789,95f63083,fcd9d9f2,cc9c5926,da22506b,a0f716e2,2d41ef42,92cd7d18,cb3f91d5 09eaf555,63d0c1fb,5a20c405,46692547,2429eeb8,d53b8017,6e4bdfd4,84538436,b0846f60,d476cb45,5145bf8e,bdf76e0b,ed46bb4c,6b0f127a,dacddf54,f1889524,64f26156,26b982a6,9f64dfc4,d7cd4a76,fa2e4d86,d55cf2ad,32cb68d5,25225259,e99d4a68,b639004d,f8693a91,6a5febbd,8f855240,63cce6bb,67f31729,cb3f91d5 ec2eeb06,d286e13a,48eb825c,9df7b51c,f7a4bf33,449b1e27,cb3f91d5 5c9936b5,4cb1181b,c29efa25,6970b493,25f5a468,e6d01ec3,cb3f91d5 7157db71,74001149,243b9ac3,47fbf52f,cb3f91d5 3cb2d6e9,9ae16b8f. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú spilar í **yfirlitinu**, glugga á tölvunni þinni með persónublaðinu þínu, teningunum, kortunum, dagbókinni og **spjallinu** við sögumanninn.
@@ -9,7 +9,7 @@
 
 1. Settu upp **Node.js** frá [nodejs.org](https://nodejs.org) (LTS-útgáfuna).
 2. Opnaðu nýjan skipanaglugga og skrifaðu `npm install -g rpg-engine`. Ef Windows segir að keyrsla skripta sé óvirk skaltu skrifa `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, svara já og reyna aftur.
-3. Skrifaðu `rpg open` og ýttu á Enter þegar það býður tákn á skjáborðið ([2.2](#22-installing)). Eftir það ræsirðu RPG Engine með tákninu.
+3. Skrifaðu `rpg open`: það setur tákn RPG Engine á skjáborðið ([2.2](#22-installing)). Eftir það ræsirðu RPG Engine með tákninu.
 4. Ýttu á **Ný herferð**, gefðu henni nafn og ýttu á **Búa til** ([2.3](#23-a-new-campaign)).
 5. Veldu í spjallinu gervigreindarforritið þitt og líkan þess ([2.4](#24-connect-your-ai)): Claude Code krefst greiddrar Claude-áskriftar, Codex ChatGPT-reiknings, ókeypis eða greidds. Ýttu á **Opna spjallið** og svo á **Byrja**.
 
@@ -53,7 +53,7 @@ rpg open
 
 Fyrsta línan setur RPG Engine upp. Ef npm býðst til að uppfæra sig sjálft geturðu hunsað það.
 
-`rpg open` opnar glugga RPG Engine. Í fyrsta skipti býður það tákn á skjáborðið og í valmyndina: ýttu á Enter til að svara já. Eftir það ræsirðu forritið með tákninu.
+`rpg open` opnar glugga RPG Engine. Í fyrsta skipti setur það líka tákn á skjáborðið og í valmyndina: eftir það ræsirðu forritið með tákninu. Til að fjarlægja það skaltu skrifa `rpg icon --remove`.
 
 Ef uppsetningin mistekst skaltu athuga að `node --version` segi 24 eða hærra. Ef Windows segir að keyrsla skripta sé óvirk skaltu skrifa `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` og svara já. Á Windows skaltu hafa RPG Engine og herferðirnar þínar utan slóða sem innihalda `&`.
 

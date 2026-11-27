@@ -22,7 +22,7 @@ Where things are in the repository, what each module depends on, and where new c
 | `src/<module>/` | One job each, behind its `index.ts` (table below) |
 | [src/commands/](../src/commands/) | The commands, a file each; a topic whose commands have helpers of their own is a folder with them, such as [view/](../src/commands/view/), [scene/](../src/commands/scene/), [config/](../src/commands/config/) and [package/](../src/commands/package/), and the helpers that join modules for several topics are in [shared/](../src/commands/shared/), a folder for each topic: `campaign/`, `sheet/`, `scene/`, `time/`, `places/`, `characters/`, `books/`, `packages/` |
 | [src/cli/cli.ts](../src/cli/cli.ts), [src/cli/command-line.ts](../src/cli/command-line.ts) | The `rpg` binary |
-| [src/cli/open.ts](../src/cli/open.ts), [src/cli/icon.ts](../src/cli/icon.ts) | `rpg open`, which reaches the launcher and opens its page, and `rpg icon`; the question, once a machine, whether to put the icon on the desktop and in the menu |
+| [src/cli/open.ts](../src/cli/open.ts), [src/cli/icon.ts](../src/cli/icon.ts) | `rpg open`, which reaches the launcher and opens its page, and `rpg icon`; the icon put on the desktop and in the menu by the first `rpg` run in a terminal of a machine |
 | [src/commands/shared/books/library-reader.ts](../src/commands/shared/books/library-reader.ts) | `rpg --read-library`, the process that reads the books of the computer's library apart, as `rules`, `config` and the dashboard start it |
 | [src/server/mcp.ts](../src/server/mcp.ts) | The MCP server |
 | [src/server/context.ts](../src/server/context.ts) | The context of a server on this computer, a chat's own or its campaign's table: what reaches the player's computer, and what follows the chat it serves |

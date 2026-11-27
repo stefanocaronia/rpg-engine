@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,399391de,b9b941d4 f2f35057,dcb833ce,3661674f 128c5761,5e6cbafc,cd16e5a6,df844d16,54eb7440,cb3f91d5 5faea867,7780116a,257e14ef,8b9540c8,e6bcc348,b21fdaf2,a9023962,dc851a2f,4e73872a,3321ea83,cc411520,38b42932,07c079ea,1e1ebddd,5776f364,99bad4f2,b3bfa381,d81788dc,06d7d789,95f63083,fcd9d9f2,cc9c5926,da22506b,a0f716e2,2d41ef42,92cd7d18,cb3f91d5 09eaf555,63d0c1fb,5a20c405,46692547,2429eeb8,d53b8017,6e4bdfd4,84538436,b0846f60,d476cb45,5145bf8e,bdf76e0b,ed46bb4c,6b0f127a,dacddf54,f1889524,64f26156,26b982a6,9f64dfc4,d7cd4a76,fa2e4d86,d55cf2ad,32cb68d5,25225259,e99d4a68,b639004d,f8693a91,6a5febbd,8f855240,63cce6bb,67f31729,cb3f91d5 ec2eeb06,d286e13a,48eb825c,9df7b51c,f7a4bf33,449b1e27,cb3f91d5 5c9936b5,4cb1181b,c29efa25,6970b493,25f5a468,e6d01ec3,cb3f91d5 7157db71,74001149,243b9ac3,47fbf52f,cb3f91d5 3cb2d6e9,9ae16b8f. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,399391de,b9b941d4 f2f35057,5d444eaa,3661674f 128c5761,5e6cbafc,cd16e5a6,df844d16,54eb7440,cb3f91d5 5faea867,7780116a,257e14ef,8b9540c8,e6bcc348,b21fdaf2,b215d13b,dc851a2f,4e73872a,3321ea83,cc411520,38b42932,07c079ea,1e1ebddd,5776f364,99bad4f2,b3bfa381,d81788dc,06d7d789,95f63083,fcd9d9f2,cc9c5926,da22506b,a0f716e2,2d41ef42,92cd7d18,cb3f91d5 09eaf555,63d0c1fb,5a20c405,46692547,2429eeb8,d53b8017,6e4bdfd4,84538436,b0846f60,d476cb45,5145bf8e,bdf76e0b,ed46bb4c,6b0f127a,dacddf54,f1889524,64f26156,26b982a6,9f64dfc4,d7cd4a76,fa2e4d86,d55cf2ad,32cb68d5,25225259,e99d4a68,b639004d,f8693a91,6a5febbd,8f855240,63cce6bb,67f31729,cb3f91d5 ec2eeb06,d286e13a,48eb825c,9df7b51c,f7a4bf33,449b1e27,cb3f91d5 5c9936b5,4cb1181b,c29efa25,6970b493,25f5a468,e6d01ec3,cb3f91d5 7157db71,74001149,243b9ac3,47fbf52f,cb3f91d5 3cb2d6e9,9ae16b8f. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. Hraješ v **Přehledu**, v okně na počítači s deníkem postavy, kostkami, mapami, kronikou a **chatem** s Pánem jeskyně.
@@ -9,7 +9,7 @@ Tento průvodce ti říká, jak hrát. Stránka vysvětluje svá tlačítka sama
 
 1. Nainstaluj **Node.js** z [nodejs.org](https://nodejs.org) (verze LTS).
 2. Otevři nový terminál a napiš `npm install -g rpg-engine`. Pokud Windows odpoví, že spouštění skriptů je zakázané, napiš `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, odpověz ano a zkus to znovu.
-3. Napiš `rpg open` a stiskni Enter, když nabídne ikonu na ploše ([2.2](#22-installing)). Od té chvíle RPG Engine spouštíš z ikony.
+3. Napiš `rpg open`: na plochu se přidá ikona RPG Engine ([2.2](#22-installing)). Od té chvíle RPG Engine spouštíš z ikony.
 4. Stiskni **Nová kampaň**, zadej jméno a stiskni **Vytvořit** ([2.3](#23-a-new-campaign)).
 5. V chatu vyber svou AI aplikaci a její model ([2.4](#24-connect-your-ai)): Claude Code potřebuje placený tarif Claude, Codex účet ChatGPT, bezplatný nebo placený. Stiskni **Otevřít chat**, pak **Začít**.
 
@@ -53,7 +53,7 @@ rpg open
 
 První řádek nainstaluje RPG Engine. Pokud ti npm nabídne, že se aktualizuje, můžeš to ignorovat.
 
-`rpg open` otevře okno RPG Engine. Poprvé nabídne ikonu na ploše a v nabídce: stiskni Enter pro ano. Od té chvíle spouštíš z ikony.
+`rpg open` otevře okno RPG Engine. Poprvé také přidá ikonu na plochu a do nabídky: od té chvíle spouštíš z ikony. Pokud ji chceš odstranit, napiš `rpg icon --remove`.
 
 Pokud instalace selže, zkontroluj, že `node --version` ukazuje 24 nebo víc. Pokud Windows odpoví, že spouštění skriptů je zakázané, napiš `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` a odpověz ano. Ve Windows nech RPG Engine i své kampaně mimo cesty, které obsahují `&`.
 

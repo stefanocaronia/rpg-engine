@@ -1,21 +1,13 @@
-// The icon from the command line: `rpg open` in a terminal asks once a machine whether to put it on the desktop and in the menu; `rpg icon` puts it there
-// whenever the player wants it, and `rpg icon --remove` takes it away.
-import { createInterface } from "node:readline/promises";
-import { iconAsked, iconCommand, type IconPlaces, iconToRemake, makeIcons, noteIconAsked, noteIconMade, removeIcons } from "../desktop/index.ts";
+// The icon from the command line: the first `rpg` run in a terminal of a machine puts it on the desktop and in the menu, and says so; `rpg icon` puts it
+// there whenever the player wants it, and `rpg icon --remove` takes it away for good.
+import { iconCommand, type IconPlaces, iconSettled, iconToRemake, makeIcons, noteIconMade, noteIconSettled, removeIcons } from "../desktop/index.ts";
 
-/** Where the question is asked: an input and an output, which ask only when both are a terminal, and the environment. The tests give their own. */
+/** Where the command line runs: its output, which puts the icon there only when it is a terminal, and the environment. The tests give their own. */
 export interface Terminal
 {
-    readonly input: NodeJS.ReadableStream & { readonly isTTY?: boolean; };
-    readonly output: NodeJS.WritableStream & { readonly isTTY?: boolean; };
+    readonly output: { readonly isTTY?: boolean; };
     readonly env: NodeJS.ProcessEnv;
-    /** How long the question waits for an answer, a minute by default. */
-    readonly answerWait?: number;
 }
-
-// The icon runs `rpg open` in a console nobody sees, which is a terminal all the same: there the question is never answered, and a process that waited
-// for it would never end. A minute, then it is asked again another time.
-const answerWait = 60_000;
 
 /** Where the icon is noted and what it runs in: the engine's data folder, the player's home, the system; and, in the tests, the folders it goes in. */
 export interface IconWhere
@@ -27,13 +19,13 @@ export interface IconWhere
 }
 
 /**
- * Asks once a machine, in a terminal on a screen, whether to put the icon on the desktop and in the menu, and puts it there on a yes: what to tell the
- * player, if anything; with no answer within its wait, nothing, and it asks again another time. Once asked, an icon made by another Node or script is
- * made again, without a word.
+ * Puts the icon on the desktop and in the menu the first time the command line runs in a terminal on a screen of this machine, without asking: the line
+ * that says so, or why it could not, once. Then never again here, so one the player took away stays away; an icon made by another Node or script is made
+ * again, without a word.
  */
-export async function offerIcon(where: IconWhere, terminal: Terminal = processTerminal()): Promise<string | undefined>
+export async function iconOnFirstRun(where: IconWhere, terminal: Terminal = processTerminal()): Promise<string | undefined>
 {
-    if (iconAsked(where.home)) {
+    if (iconSettled(where.home)) {
         if (iconToRemake(where.home, iconCommand(where.userHome))) {
             await iconsMade(where);
         }
@@ -45,20 +37,13 @@ export async function offerIcon(where: IconWhere, terminal: Terminal = processTe
         return undefined;
     }
 
-    const words = wordsFor(where.platform);
-    const reader = createInterface({ input: terminal.input, output: terminal.output });
-    const signal = AbortSignal.timeout(terminal.answerWait ?? answerWait);
-    const answer = await reader.question(words.question, { signal }).catch(() => undefined).finally(() => reader.close());
-
-    if (answer === undefined) {
-        return undefined;
-    }
-
-    noteIconAsked(where.home);
-    return yes(answer) ? (await iconsMade(where)).said : words.later;
+    const made = await iconsMade(where);
+    // A failure too, said once: not at every command, and rpg icon tries again.
+    noteIconSettled(where.home);
+    return made.failed ? made.said : wordsFor(where.platform).first;
 }
 
-/** Puts the icon on the desktop and in the menu, and asks no more on this machine: what to tell the player, the files made or why there are none. */
+/** Puts the icon on the desktop and in the menu, which settles it on this machine: what to tell the player, the files made or why there are none. */
 export async function iconsMade(where: IconWhere): Promise<{ said: string; failed: boolean; }>
 {
     const words = wordsFor(where.platform);
@@ -83,30 +68,23 @@ export function iconsRemoved(where: IconWhere): string
 
 function processTerminal(): Terminal
 {
-    return { input: process.stdin, output: process.stdout, env: process.env };
+    return { output: process.stdout, env: process.env };
 }
 
-// A terminal the player sees: on Linux, one of a desktop, not one reached through SSH or WSL, where there is no desktop to put the icon on.
+// A terminal the player sees, not a CI run: on Linux, one of a desktop, not one reached through SSH or WSL, where there is no desktop to put the icon on.
 function onScreen(platform: string, terminal: Terminal): boolean
 {
     const desktop = platform !== "linux" || Boolean(terminal.env.DISPLAY || terminal.env.WAYLAND_DISPLAY);
-    return terminal.input.isTTY === true && terminal.output.isTTY === true && desktop;
-}
-
-// Yes unless it says no: Enter, "ok" and "sure" are yes, since the question is not asked again.
-function yes(answer: string): boolean
-{
-    return !answer.trim().toLowerCase().startsWith("n");
+    return terminal.output.isTTY === true && !terminal.env.CI && desktop;
 }
 
 /** The words for the player, with the menu as their system names it. */
-function wordsFor(platform: string): { question: string; made: string; later: string; failed: (reason: string) => string; removed: string; noneRemoved: string; }
+function wordsFor(platform: string): { first: string; made: string; failed: (reason: string) => string; removed: string; noneRemoved: string; }
 {
     const where = platform === "win32" ? "your Start menu" : platform === "darwin" ? "Applications" : "your applications menu";
     return {
-        question: `Add an RPG Engine icon to your desktop and ${where}? Double-click it to see your campaigns. [Y/n] `,
+        first: `RPG Engine's icon is on your desktop and in ${where}: double-click it to see your campaigns. To take it away: rpg icon --remove.`,
         made: `Done: RPG Engine is on your desktop and in ${where}.`,
-        later: "All right, no icon. To add it later, type rpg icon.",
         failed: (reason) => `RPG Engine could not add its icon (${reason}). Try again with rpg icon.`,
         removed: `Done: RPG Engine's icon is gone from your desktop and ${where}. To remove RPG Engine: npm uninstall -g rpg-engine. Your campaigns stay where they are.`,
         noneRemoved: "RPG Engine found no icon of its own on this computer.",

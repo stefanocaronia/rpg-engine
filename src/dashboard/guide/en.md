@@ -8,7 +8,7 @@ This guide tells you how to play. The page explains its own buttons: rest the po
 
 1. Install **Node.js** from [nodejs.org](https://nodejs.org) (the LTS version).
 2. Open a new terminal and write `npm install -g rpg-engine`. If Windows says that running scripts is disabled, write `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer yes and try again.
-3. Write `rpg open`, and press Enter when it offers the icon on your desktop ([2.2](#22-installing)). From then on you start RPG Engine from the icon.
+3. Write `rpg open`: it puts RPG Engine's icon on your desktop ([2.2](#22-installing)). From then on you start RPG Engine from the icon.
 4. Press **New campaign**, give it a name and press **Create** ([2.3](#23-a-new-campaign)).
 5. In the chat, choose your AI app and its model ([2.4](#24-connect-your-ai)): Claude Code needs a paid Claude plan, Codex a ChatGPT account, free or paid. Press **Open the chat**, then **Begin**.
 
@@ -52,7 +52,7 @@ rpg open
 
 The first line installs RPG Engine. If npm offers to update itself, you can ignore it.
 
-`rpg open` opens RPG Engine's window. The first time, it offers an icon on your desktop and in your menu: press Enter for yes, and from then on you start from the icon.
+`rpg open` opens RPG Engine's window. The first time, it also puts an icon on your desktop and in your menu: from then on you start from the icon. To take it away, write `rpg icon --remove`.
 
 If installing fails, check that `node --version` says 24 or more. If Windows says that running scripts is disabled, write `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` and answer yes. On Windows, keep RPG Engine and your campaigns out of paths that contain `&`.
 

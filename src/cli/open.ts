@@ -7,7 +7,7 @@ import { userDataFolder } from "../core/context.ts";
 import { getVersion } from "../core/version.ts";
 import { type BrowserOpened, type IconPlaces, openInBrowser } from "../desktop/index.ts";
 import { reachLauncher, serveWaitingPage, type WaitingPage } from "../server/launcher/index.ts";
-import { iconsMade, iconsRemoved, offerIcon, type Terminal } from "./icon.ts";
+import { iconOnFirstRun, iconsMade, iconsRemoved, type Terminal } from "./icon.ts";
 
 /** What `rpg open` and `rpg icon` take from outside: this computer's folders and system, how the launcher is reached and its page opened; the tests give their own. */
 export interface OpenWhere
@@ -44,7 +44,7 @@ export interface Streams
 
 /**
  * `rpg open`: the launcher reached, started apart where none of this engine answers, then its page opened in a window; what happened in one line, with the
- * link for a terminal where no browser started. In a terminal, it asks once a machine about the icon. A failure is also written to open.log in the data
+ * link for a terminal where no browser started. The first time in a terminal of a machine, it puts the icon there. A failure is also written to open.log in the data
  * folder, the last one alone, for the icon, which has no console.
  */
 export async function runOpen(args: string[], where: OpenWhere = thisComputer()): Promise<Said>
@@ -87,7 +87,7 @@ async function openLauncherPage(where: OpenWhere, opened: () => void): Promise<S
         await waiting.ended;
     }
 
-    // The window is there: another click opens again, whatever this process still does, as a question nobody answers under the icon.
+    // The window is there: another click opens again, whatever this process still does.
     opened();
 
     if ("error" in reached) {
@@ -99,7 +99,7 @@ async function openLauncherPage(where: OpenWhere, opened: () => void): Promise<S
         : shown === "tab"
         ? `RPG Engine's campaigns are open in your browser: ${reached.url}`
         : `RPG Engine's campaigns are at ${reached.url}: open that link in your browser.`;
-    const icon = await offerIcon(where, where.terminal);
+    const icon = await iconOnFirstRun(where, where.terminal).catch(() => undefined);
     return { output: icon === undefined ? line : `${line}\n${icon}`, exitCode: 0 };
 }
 

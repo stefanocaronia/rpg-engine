@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,399391de,b9b941d4 f2f35057,dcb833ce,3661674f 128c5761,5e6cbafc,cd16e5a6,df844d16,54eb7440,cb3f91d5 5faea867,7780116a,257e14ef,8b9540c8,e6bcc348,b21fdaf2,a9023962,dc851a2f,4e73872a,3321ea83,cc411520,38b42932,07c079ea,1e1ebddd,5776f364,99bad4f2,b3bfa381,d81788dc,06d7d789,95f63083,fcd9d9f2,cc9c5926,da22506b,a0f716e2,2d41ef42,92cd7d18,cb3f91d5 09eaf555,63d0c1fb,5a20c405,46692547,2429eeb8,d53b8017,6e4bdfd4,84538436,b0846f60,d476cb45,5145bf8e,bdf76e0b,ed46bb4c,6b0f127a,dacddf54,f1889524,64f26156,26b982a6,9f64dfc4,d7cd4a76,fa2e4d86,d55cf2ad,32cb68d5,25225259,e99d4a68,b639004d,f8693a91,6a5febbd,8f855240,63cce6bb,67f31729,cb3f91d5 ec2eeb06,d286e13a,48eb825c,9df7b51c,f7a4bf33,449b1e27,cb3f91d5 5c9936b5,4cb1181b,c29efa25,6970b493,25f5a468,e6d01ec3,cb3f91d5 7157db71,74001149,243b9ac3,47fbf52f,cb3f91d5 3cb2d6e9,9ae16b8f. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,399391de,b9b941d4 f2f35057,5d444eaa,3661674f 128c5761,5e6cbafc,cd16e5a6,df844d16,54eb7440,cb3f91d5 5faea867,7780116a,257e14ef,8b9540c8,e6bcc348,b21fdaf2,b215d13b,dc851a2f,4e73872a,3321ea83,cc411520,38b42932,07c079ea,1e1ebddd,5776f364,99bad4f2,b3bfa381,d81788dc,06d7d789,95f63083,fcd9d9f2,cc9c5926,da22506b,a0f716e2,2d41ef42,92cd7d18,cb3f91d5 09eaf555,63d0c1fb,5a20c405,46692547,2429eeb8,d53b8017,6e4bdfd4,84538436,b0846f60,d476cb45,5145bf8e,bdf76e0b,ed46bb4c,6b0f127a,dacddf54,f1889524,64f26156,26b982a6,9f64dfc4,d7cd4a76,fa2e4d86,d55cf2ad,32cb68d5,25225259,e99d4a68,b639004d,f8693a91,6a5febbd,8f855240,63cce6bb,67f31729,cb3f91d5 ec2eeb06,d286e13a,48eb825c,9df7b51c,f7a4bf33,449b1e27,cb3f91d5 5c9936b5,4cb1181b,c29efa25,6970b493,25f5a468,e6d01ec3,cb3f91d5 7157db71,74001149,243b9ac3,47fbf52f,cb3f91d5 3cb2d6e9,9ae16b8f. Change the English, then run it again. -->
 # RPG Engine: den komplette guide
 
 **RPG Engine** lader dig spille et bordrollespil med **en AI som spilleder**. Du spiller i **dashboardet**, et vindue på din computer med dit karakterark, terningerne, kortene, din dagbog og **chatten** med spillederen.
@@ -9,7 +9,7 @@ Denne guide fortæller, hvordan du spiller. Siden forklarer selv sine knapper: h
 
 1. Installer **Node.js** fra [nodejs.org](https://nodejs.org) (LTS-versionen).
 2. Åbn en ny terminal, og skriv `npm install -g rpg-engine`. Hvis Windows siger, at det er slået fra at køre scripts, skal du skrive `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, svare ja og prøve igen.
-3. Skriv `rpg open`, og tryk på Enter, når den tilbyder ikonet på dit skrivebord ([2.2](#22-installing)). Fra da af starter du RPG Engine fra ikonet.
+3. Skriv `rpg open`: det lægger RPG Engines ikon på dit skrivebord ([2.2](#22-installing)). Fra da af starter du RPG Engine fra ikonet.
 4. Tryk på **Ny kampagne**, giv den et navn, og tryk på **Opret** ([2.3](#23-a-new-campaign)).
 5. I chatten vælger du din AI-app og dens model ([2.4](#24-connect-your-ai)): Claude Code kræver et betalt Claude-abonnement, Codex en ChatGPT-konto, gratis eller betalt. Tryk på **Åbn chatten** og derefter på **Begynd**.
 
@@ -53,7 +53,7 @@ rpg open
 
 Den første linje installerer RPG Engine. Hvis npm tilbyder at opdatere sig selv, kan du ignorere det.
 
-`rpg open` åbner RPG Engines vindue. Første gang tilbyder det et ikon på dit skrivebord og i din menu: tryk på Enter for ja, og fra da af starter du fra ikonet.
+`rpg open` åbner RPG Engines vindue. Første gang lægger det også et ikon på dit skrivebord og i din menu: fra da af starter du fra ikonet. Hvis du vil fjerne det, skal du skrive `rpg icon --remove`.
 
 Hvis installationen mislykkes, så tjek, at `node --version` viser 24 eller mere. Hvis Windows siger, at det er slået fra at køre scripts, skal du skrive `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` og svare ja. På Windows skal du holde RPG Engine og dine kampagner ude af stier, der indeholder `&`.
 

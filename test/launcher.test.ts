@@ -6,7 +6,7 @@ import { basename, join } from "node:path";
 import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { offerIcon, type Terminal } from "../src/cli/icon.ts";
+import { iconOnFirstRun, type Terminal } from "../src/cli/icon.ts";
 import { type OpenWhere, runIcon, runOpen, sayAndEnd } from "../src/cli/open.ts";
 import { chooseFolder, dialogCommands, folderCommands } from "../src/confirm/index.ts";
 import type { Context } from "../src/core/context.ts";
@@ -20,9 +20,9 @@ import { windowPlace as pageWindowPlace } from "../src/dashboard/shell/window.ts
 import {
     appBrowser,
     type BrowserSystem,
-    iconAsked,
     type IconCommand,
     iconCommand,
+    iconSettled,
     iconToRemake,
     makeIcons,
     noteIconMade,
@@ -1247,7 +1247,7 @@ describe("the icon", () => {
         expect(iconToRemake(home, { ...command, path: "/usr/local/bin" }, "desk")).toBe(false);
         expect(iconToRemake(home, iconCommand("/home/ann"), "desk")).toBe(true);
         expect(iconToRemake(home, iconCommand("/home/ann"), "desk", () => false)).toBe(false);
-        expect(iconAsked(home, "desk")).toBe(true);
+        expect(iconSettled(home, "desk")).toBe(true);
         expect(iconCommand("/home/ann", "/bin")).toMatchObject({ node: process.execPath, folder: "/home/ann", path: "/bin", args: expect.arrayContaining(["open"]) });
     });
 
@@ -1319,22 +1319,9 @@ function shellLink(bytes: Buffer): { target: string; name?: string; folder?: str
 }
 
 /** A terminal that answers the question once it is shown, on a Linux desktop unless told otherwise; what it showed. */
-function fakeTerminal(answer: string, options: { tty?: boolean; env?: NodeJS.ProcessEnv; } = {}): { terminal: Terminal; shown: () => string; }
+function fakeTerminal(options: { tty?: boolean; env?: NodeJS.ProcessEnv; } = {}): Terminal
 {
-    const tty = options.tty ?? true;
-    const input = Object.assign(new PassThrough(), { isTTY: tty });
-    const output = Object.assign(new PassThrough(), { isTTY: tty });
-    let shown = "";
-    let answered = false;
-    output.on("data", (chunk: Buffer) => {
-        shown += chunk.toString("utf8");
-
-        if (!answered && shown.includes("[Y/n]")) {
-            answered = true;
-            input.write(`${answer}\r`);
-        }
-    });
-    return { terminal: { input, output, env: options.env ?? { DISPLAY: ":0" } }, shown: () => shown };
+    return { output: { isTTY: options.tty ?? true }, env: options.env ?? { DISPLAY: ":0" } };
 }
 
 describe("rpg open, rpg icon and rpg launcher", () => {
@@ -1348,7 +1335,7 @@ describe("rpg open, rpg icon and rpg launcher", () => {
         reach: () => Promise.resolve({ url: "http://127.0.0.1:5750" }),
         browser: () => Promise.resolve("window"),
         waiting: () => Promise.resolve({ url: "http://127.0.0.1:5799/", reached: () => undefined, ended: Promise.resolve() }),
-        terminal: fakeTerminal("n", { tty: false }).terminal,
+        terminal: fakeTerminal({ tty: false }),
         now: () => new Date("2026-11-25T08:00:00Z"),
         ...own,
     });
@@ -1405,15 +1392,6 @@ describe("rpg open, rpg icon and rpg launcher", () => {
         expect(opened).toBe(1);
         expect(existsSync(join(home, "opening"))).toBe(false);
 
-        // Once its window is there, a question nobody answers, as under the icon, holds nothing.
-        const input = Object.assign(new PassThrough(), { isTTY: true });
-        const output = Object.assign(new PassThrough(), { isTTY: true });
-        const asking = runOpen([], where({ terminal: { input, output, env: { DISPLAY: ":0" }, answerWait: 2000 } }));
-        await vi.waitFor(() => expect(String(output.read() ?? "")).toContain("[Y/n]"));
-        expect(existsSync(join(home, "opening"))).toBe(false);
-        expect((await runOpen([], where())).output).toBe("RPG Engine's campaigns are open in a window: http://127.0.0.1:5750");
-        await asking;
-
         // A mark left by a process that is gone, or older than half a minute, holds nothing.
         writeFileSync(join(home, "opening"), `999999999 ${String(new Date("2026-11-25T08:00:00Z").getTime())}`);
         expect((await runOpen([], where())).exitCode).toBe(0);
@@ -1469,35 +1447,45 @@ describe("rpg open, rpg icon and rpg launcher", () => {
         expect(readFileSync(join(home, "open.log"), "utf8")).toBe("2026-11-25T08:00:00.000Z RPG Engine's launcher did not start within ten seconds.\n");
     });
 
-    it("asks once a machine in a terminal whether to put the icon there: no is noted, yes puts it where it is told", async () => {
-        const said = fakeTerminal("n");
-        expect((await runOpen([], where({ terminal: said.terminal }))).output).toContain("All right, no icon. To add it later, type rpg icon.");
-        expect(said.shown()).toContain("Add an RPG Engine icon to your desktop and your applications menu? Double-click it to see your campaigns. [Y/n]");
-        expect(iconAsked(home)).toBe(true);
-        expect(await offerIcon(where(), fakeTerminal("y").terminal)).toBeUndefined();
-
-        const other = makeTempFolder();
+    it("puts the icon there the first time it runs in a terminal of a machine, without asking, and says so in a line; then never again", async () => {
         const at = places();
-        expect(await offerIcon({ home: other, userHome, platform: "linux", places: at }, fakeTerminal("").terminal)).toContain("Done: RPG Engine is on your desktop and in your applications menu.");
+        const said = await runOpen([], where({ terminal: fakeTerminal(), places: at }));
+
+        expect(said.output).toBe(
+            "RPG Engine's campaigns are open in a window: http://127.0.0.1:5750\nRPG Engine's icon is on your desktop and in your applications menu: double-click it to see your campaigns. To take it away: rpg icon --remove.",
+        );
         expect(existsSync(join(at.desktop, "rpg-engine.desktop"))).toBe(true);
+        expect(iconSettled(home)).toBe(true);
+        expect(await iconOnFirstRun({ home, userHome, platform: "linux", places: places() }, fakeTerminal())).toBeUndefined();
     });
 
-    it("ends with no answer after its wait, as in the icon's console that nobody sees, and asks again another time", async () => {
-        const input = Object.assign(new PassThrough(), { isTTY: true });
-        const output = Object.assign(new PassThrough(), { isTTY: true });
-        const nobody: Terminal = { input, output, env: { DISPLAY: ":0" }, answerWait: 50 };
-        let shown = "";
-        output.on("data", (chunk: Buffer) => (shown += chunk.toString("utf8")));
+    it("never puts it back once the player took it away with rpg icon --remove", async () => {
+        const at = places();
+        expect(await iconOnFirstRun({ home, userHome, platform: "linux", places: at }, fakeTerminal())).toContain("RPG Engine's icon is on your desktop");
+        expect((await runIcon(["--remove"], where())).exitCode).toBe(0);
 
-        expect(await runOpen([], where({ terminal: nobody }))).toEqual({ output: "RPG Engine's campaigns are open in a window: http://127.0.0.1:5750", exitCode: 0 });
-        expect(shown).toContain("[Y/n]");
-        expect(iconAsked(home)).toBe(false);
-    }, 5000);
+        expect(await iconOnFirstRun({ home, userHome, platform: "linux", places: at }, fakeTerminal())).toBeUndefined();
+        expect(existsSync(join(at.menu, "rpg-engine.desktop"))).toBe(false);
+    });
 
-    it("never asks with no terminal, or on a Linux with no desktop", async () => {
-        expect(await offerIcon(where(), fakeTerminal("y", { tty: false }).terminal)).toBeUndefined();
-        expect(await offerIcon(where(), fakeTerminal("y", { env: {} }).terminal)).toBeUndefined();
-        expect(iconAsked(home)).toBe(false);
+    it("says once why it could not put the icon there, and leaves it to rpg icon", async () => {
+        const blocked = join(makeTempFolder(), "file");
+        writeFileSync(blocked, "");
+        const nowhere = { desktop: join(blocked, "Desktop"), menu: join(blocked, "applications") };
+
+        expect(await iconOnFirstRun({ home, userHome, platform: "linux", places: nowhere }, fakeTerminal())).toMatch(/^RPG Engine could not add its icon \(.+\)\. Try again with rpg icon\.$/);
+        expect(await iconOnFirstRun({ home, userHome, platform: "linux", places: nowhere }, fakeTerminal())).toBeUndefined();
+    });
+
+    it("never puts it there with no terminal, in CI, or on a Linux with no desktop, and tries again another time", async () => {
+        const at = places();
+        const first = (terminal: Terminal): Promise<string | undefined> => iconOnFirstRun({ home, userHome, platform: "linux", places: at }, terminal);
+
+        expect(await first(fakeTerminal({ tty: false }))).toBeUndefined();
+        expect(await first(fakeTerminal({ env: { DISPLAY: ":0", CI: "true" } }))).toBeUndefined();
+        expect(await first(fakeTerminal({ env: {} }))).toBeUndefined();
+        expect(iconSettled(home)).toBe(false);
+        expect(existsSync(join(at.menu, "rpg-engine.desktop"))).toBe(false);
     });
 
     it("puts the icon there with rpg icon, and takes it away with rpg icon --remove, saying the files", async () => {

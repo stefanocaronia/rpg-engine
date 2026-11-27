@@ -1,5 +1,5 @@
 // RPG Engine's icon on the desktop and in the system's menu: it opens the launcher as `rpg open` does, with no console, on Windows, macOS and Linux. The
-// command line asks once a machine whether to put it there.
+// command line puts it there the first time it runs in a terminal of a machine.
 import { existsSync, lstatSync, rmSync } from "node:fs";
 import { hostname } from "node:os";
 import { basename, join } from "node:path";
@@ -49,14 +49,17 @@ export function iconCommand(folder: string, path = process.env.PATH ?? ""): Icon
     return { node: process.execPath, args: [...process.execArgv, process.argv[1] ?? "", "open"], folder, path };
 }
 
-/** Whether the command line asked already on this machine whether to put the icon there: once a machine, since the data folder may be on several. */
-export function iconAsked(home: string, machine = hostname()): boolean
+/**
+ * Whether the icon was settled on this machine already: made, or tried, or, before, refused; once a machine, since the data folder may be on several. An icon
+ * the player took away stays settled, and never comes back by itself.
+ */
+export function iconSettled(home: string, machine = hostname()): boolean
 {
     return iconNotes(home).asked.includes(machine);
 }
 
-/** Notes that the command line asked on this machine, whatever the answer. */
-export function noteIconAsked(home: string, machine = hostname()): void
+/** Notes the icon settled on this machine, whether or not it was made. */
+export function noteIconSettled(home: string, machine = hostname()): void
 {
     const notes = iconNotes(home);
 
@@ -65,7 +68,7 @@ export function noteIconAsked(home: string, machine = hostname()): void
     }
 }
 
-/** Notes the icon made on this machine, its command and files, which asks no more there. */
+/** Notes the icon made on this machine, its command and files, which settles it there. */
 export function noteIconMade(home: string, command: IconCommand, files: readonly string[], machine = hostname()): void
 {
     const notes = iconNotes(home);
@@ -99,7 +102,7 @@ export function iconToRemake(home: string, command: IconCommand, machine = hostn
     return made !== undefined && JSON.stringify(made.command) !== JSON.stringify(commandLine(command)) && made.files.some(exists);
 }
 
-/** What icon.json keeps: the machines asked, by their name, and the icon made on each. */
+/** What icon.json keeps: the machines where the icon is settled, by their name, under the key they had when they were asked, and the icon made on each. */
 interface IconNotes
 {
     readonly asked: readonly string[];
@@ -130,7 +133,7 @@ function writeIconNotes(home: string, notes: IconNotes): void
     writeDataFile(notesFile(home), notes);
 }
 
-// The notes kept; none when the file is missing or cannot be read, which only asks again.
+// The notes kept; none when the file is missing or cannot be read, which only settles the icon again.
 function iconNotes(home: string): IconNotes
 {
     const texts = (value: unknown): string[] => (Array.isArray(value) ? value.filter((text): text is string => typeof text === "string") : []);

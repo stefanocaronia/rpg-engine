@@ -91,6 +91,21 @@ if (args.length === 1 && args[0] === "mcp" && process.env.RPG_HELPER === "1") {
 
     process.exitCode = exitCode;
     await waitForGit();
+    await sayIconOnFirstRun();
+}
+
+/** The first command in a terminal of this machine puts RPG Engine's icon on the desktop and in the menu, and says so in a line. */
+async function sayIconOnFirstRun(): Promise<void>
+{
+    const { iconOnFirstRun } = await import("./icon.ts");
+    const { userDataFolder } = await import("../core/context.ts");
+    const { homedir } = await import("node:os");
+    // The icon never fails a command: a data folder that cannot be written only leaves it for another time.
+    const icon = await iconOnFirstRun({ home: userDataFolder(), userHome: homedir(), platform: process.platform }).catch(() => undefined);
+
+    if (icon !== undefined) {
+        console.log(icon);
+    }
 }
 
 /** The commit a command started, and its push, which the process waits for anyway: said, then what went wrong, if anything (D-576). */
