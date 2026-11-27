@@ -49,8 +49,10 @@
         height: 16px;
     }
 
-    .package-see:hover {
-        text-decoration: underline;
+    @media (hover: hover) {
+        .package-see:hover {
+            text-decoration: underline;
+        }
     }
 
     /* What was just added, seen from Add: lit in the accent, which fades. */
@@ -307,17 +309,11 @@
         }
     }
 
-    /* On touch the switch, and on a phone the link on its own line, are as tall as a finger needs. */
+    /* On a phone under a finger the link, on its own line, is as tall as a finger needs. */
     @media (max-width: 600px) and (pointer: coarse) {
         .package-report {
             display: flex;
             align-items: center;
-            min-height: var(--target);
-        }
-    }
-
-    @media (pointer: coarse) {
-        .package-use {
             min-height: var(--target);
         }
     }
@@ -392,9 +388,11 @@
         height: 20px;
     }
 
-    .package-bin:not([aria-disabled="true"]):hover {
-        background: color-mix(in srgb, var(--low) 10%, transparent);
-        color: var(--low);
+    @media (hover: hover) {
+        .package-bin:not([aria-disabled="true"]):hover {
+            background: color-mix(in srgb, var(--low) 10%, transparent);
+            color: var(--low);
+        }
     }
 
     .package-bin[aria-disabled="true"] {
@@ -878,6 +876,16 @@
 
         .package-add-line input {
             flex-basis: 100%;
+        }
+    }
+
+    /* Under a finger the switch with its word, the field's button and what shows more or opens a package's page are a finger tall. */
+    @media (pointer: coarse) {
+        .package-use,
+        .package-see,
+        .package-show,
+        .package-add-line .button {
+            min-height: var(--target);
         }
     }
 }

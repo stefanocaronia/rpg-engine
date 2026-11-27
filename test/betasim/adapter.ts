@@ -1,7 +1,7 @@
 // How betasim talks to the dashboard: it serves a demo campaign (test/demo/demo.ts) on a port of its own, free's or the 5e's as the flow says, puts a copy of it in the state each flow asks for,
 // and plays the master's part, asking the page a check or a choice as ask does (D-279). Usability only, never the game. `npm run betasim`; betasim's README.md says how it works.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type { Page } from "playwright-core";
 import { parse } from "yaml";
 import { runCommandLine } from "../../src/cli/command-line.ts";
@@ -13,6 +13,7 @@ import { saveLibraryFolders } from "../../src/library/folders.ts";
 import { type Dashboard, startDashboard } from "../../src/server/dashboard/index.ts";
 import { loadSystemCode } from "../../src/systems/index.ts";
 import { demoFolderOf, type DemoSystem, serveDemo } from "../demo/demo.ts";
+import { type DemoMaster, demoMaster } from "../demo/master.ts";
 
 /** The port in betasim.yaml and betasim-phone.yaml: never 5760, which the app's browser pane uses. */
 const port = 5791;
@@ -26,6 +27,8 @@ const work = join(folders, "campaign");
 // The player's data folder of betasim's own, never the player's: the library added to this computer lives there (D-491). And a shelf of books to add.
 const home = join(folders, "home");
 const books = join(folders, "Manuali");
+// The folder of a page built apart, served in place of the one `npm run build` makes: to run the flows on a change without building over a page that is played.
+const builtApart = process.env.BETASIM_PAGE === undefined || process.env.BETASIM_PAGE === "" ? undefined : resolve(process.env.BETASIM_PAGE);
 
 /** A flow's setup: settings and commands of the master, in order, files of the campaign, then a question on the page. */
 interface Setup
@@ -44,16 +47,24 @@ interface Setup
     note?: { title: string; text: string; };
     /** The demo the flow plays: free's unless it needs the 5e's cards, as the hit dice of a rest, or its sheet, as its skills and attacks. */
     system?: DemoSystem;
+    /**
+     * The chat with the demo's master in the page (test/demo/master.ts), as a campaign's table keeps it: no program started, nothing spent. True, closed
+     * until the player opens it; "taken-up", open on a story already told.
+     */
+    chat?: boolean | "taken-up";
     /** The master asks the page, as ask does: a check (an option with its notation), a choice, or the dice of a rest's recipe (ASK-14). */
     ask?: { question: string; options?: string[]; recipe?: string; };
 }
 
 let dashboard: Dashboard | undefined;
 let session: SessionStore | undefined;
+let master: DemoMaster | undefined;
 let context = gameContext();
 let asked: Promise<string> | undefined;
 // The page's calls to the game, and its files (the dice), still on their way: betasim moves on after a tap in fake time, while they take real time.
 const calls = new WeakMap<Page, Set<unknown>>();
+// The pages already told that a finger touches them.
+const fingered = new WeakSet<Page>();
 
 await reset();
 
@@ -64,6 +75,7 @@ export default {
      */
     async ready(page: Page): Promise<void>
     {
+        await underFinger(page);
         await shown(page, ".band, .notice, .setup").catch(() => undefined);
     },
 
@@ -71,6 +83,7 @@ export default {
     async setup(page: Page, setup: Setup = {}): Promise<void>
     {
         follow(page);
+        await underFinger(page);
         // The page leaves first, so that it does not see the game go away meanwhile.
         await page.goto("about:blank");
         await reset(setup);
@@ -130,13 +143,33 @@ export default {
             return settings[argument ?? ""];
         }
 
+        if (name === "reply") {
+            return reply(page);
+        }
+
         if (name === "log") {
             return readFileSync(join(work, "log.jsonl"), "utf8").trim().split("\n").at(-1) ?? "";
         }
 
-        throw new Error(`No query ${name}: idle, answer, news, notes, setting <name> or log.`);
+        throw new Error(`No query ${name}: idle, answer, reply, news, notes, setting <name> or log.`);
     },
 };
+
+/**
+ * A phone's width is touched by a finger: the page then has its manners under one, a coarse pointer that does not hover, which are what a phone's flows
+ * run on (targets a finger tall, the bar that steps aside for the keyboard, Enter that goes to a new line). betasim opens its pages with a mouse at every
+ * width, so the browser is told here, through its own protocol, once for each page (a workaround until betasim's target has a touch of its own).
+ */
+async function underFinger(page: Page): Promise<void>
+{
+    if (fingered.has(page) || (page.viewportSize()?.width ?? Infinity) > 600) {
+        return;
+    }
+
+    fingered.add(page);
+    const browser = await page.context().newCDPSession(page);
+    await browser.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
+}
 
 /** Keeps count of the page's calls to the game, the live events apart. */
 function follow(page: Page): void
@@ -245,9 +278,29 @@ async function answer(page: Page): Promise<string>
     return said ?? "no answer";
 }
 
-/** The demo's copy back as it was, the commands run on it and the files written, and the dashboard on its port, even when a command failed. */
-async function reset({ rpg = [], files = {}, busy = false, system = "free" }: Setup = {}): Promise<void>
+/** The master's last words in the chat, once its turn has ended: its answer comes in pieces over a couple of real seconds, and the fake clock moves the page meanwhile. */
+async function reply(page: Page): Promise<string>
 {
+    for (let tries = 0; tries < 100; tries++) {
+        const shown = master?.shown();
+
+        if (shown?.chat?.state !== "turn" && shown?.messages.at(-1)?.from === "master") {
+            break;
+        }
+
+        await page.clock.runFor(100);
+        await new Promise((done) => setTimeout(done, 50));
+    }
+
+    await page.clock.runFor(300);
+    return master?.shown().messages.findLast((message) => message.from === "master")?.text ?? "no chat";
+}
+
+/** The demo's copy back as it was, the commands run on it and the files written, and the dashboard on its port, even when a command failed. */
+async function reset({ rpg = [], files = {}, busy = false, system = "free", chat = false }: Setup = {}): Promise<void>
+{
+    // The chat closes while its dashboard still listens, so that no answer of the flow before goes on coming in pieces.
+    master?.close();
     await dashboard?.close();
     session?.close();
     asked = undefined;
@@ -282,7 +335,7 @@ async function reset({ rpg = [], files = {}, busy = false, system = "free" }: Se
             writeFileSync(join(work, path), text);
         }
     } finally {
-        await serve();
+        await serve(chat);
     }
 }
 
@@ -305,11 +358,18 @@ function gameContext(busy = false, system: DemoSystem = "free"): Context
     };
 }
 
-/** The dashboard of the copy on its port. */
-async function serve(): Promise<void>
+/** The dashboard of the copy on its port, with the demo's master where the flow has the chat. */
+async function serve(chat: boolean | "taken-up" = false): Promise<void>
 {
     session = new SessionStore({ systemFolders: context.systemFolders });
-    dashboard = await startDashboard({ ...context, files: session }, session, { ports: [port], pageReturn: 2_000 });
+    master = chat === false ? undefined : demoMaster({ takes: chat === "taken-up" ? "whole" : undefined });
+    dashboard = await startDashboard({ ...context, files: session }, session, {
+        ports: [port],
+        pageReturn: 2_000,
+        ...(builtApart === undefined ? {} : { page: builtApart }),
+        ...(master === undefined ? {} : { master }),
+    });
+    master?.onChange(() => dashboard?.chatChanged());
 
     if (dashboard === undefined) {
         throw new Error(`Port ${port} is taken: stop what holds it, or change it here and in betasim.yaml.`);

@@ -1002,7 +1002,7 @@
         }
     }
 
-    /* A finger needs room (D-282): the buttons at least so big; the sheet's lines a little less, or eighteen skills would grow a third. */
+    /* A finger needs room (D-282): the buttons at least so big. */
     @media (pointer: coarse) {
         .asked-buttons button {
             min-height: var(--target);

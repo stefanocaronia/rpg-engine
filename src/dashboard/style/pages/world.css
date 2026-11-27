@@ -865,4 +865,14 @@
             height: 460px;
         }
     }
+
+    /* Under a finger the maps' tabs, the way to the list, what opens the key and a place's way to the Scene are a finger tall. */
+    @media (pointer: coarse) {
+        .map-tab,
+        .map-to-list,
+        .map-key summary,
+        .pc-scene {
+            min-height: var(--target);
+        }
+    }
 }

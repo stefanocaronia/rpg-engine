@@ -6,5 +6,5 @@ steps:
   - tapOn: Journal
   - tapOn: Story
   - assertVisible: La locanda del Guado
-  - tapOn: Il sigillo spezzato
+  - tapOn: Tre giorni   # the chapter before, by its title: in the index, or on a phone in the way back
   - assertVisible: Il campo del viandante era un cerchio di pietre annerite

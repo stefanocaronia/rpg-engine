@@ -4,7 +4,7 @@
 import { join } from "node:path";
 import { sessionsFolderName } from "../../campaign/index.ts";
 import { FileStore } from "../../core/store.ts";
-import type { ModelMark, PageMessage } from "../dashboard/index.ts";
+import type { MarkedClock, MarkedTurns, ModelMark, PageMessage, StoryMarks } from "../dashboard/index.ts";
 
 /** The folder of the campaign's `sessions/` where the table keeps its chats. */
 export const flowFolderName = "table-chats";
@@ -151,7 +151,50 @@ function flowMessage(line: string): PageMessage | undefined
         return isRecord(roll) && typeof roll.id === "string" && typeof roll.at === "string" ? { id, from, text, roll: roll as unknown as Extract<PageMessage, { from: "roll"; }>["roll"] } : undefined;
     }
 
+    if (from === "master") {
+        const marks = keptMarks(parsed.marks);
+        return marks === undefined ? { id, from, text } : { id, from, text, marks };
+    }
+
     return from === "table" ? { id, from, text, ...modelMark(parsed) } : { id, from, text };
+}
+
+/** The values a master's message keeps of its marks, as the file keeps them; none where it holds none, or they are not well formed. */
+function keptMarks(value: unknown): StoryMarks | undefined
+{
+    if (!isRecord(value)) {
+        return undefined;
+    }
+
+    const { clocks, turns } = value;
+    const clocksValid = clocks === undefined || (Array.isArray(clocks) && clocks.every(isMarkedClock));
+    const turnsValid = turns === undefined || isMarkedTurns(turns);
+
+    if (!clocksValid || !turnsValid || (clocks === undefined && turns === undefined)) {
+        return undefined;
+    }
+
+    return {
+        ...(clocks === undefined ? {} : { clocks: (clocks as MarkedClock[]).map(({ page, name, value, max }) => ({ page, name, value, max })) }),
+        ...(turns === undefined ? {} : { turns: markedTurns(turns as MarkedTurns) }),
+    };
+}
+
+function isMarkedClock(clock: unknown): boolean
+{
+    return isRecord(clock) && typeof clock.page === "string" && typeof clock.name === "string" && Number.isSafeInteger(clock.value) && Number.isSafeInteger(clock.max)
+        && (clock.max as number) >= 1;
+}
+
+function isMarkedTurns(turns: unknown): boolean
+{
+    return isRecord(turns) && Array.isArray(turns.order) && turns.order.length > 0 && turns.order.every((name) => typeof name === "string") && typeof turns.turn === "string"
+        && (turns.round === undefined || Number.isSafeInteger(turns.round));
+}
+
+function markedTurns({ order, turn, round }: MarkedTurns): MarkedTurns
+{
+    return { order: [...order], turn, ...(round === undefined ? {} : { round }) };
 }
 
 /** The mark of a line of the table about the master's model, as the file keeps it; none where it holds none, or one not well formed. */

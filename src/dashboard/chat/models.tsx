@@ -89,8 +89,10 @@ export function ModelPicker({ host, model, effort, efforts: told, id, labelledBy
 
         const away = (event: Event): void => {
             const path = event.composedPath();
+            // In a sheet, a press on the list gives the focus to the sheet itself, which holds the list: the focus did not leave it.
+            const holder = event.type === "focusin" && event.target instanceof Node && pop.current !== null && event.target.contains(pop.current);
 
-            if (!path.includes(pop.current as EventTarget) && !path.includes(button.current as EventTarget)) {
+            if (!holder && !path.includes(pop.current as EventTarget) && !path.includes(button.current as EventTarget)) {
                 close(false);
             }
         };

@@ -68,7 +68,7 @@ export function Help()
         }
 
         // Under the top, drawn together down the page, as tall as the style sheet says; the focus where the eye goes.
-        const above = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--top-space")) + 16;
+        const above = topSpace() + 16;
         const to = target.getBoundingClientRect().top + window.scrollY - above;
         window.scrollTo({ top: to, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
         const focused = target instanceof HTMLDetailsElement ? target.querySelector("summary") : target;
@@ -186,4 +186,17 @@ function guideParts(own: string, english: string): { lead: Block[]; parts: Part[
 function iconOf(heading: Part["heading"]): IconName
 {
     return heading.icon !== undefined && isIconName(heading.icon) ? heading.icon : "help";
+}
+
+/** How tall the top stands drawn together, as the style sheet says it: a sum, or with the screen's safe area in it, which only a box measures. */
+function topSpace(): number
+{
+    const probe = document.createElement("div");
+    probe.style.setProperty("position", "fixed");
+    probe.style.setProperty("visibility", "hidden");
+    probe.style.setProperty("height", "var(--top-space)");
+    document.body.append(probe);
+    const height = probe.getBoundingClientRect().height;
+    probe.remove();
+    return height;
 }

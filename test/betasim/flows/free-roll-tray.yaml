@@ -2,6 +2,7 @@ name: A free roll of any dice from the dice button
 covers: [free-roll-tray]
 setup: {}
 steps:
+  - phone: {tapOn: Table}   # on a phone the dice's button is on the Table alone
   - tapOn: {label: Free roll}
   - tapOn: {label: Add a d20}
   - tapOn: Roll 1d20

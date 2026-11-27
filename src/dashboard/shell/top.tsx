@@ -2,17 +2,20 @@
 // the name the sections, then the saves, the settings and About at the row's end, what does not fit in a menu there; under them all, the row of the world:
 // where the party is, and at its end the game's time and the switch of the column beside the page. It stays on top: down the page it draws itself together, the master and the name smaller, the product and the place folded away,
 // the sections still there (D-295); what the master asks and the rolls stay in sight under it. The robot shows the master's mood, a moment's face, and sleeps
-// while the chat is away (D-305). On a phone the sections at the bottom, the rest in the menu (D-309).
+// while the chat is away (D-305). On a phone the sections at the bottom, the rest in the menu (D-309), a sheet from the window's foot there.
 import { type ComponentChildren, Fragment, type RefObject } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { chatPage, menuPages, packagePages, type Section, sectionAddress, sectionLabel, type SectionTab, sectionTabs } from "../address.ts";
 import type { CalendarDay, Moment, Mood } from "../data.ts";
 import { type NavPage, ownKey } from "../packages/page-code.tsx";
 import { Drawn, WidgetChips } from "../packages/widgets.tsx";
+import { useMedia } from "../parts/card.tsx";
 import { calendarDayLabel, gameDateLabel } from "../parts/game-words.ts";
 import { Icon } from "../parts/icons.tsx";
+import { PhoneSheet } from "../parts/phone-sheet.tsx";
 import { listText, t } from "../text.ts";
 import { Master } from "./master.tsx";
+import { tableSection } from "./table.tsx";
 import { useTheme } from "./theme-switch.tsx";
 
 /** What the top says: the campaign, the product, the system's name, the game's time and place, and whether the game is live; the master's mood and moment. */
@@ -52,6 +55,8 @@ interface TopOf
     column?: ColumnSwitch | undefined;
     /** On a phone the table is a section of its own, its tab after the Scene's. */
     table?: boolean;
+    /** Always drawn together, wherever the page stands: on a phone in the chat's section, where the window does not scroll and the room is the messages'. */
+    folded?: boolean;
 }
 
 /** The switch of the column beside the page: whether it is shown, and what turns it. */
@@ -77,7 +82,7 @@ export function Top(top: TopOf)
 {
     const room = useRef<HTMLDivElement>(null);
     const header = useRef<HTMLElement>(null);
-    const compact = useCompact(room, header);
+    const compact = useCompact(room, header) || top.folded === true;
     // The robot's face when the robot or the campaign's name leads back to the party.
     const [poke, setPoke] = useState<Moment>();
 
@@ -396,7 +401,8 @@ function useFitting(row: RefObject<HTMLElement | null>, count: number, shape: st
 
 /**
  * The menu (D-309, D-333): what does not fit in the row, the tabs and the pages at its end, the packages' pages that are no tabs after Packages (D-512); on a
- * phone the theme too, which has no switch of its own there; none when all fits.
+ * phone the theme too, which has no switch of its own there; none when all fits. Under its button on a wide screen; on a phone a sheet from the window's
+ * foot, in the thumb's reach.
  */
 function Menu({ current, awayTabs, awayPages, ownMenu, ownShown, home }: {
     current: Section;
@@ -410,13 +416,56 @@ function Menu({ current, awayTabs, awayPages, ownMenu, ownShown, home }: {
     const [open, setOpen] = useState(false);
     const holder = useRef<HTMLDivElement>(null);
     const [theme, flip] = useTheme();
-    useClosing(holder, open, setOpen);
+    const phone = useMedia(tableSection);
+    // The sheet closes by itself, as a dialog does.
+    useClosing(holder, open && !phone, setOpen);
 
     if (awayTabs.length + awayPages.length === 0) {
         return null;
     }
 
     const names = listText([...awayTabs.map((tab) => tab.label), ...awayPages.map(sectionLabel)]);
+    const links = (
+        <div class="menu-pop">
+            {awayTabs.map((tab) => (
+                <a key={tab.key} href={tab.href} aria-current={tab.current ? "page" : undefined} dir="auto" onClick={() => setOpen(false)}>
+                    {tab.icon}
+                    {tab.label}
+                </a>
+            ))}
+            {home !== undefined && (
+                <button
+                    type="button"
+                    class="menu-home"
+                    aria-busy={home.busy}
+                    onClick={() => {
+                        setOpen(false);
+                        home.go();
+                    }}
+                >
+                    <Icon name="house" />
+                    {t("Campaigns")}
+                </button>
+            )}
+            {awayPages.map((page) => (
+                <Fragment key={page}>
+                    <a href={sectionAddress(page)} aria-current={page === current ? "page" : undefined} onClick={() => setOpen(false)}>
+                        <Icon name={page} />
+                        {sectionLabel(page)}
+                    </a>
+                    {page === "packages" && ownMenu.length > 0 && (
+                        <div class="menu-sub">
+                            <OwnPageLinks pages={ownMenu} ownShown={ownShown} onPick={() => setOpen(false)} />
+                        </div>
+                    )}
+                </Fragment>
+            ))}
+            <button type="button" class="menu-theme" onClick={flip}>
+                <Icon name={theme.next === "dark" ? "moon" : "sun"} />
+                {theme.name}
+            </button>
+        </div>
+    );
     return (
         <div class="menu" ref={holder}>
             <button
@@ -429,47 +478,7 @@ function Menu({ current, awayTabs, awayPages, ownMenu, ownShown, home }: {
             >
                 <Icon name="menu" />
             </button>
-            {open && (
-                <div class="menu-pop">
-                    {awayTabs.map((tab) => (
-                        <a key={tab.key} href={tab.href} aria-current={tab.current ? "page" : undefined} dir="auto" onClick={() => setOpen(false)}>
-                            {tab.icon}
-                            {tab.label}
-                        </a>
-                    ))}
-                    {home !== undefined && (
-                        <button
-                            type="button"
-                            class="menu-home"
-                            aria-busy={home.busy}
-                            onClick={() => {
-                                setOpen(false);
-                                home.go();
-                            }}
-                        >
-                            <Icon name="house" />
-                            {t("Campaigns")}
-                        </button>
-                    )}
-                    {awayPages.map((page) => (
-                        <Fragment key={page}>
-                            <a href={sectionAddress(page)} aria-current={page === current ? "page" : undefined} onClick={() => setOpen(false)}>
-                                <Icon name={page} />
-                                {sectionLabel(page)}
-                            </a>
-                            {page === "packages" && ownMenu.length > 0 && (
-                                <div class="menu-sub">
-                                    <OwnPageLinks pages={ownMenu} ownShown={ownShown} onPick={() => setOpen(false)} />
-                                </div>
-                            )}
-                        </Fragment>
-                    ))}
-                    <button type="button" class="menu-theme" onClick={flip}>
-                        <Icon name={theme.next === "dark" ? "moon" : "sun"} />
-                        {theme.name}
-                    </button>
-                </div>
-            )}
+            {open && (phone ? <PhoneSheet title={t("Menu")} kind="menu-sheet" onClose={() => setOpen(false)}>{links}</PhoneSheet> : links)}
         </div>
     );
 }

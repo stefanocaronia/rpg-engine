@@ -464,6 +464,24 @@
         font-weight: 700;
     }
 
+    /* The turns where the master's words tell them, in the same pill: the round, then who acts in order, whoever acts now in the accent. A clock's pill is
+       the roll's, with its name and how full it is as the total. */
+    .chat-turns {
+        display: inline;
+        box-decoration-break: clone;
+    }
+
+    .chat-turns > span + span::before {
+        content: "·";
+        margin-inline: 6px;
+        color: var(--muted);
+    }
+
+    .chat-turns > .chat-turns-name.now {
+        color: var(--accent);
+        font-weight: 700;
+    }
+
     /* Words out of the game, the master's and the player's: apart from the story's by their look, smaller, dimmed and in italics in a dashed edge, without
        their brackets; never a colour of their own, and never dimmer than --muted, which keeps them read. Out of the game the table talks as people do: a
        paragraph of the master's is a dashed bubble at the start, a message of the player's that is all out of the game a dashed bubble at the end, each on
@@ -912,8 +930,10 @@
         cursor: pointer;
     }
 
-    .chat-close:hover {
-        color: var(--ink);
+    @media (hover: hover) {
+        .chat-close:hover {
+            color: var(--ink);
+        }
     }
 
     /* Where a chat is opened: what it is, each choice its label before its control, then the buttons at the end. It scrolls in its frame where the
@@ -1342,10 +1362,15 @@
         transition: opacity var(--quick) linear;
     }
 
-    .chat-edge:hover::before,
     .chat-edge:focus-visible::before,
     .chat-panel.dragging .chat-edge::before {
         opacity: 1;
+    }
+
+    @media (hover: hover) {
+        .chat-edge:hover::before {
+            opacity: 1;
+        }
     }
 
     /* Its grip, always in sight at the middle of the line: what says the line can be moved. */
@@ -1362,10 +1387,15 @@
         transition: background-color var(--quick) linear;
     }
 
-    .chat-edge:hover::after,
     .chat-edge:focus-visible::after,
     .chat-panel.dragging .chat-edge::after {
         background: var(--accent);
+    }
+
+    @media (hover: hover) {
+        .chat-edge:hover::after {
+            background: var(--accent);
+        }
     }
 
     /* While the edge is dragged nothing of the page is selected. */
@@ -1402,10 +1432,29 @@
             max-width: 92%;
         }
 
-        /* On a phone the chat's section is the chat's place: its ground the whole page under the top, with no box's edge or ground inside it. */
+        /* On a phone the chat's section is the chat's place, as an app's screen: its ground the whole page under the top, with no box's edge or ground
+           inside it. The window does not scroll there: the page's top is drawn together, its room its own height; the section has no title and the page
+           no foot; the open chat goes from under the top down to the bar of the sections, as the page measures it, and the messages alone scroll. With
+           no chat open the page scrolls as ever, clear of the bar. */
         .page:has(.chat-page.chat-section) {
             --chat-ground: light-dark(color-mix(in srgb, var(--paper) 88%, var(--gold)), color-mix(in srgb, var(--paper) 45%, black));
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding-block: var(--top-space) calc(84px + env(safe-area-inset-bottom));
             background: var(--chat-ground);
+        }
+
+        .page:has(.chat-page.chat-section.view-open) {
+            padding-block-end: 0;
+        }
+
+        .page:has(.chat-page.chat-section) :is(.top-room, .page-foot, .chat-head) {
+            display: none;
+        }
+
+        /* To the window's edges, out of the room the page keeps at its sides. */
+        .page:has(.chat-page.chat-section) .body {
+            margin-inline: calc(-1 * var(--gap));
         }
 
         .chat-page.chat-section .chat-box {
@@ -1416,31 +1465,135 @@
 
         /* The player's bubbles keep their tail's room at the end. */
         .chat-page.chat-section .chat-log {
-            padding-inline: 0 10px;
+            padding-inline: 16px 18px;
         }
 
-        /* Room for the field's focus ring, which the box would cut. */
+        /* What the master is doing is the messages' last line there, with no rule over it. */
+        .chat-page.chat-section .chat-turn {
+            min-height: 32px;
+            padding-block: 2px;
+            border-top: 0;
+        }
+
+        /* The player's turn, seen from the chat: one slim strip under the top, as wide as the window, its words on one line. */
+        .page:has(.chat-page.chat-section) .turn-notice {
+            flex-wrap: nowrap;
+            align-items: center;
+            min-height: var(--target);
+            margin: 0 calc(-1 * var(--gap));
+            padding-block: 0;
+            padding-inline: 16px 8px;
+            border-radius: 0;
+            box-shadow: none;
+            font-size: 0.9rem;
+        }
+
+        .page:has(.chat-page.chat-section) .turn-notice svg.icon {
+            width: 18px;
+            height: 18px;
+            margin-block-start: 0;
+        }
+
+        .page:has(.chat-page.chat-section) .turn-notice > span:not(.turn-notice-go) {
+            min-width: 0;
+            padding-block: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .page:has(.chat-page.chat-section) .turn-notice-go {
+            font-size: 0.85rem;
+        }
+
+        /* While the player writes on a touch screen the strip steps aside with the bar of the sections (parts/top.css): the room is the messages'. */
+        @media (pointer: coarse) {
+            :root:has(:focus:is(textarea, input:is([type="text"], [type="search"], :not([type])))) .page:has(.chat-page.chat-section) .turn-notice {
+                display: none;
+            }
+
+            /* In the setup the dice's button stands over the page on a phone too, at the end of the player's words once the keyboard is there: it steps
+               aside while they write, as it would cover what sends them, and on a phone's keyboard nothing else does. */
+            :root:has(.chat-field:focus) .dice-fab {
+                display: none;
+            }
+        }
+
+        /* The player's words on a phone: a bar as wide as the chat, flat, on the float ground with a rule over it, and nothing under it; at its start
+           what opens the chat's own sheet, at its end what sends, each a finger wide. The words at 16 px, as a phone's browser zooms into a smaller
+           field that takes the focus; six lines at most, then they scroll. */
+        .chat-words,
+        .body:not(:has(> .play-table)) .chat-page.view-open .chat-words,
+        .setup-with-chat .chat-page.view-open .chat-words {
+            gap: 0;
+            padding: 0;
+            border-top: 1px solid var(--rule);
+            background: var(--float);
+        }
+
+        .chat-field-box {
+            gap: 0;
+            padding: 6px;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .chat-field {
+            min-height: calc(1lh + 22px);
+            max-height: calc(6lh + 22px);
+            padding-block: 11px;
+            padding-inline: 6px;
+            font-size: 1rem;
+            line-height: 1.375;
+        }
+
+        .chat-field-tools .icon-button,
+        .chat-tune {
+            flex: none;
+            width: var(--target);
+            height: var(--target);
+            border-radius: var(--radius-m);
+        }
+
+        .chat-tune[aria-expanded="true"] {
+            background: color-mix(in srgb, var(--ink) 10%, transparent);
+            color: var(--ink);
+        }
+
+        .chat-words .chat-field-box::before,
+        .chat-words .chat-field-box::after {
+            inset-inline: 56px;
+        }
+
+        .chat-words .chat-field-box::before {
+            top: 6px;
+        }
+
+        .chat-words .chat-field-box::after {
+            bottom: 6px;
+        }
+
+        /* In its section the bar and the bar of the sections under it are one block: the shade over the messages is the field's. */
         .chat-page.chat-section .chat-words {
-            padding-inline: 4px;
+            box-shadow: var(--raise-up);
         }
 
-        /* The room is the messages': what the chat plays with is left out. */
-        .chat-plays {
-            display: none;
+        /* While the player writes on a touch screen the bar of the sections is away (parts/top.css): the words' bar is the window's foot, clear of the
+           screen's own. */
+        @media (pointer: coarse) {
+            :root:has(:focus:is(textarea, input:is([type="text"], [type="search"], :not([type])))) .chat-page.chat-section .chat-words {
+                padding-bottom: var(--safe-bottom);
+            }
+        }
+
+        .page:has(.chat-page.chat-section.view-open) .top .main-nav {
+            box-shadow: none;
         }
 
         .chat-buttons .button {
             scroll-margin-block-end: 0;
-        }
-
-        /* In play the dice's button is in the table's section, never over the chat: the player's words take the chat's whole width. */
-        .body:not(:has(> .play-table)) .chat-page.view-open .chat-words {
-            padding-inline-end: 4px;
-        }
-
-        /* Under the setup's questions the chat stands whole over the dice's button. */
-        .setup-with-chat .chat-page.view-open .chat-words {
-            padding-inline-end: 12px;
         }
     }
 
@@ -1489,8 +1642,10 @@
         outline-offset: -2px;
     }
 
-    .app-row:hover:not([aria-checked="true"], [aria-disabled="true"]) {
-        background: color-mix(in srgb, var(--ink) 4%, transparent);
+    @media (hover: hover) {
+        .app-row:hover:not([aria-checked="true"], [aria-disabled="true"]) {
+            background: color-mix(in srgb, var(--ink) 4%, transparent);
+        }
     }
 
     .app-radio {
@@ -2087,13 +2242,50 @@
         height: 14px;
     }
 
-    .model-switch:hover {
-        color: var(--ink);
+    @media (hover: hover) {
+        .model-switch:hover {
+            color: var(--ink);
+        }
     }
 
     .model-switch[aria-disabled="true"] {
         opacity: 0.55;
         cursor: default;
+    }
+
+    /* The open chat's own sheet on a phone (parts/phone-sheet.tsx), in place of what stands under the player's words on a wide screen: what the master
+       plays with, the app in words over the model's button, as wide as the sheet, or the whole line in words where the app lets nothing change; how it
+       changes, quiet; then what closes the chat, apart, each a finger tall. */
+    .chat-sheet-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+        padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+    }
+
+    .chat-sheet-app,
+    .chat-sheet-plays {
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .chat-sheet-plays {
+        font-weight: 700;
+    }
+
+    .chat-sheet .model-button {
+        height: 48px;
+    }
+
+    /* In the master's turn the model waits: dimmed, as its small button under the words is, the line under it saying until when. */
+    .chat-sheet .model-button[aria-disabled="true"] {
+        opacity: 0.55;
+        cursor: default;
+    }
+
+    .chat-sheet-end {
+        min-height: 48px;
+        margin-block-start: 10px;
     }
 
     /* That a long wait is normal: opening the chat, the master's first answer. Quiet, under what it is about. */
@@ -2117,14 +2309,14 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            max-height: 75vh;
+            max-height: 75dvh;
             padding-bottom: max(6px, env(safe-area-inset-bottom));
             border-radius: var(--radius-xl) var(--radius-xl) 0 0;
         }
 
-        /* On a phone the foot keeps the model's name whole; the thinking is in its list. */
-        .model-switch .model-effort {
-            display: none;
+        /* Each model a finger tall. */
+        .model-option {
+            min-height: var(--target);
         }
 
         .chat-app {
@@ -2136,6 +2328,17 @@
             grid-column: 1;
             justify-items: start;
             margin-top: 6px;
+        }
+    }
+
+    /* Under a finger, where a chat is opened: each app's row and the model's button a finger tall. */
+    @media (pointer: coarse) {
+        .app-row {
+            min-height: var(--target);
+        }
+
+        .model-button {
+            height: var(--target);
         }
     }
 }

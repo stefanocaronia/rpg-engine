@@ -31,4 +31,8 @@
 - {id: world-map, area: World, name: "The world map: the places known, how far, and where each leads", decision: D-318}
 - {id: journal-book, area: Journal, name: "The story told as a book, chapter by chapter", decision: T-227}
 - {id: journal-story, area: Journal, name: "The timeline of the story, scene by scene", decision: D-367}
+- {id: chat-say, area: Chat, name: "The chat with the master in the page: the player's words sent, the master's answer read", decision: D-582}
+- {id: chat-sheet, area: Chat, name: "On a phone the chat's own sheet: what the master plays with, and what closes the chat", decision: T-321}
+- {id: phone-menu, area: Phone, name: "On a phone the menu is a sheet from the window's foot", decision: T-321}
+- {id: phone-turns, area: Phone, name: "On a phone the Scene's band leads to the whole order of the turns, on the Table", decision: T-321}
 - {id: right-to-left, area: Language, name: "The page right to left, in Arabic and in Hebrew", decision: D-394}

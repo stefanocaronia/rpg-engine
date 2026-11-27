@@ -19,6 +19,7 @@ import { hostPictures, hostWriter } from "../../src/helpers/index.ts";
 import { npmPackages } from "../../src/packages/index.ts";
 import { type Dashboard, startDashboard } from "../../src/server/dashboard/index.ts";
 import { removeLauncher, writeLauncher } from "../../src/server/launcher/place.ts";
+import { type ResolvedMarks, storyMarks } from "../../src/server/table/marks.ts";
 import { loadSystemCode } from "../../src/systems/index.ts";
 import { inPlay } from "../support.ts";
 import { demoHosts, type DemoHostsState } from "./hosts.ts";
@@ -214,6 +215,11 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free", {
         await makeDemoLock(context);
     }
 
+    // The clock the demo master's words mark (D-586), on a demo made before it too.
+    if (!existsSync(join(folder, "world", "events", `${demoClock}.md`))) {
+        await makeDemoClock(context);
+    }
+
     // The systems' code, as the MCP server loads it, for what the demo asks to follow as in a game (D-448).
     context.systemCode = await loadSystemCode(context.systemFolders);
 
@@ -222,7 +228,10 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free", {
     const home = `${folder}-home`;
     const apps = demoHosts(hosts);
     const fake = launcher === false ? undefined : await serveDemoLauncher(folder, launcher === "empty", page, apps);
-    const master = chat !== false || fake !== undefined ? demoMaster({ hosts: apps, takes: chat === "resumed" ? "cut" : chat === "taken-up" ? "whole" : chat === "taken-up-empty" ? "empty" : undefined }) : undefined;
+    const takes = chat === "resumed" ? "cut" : chat === "taken-up" ? "whole" : chat === "taken-up-empty" ? "empty" : undefined;
+    // The marks of the master's words resolved as the table resolves them, from the demo's campaign.
+    const marks = (text: string): ResolvedMarks => withFiles(session, () => storyMarks(folder, { ...context, files: session }, text));
+    const master = chat !== false || fake !== undefined ? demoMaster({ hosts: apps, takes, marks }) : undefined;
     const dashboard = await startDashboard({ ...context, files: session }, session, {
         ports,
         ...(page === undefined ? {} : { page }),
@@ -419,6 +428,17 @@ function unlinkFolder(link: string): void
 
 /** The lock of the demo, under the inn's counter. */
 const demoLock = "Forziere di Bertoldo";
+const demoClock = "I briganti chiamano rinforzi";
+
+/** An event whose clock the player sees, named for them, as the demo master's words mark it: the page's title stays the master's. */
+async function makeDemoClock(context: Context): Promise<void>
+{
+    const result = await runCommandLine(["write", demoClock, "--type", "event", "--set", "clock=1/4", "--set", "clock-name=Rinforzi in arrivo"], context);
+
+    if (result.exitCode !== 0) {
+        throw new Error(`rpg write ${demoClock}: ${result.output}`);
+    }
+}
 
 /** Bertoldo's chest at the inn, a lock of DC 15 (6d6 for a cleric), and Ettore's thieves' tools with his proficiency in them: two rerolls at the third level. */
 async function makeDemoLock(context: Context): Promise<void>

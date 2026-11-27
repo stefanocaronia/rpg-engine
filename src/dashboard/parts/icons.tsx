@@ -116,6 +116,8 @@ const iconPaths = {
     // The campaign's folder as a git repository, in Settings: a branch that joins its trunk.
     branch: "M7 4a2 2 0 1 0 0 4a2 2 0 1 0 0-4Z M7 16a2 2 0 1 0 0 4a2 2 0 1 0 0-4Z M17 6.5a2 2 0 1 0 0 4a2 2 0 1 0 0-4Z M7 8v8 M17 10.5c0 3.5-4 3-10 5.5",
     more: "M6 9l6 6 6-6",
+    // What the open chat plays with and what closes it, on a phone: two sliders.
+    tune: "M4 7h9.4 M18.6 7H20 M4 17h1.4 M10.6 17H20 M16 4.4a2.6 2.6 0 1 0 0 5.2a2.6 2.6 0 1 0 0-5.2Z M8 14.4a2.6 2.6 0 1 0 0 5.2a2.6 2.6 0 1 0 0-5.2Z",
     // A thing in a list of bonds, as attuned: two rings linked.
     bond: "M9 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9Z M15 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9Z",
     // A roll the sheet makes better, worse, or both, which cancel out.

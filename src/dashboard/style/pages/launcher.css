@@ -50,8 +50,10 @@
         transition: border-color var(--quick) var(--ease);
     }
 
-    .launcher-card:has(> button.launcher-row:hover) {
-        border-color: color-mix(in srgb, var(--accent) 45%, var(--card-edge));
+    @media (hover: hover) {
+        .launcher-card:has(> button.launcher-row:hover) {
+            border-color: color-mix(in srgb, var(--accent) 45%, var(--card-edge));
+        }
     }
 
     /* The one being opened: its edge in the accent, as what is chosen; never a tint, which on the light page reads as off. */

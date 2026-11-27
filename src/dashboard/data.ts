@@ -169,6 +169,16 @@ export interface ChatSaid
     asked?: string;
     effort?: string;
     dropped?: true;
+    /** On a master's message once complete, what its marks of clocks and of the turns stood for then (D-586); a mark without data shows nothing. */
+    marks?: StoryMarks;
+}
+
+/** What the marks of a master's message stood for: each clock on the table, by the page as the mark names it, with the name written for the player; the turns. */
+export interface StoryMarks
+{
+    clocks?: { page: string; name: string; value: number; max: number; }[];
+    /** The turns as the player's view names them, with no round in a game without rounds. */
+    turns?: { order: string[]; turn: string; round?: number; };
 }
 
 /**

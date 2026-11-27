@@ -113,6 +113,29 @@
         justify-self: center;
     }
 
+    /* In a page, where a card is wide, one row: the figure at its start, the words beside it, the value at the end; where it is narrow the words go under. */
+    .on-page .widget-lead.figured:not(:has(> .ext-figure.small)) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 16px;
+    }
+
+    /* The figure gives way before the words leave the row; the value keeps to the end, on a row of its own too. */
+    .on-page .widget-lead.figured > .ext-figure:not(.small) {
+        flex: 1 1 200px;
+        min-width: min(200px, 100%);
+        max-width: min(var(--figure-width, 100%), 100%);
+    }
+
+    .on-page .widget-lead.figured > .widget-lead-words {
+        flex: 1 0 8em;
+    }
+
+    .on-page .widget-lead.figured > .widget-lead-value {
+        margin-inline-start: auto;
+    }
+
     /* A figure no taller than an icon takes the icon's place, beside the words. */
     .widget-lead.figured:has(> .ext-figure.small) {
         grid-template-columns: auto minmax(0, 1fr) auto;

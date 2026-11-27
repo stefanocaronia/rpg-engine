@@ -5,6 +5,7 @@
 import { Fragment } from "preact";
 import { useContext, useEffect, useRef, useState } from "preact/hooks";
 import { TalkName, usePlayerActs } from "../acts/names.tsx";
+import { useSideShades } from "../chat/shades.ts";
 import type { ShownGrid } from "../data.ts";
 import { WidgetsContext } from "../packages/widgets.tsx";
 import { CardHead } from "../parts/card.tsx";
@@ -96,6 +97,8 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
     ];
     const letters = Math.max(11, 11 / scale);
     const frame = useRef<HTMLDivElement>(null);
+    // Where the map scrolls aside, as on a phone, it draws no bar: it fades at the side where there is more of it.
+    const shades = useSideShades(frame, `${map.columns} ${map.rows} ${picking === undefined && choosing === undefined}`);
 
     // On a phone the map keeps squares a finger can read and scrolls aside (D-547): it opens with the player's character in the middle.
     useEffect(() => {
@@ -140,7 +143,7 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
     return (
         <section class={bare ? "lm bare" : "lm"} {...(bare ? { "aria-label": `${t("Map")}: ${place}` } : { "aria-labelledby": "lm-title" })}>
             {!bare && <CardHead icon={iconPath("world")} title={<h3 id="lm-title">{t("Map")}</h3>} note={place} />}
-            <div ref={frame} class={picking === undefined && choosing === undefined ? "lm-frame" : "lm-frame panned"} style={{ "--map-width": String(width) }}>
+            <div ref={frame} class={["lm-frame", picking === undefined && choosing === undefined ? "" : "panned", shades].filter((name) => name !== "").join(" ")} style={{ "--map-width": String(width) }}>
                 {/* To choose a square or someone, each at least 44 px wide, the map scrolls rather than shrinks (D-325 (6)). */}
                 <svg
                     ref={svg}

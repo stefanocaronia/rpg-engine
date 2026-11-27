@@ -1,5 +1,5 @@
-// The engine's marks in the master's words (D-585): a roll's mark, [roll <id>], read wherever it stands; brackets of the master's own left as written; the
-// rolls the story tells, whose own line goes; and a roll of the engine's as a line of the chat.
+// The engine's marks in the master's words (D-585, D-586): a roll's mark, [roll <id>], a clock's, [clock <page>], and the turns', [turns], read wherever
+// they stand; brackets of the master's own left as written; the rolls the story tells, whose own line goes; and a roll of the engine's as a line of the chat.
 import { describe, expect, it } from "vitest";
 import { rollLine } from "../src/dashboard/chat/chat.ts";
 import { masterMarks, rollsTold } from "../src/dashboard/chat/marks.ts";
@@ -20,9 +20,31 @@ describe("the engine's marks in the chat", () => {
         expect(masterMarks("")).toEqual([]);
     });
 
-    it("leaves the master's own brackets as they are written: a clock, dice, the order of the turns, a roll named otherwise", () => {
+    it("reads a clock's mark by its page, spaces and all, and the mark of the turns, as tolerantly as a roll's (D-586)", () => {
+        const clock = (page: string): { kind: "clock"; page: string; } => ({ kind: "clock", page });
+        expect(masterMarks("The bells ring. [clock Fuga dal castello] Run.")).toEqual(["The bells ring. ", clock("Fuga dal castello"), " Run."]);
+        expect(masterMarks("[ CLOCK:  Fuga   dal castello ] and \\[clock Fuga\\]")).toEqual([clock("Fuga dal castello"), " and ", clock("Fuga")]);
+        expect(masterMarks("Ombra moves. [turns] Then Lupa.")).toEqual(["Ombra moves. ", { kind: "turns" }, " Then Lupa."]);
+        expect(masterMarks("[ Turns ] [turns:] \\[TURNS\\]")).toEqual([{ kind: "turns" }, " ", { kind: "turns" }, " ", { kind: "turns" }]);
+    });
+
+    it("leaves the master's own brackets as they are written: a clock with its numbers, dice, the order of the turns, a roll named otherwise", () => {
         for (
-            const free of ["[Fuga 1/4]", "[Scatto 2d6: 5 (4+1)]", "[Ettore → Ombra → Lupa]", "(d6: 1, serviva 4)", "[roll the dice]", "[roll]", "[roll xyz]", "[rolls 3cb1a2f0]", "[clock Fuga]", "[turns]", "[the rules](https://example.org)"]
+            const free of [
+                "[Fuga 1/4]",
+                "[Scatto 2d6: 5 (4+1)]",
+                "[Ettore → Ombra → Lupa]",
+                "(d6: 1, serviva 4)",
+                "[roll the dice]",
+                "[roll]",
+                "[roll xyz]",
+                "[rolls 3cb1a2f0]",
+                "[roll3cb1a2f0]",
+                "[clock]",
+                "[clocks Fuga]",
+                "[turns of Ombra]",
+                "[the rules](https://example.org)",
+            ]
         ) {
             expect(masterMarks(`It goes on ${free} from here.`), free).toEqual([`It goes on ${free} from here.`]);
         }
@@ -40,6 +62,14 @@ describe("the engine's marks in the chat", () => {
         expect(masterMarks("and then [roll 3cb1a2f0 ")).toEqual(["and then "]);
         expect(masterMarks("and then [Fu")).toEqual(["and then [Fu"]);
         expect(masterMarks("and then [rosso")).toEqual(["and then [rosso"]);
+
+        // A clock's page with its spaces, and the turns, hidden letter by letter until the mark closes; a backslash before the brackets too.
+        for (const written of ["[clock Fuga dal castello]", "\\[clock: Fuga dal castello\\]", "[turns]"]) {
+            // A backslash alone may be the story's: hidden from its bracket on.
+            for (let length = written.startsWith("\\") ? 2 : 1; length < written.length; length++) {
+                expect(masterMarks(`Run. ${written.slice(0, length)}`), written.slice(0, length)).toEqual(["Run. "]);
+            }
+        }
     });
 
     it("tells which rolls the master's words tell: those marked in a message of the master's after them", () => {

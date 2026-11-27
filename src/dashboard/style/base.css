@@ -13,6 +13,8 @@
     body {
         margin: 0;
         min-height: 100vh;
+        /* What the window shows now, where a phone's browser draws its bars over the page and puts them away. */
+        min-height: 100dvh;
         /* The light from above, then the game's texture under its veil (D-528), on the page's colour. */
         background:
             radial-gradient(1200px 400px at 50% -200px, var(--glow), transparent),
@@ -125,7 +127,44 @@
     @media (max-width: 600px) {
         /* A field that takes the focus is scrolled clear of the bar and of the dice's button over it (84 + 56 + 12 px). */
         html {
-            scroll-padding-bottom: 152px;
+            scroll-padding-bottom: calc(152px + var(--safe-bottom));
+        }
+    }
+
+    /* Under a finger (a phone, a tablet) the page behaves as an app, with none of the browser's own answers to a touch. */
+    @media (pointer: coarse) {
+        /* No zoom at a double tap, two fingers still zoom; pulled past its end the page neither reloads nor bounces; on its side, a phone keeps the text's size. */
+        html {
+            touch-action: manipulation;
+            overscroll-behavior-y: none;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        /* The page's own pressed state alone, with no flash of the browser's over it; the texture scrolls with the page, as an iPhone redraws one that stays. */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            background-attachment: scroll;
+        }
+
+        /* What scrolls inside the page, a finger scrolls: no bar drawn. */
+        * {
+            scrollbar-width: none;
+        }
+
+        /* A field a finger tall, whatever height its part gives it. */
+        :is(input:not([type="checkbox"], [type="radio"], [type="range"]), select) {
+            min-height: var(--target);
+        }
+
+        /* A control held down is no text to select, and on an iPhone opens no card of its link; the story's words, a page's and a field's stay text. */
+        :is(button, summary, [role="tab"], [role="radio"], [role="button"], [role="switch"], [role="option"], [role="menuitem"]),
+        a:is(.button, .icon-button, .turn-all, .map-sheet-go),
+        :is(.top, .menu-pop, .page-tabs, .filter-chips, .foot-own) a,
+        :is(.token, .lm-svg, .map) {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
     }
 }

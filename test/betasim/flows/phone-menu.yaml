@@ -1,0 +1,11 @@
+name: On a phone, open the menu, a sheet from the window's foot, and go to Settings
+covers: [phone-menu]
+setup: {}
+steps:
+  - phone: {tapOn: Menu}
+  - phone: {assertVisible: Saves}
+  - phone: {assertVisible: Help}
+  - phone: {assertVisible: Packages}
+  - phone: {tapOn: Settings}
+  - phone: {assertVisible: Game}   # the Settings' first tab; the sheet has closed over it
+  - phone: {assertNotVisible: {css: "dialog.menu-sheet"}}

@@ -316,4 +316,10 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+
+    @media (pointer: coarse) {
+        .rolls-more {
+            height: var(--target);
+        }
+    }
 }

@@ -73,6 +73,25 @@
         outline-offset: 2px !important;
     }
 
+    /* On a phone the words are a bar as wide as the window, whose edges would cut a ring around it: the ring is a line over the bar. */
+    @media (max-width: 600px) {
+        .chat-field-box:has(.chat-field:focus-visible) {
+            outline: none !important;
+        }
+
+        .chat-words:has(.chat-field:focus-visible) {
+            box-shadow: inset 0 2px 0 var(--guard-accent) !important;
+        }
+    }
+
+    /* On a touch screen a field writes at 16 px at least, whatever its part or a theme says: under that an iPhone enlarges the whole page as the field takes
+       the focus, and leaves it so. */
+    @media (pointer: coarse) {
+        :is(input:not([type="checkbox"], [type="radio"], [type="range"]), textarea, select) {
+            font-size: max(1rem, 16px) !important;
+        }
+    }
+
     .tracked-what:focus-visible {
         outline: 2px solid var(--guard-accent) !important;
         outline-offset: 3px !important;
@@ -126,7 +145,7 @@
     }
 
     /* The page's one tooltip (T-228), what a control's data-tip says: in the top layer, over every card, list and dialog, nothing cuts it; shell/tooltip.ts
-       shows it after a moment under a pointer or at once by the keyboard, never at a touch, and places it beside its control inside the window. Its lines
+       shows it after a moment under a pointer or at once by the keyboard, at a touch for a mark that is no control, and places it beside its control inside the window. Its lines
        wrap, a name of several things a line for each. It comes from its control's side.
        While it shows (where a browser has no popover, while it is not hidden), every property first to its initial value, then the page's: nothing a theme's
        own style sheet says of it shows (D-575). tooltip.ts sets top and left inline; its sizes have a floor in pixels, whatever a sheet makes of the root's. */

@@ -1,14 +1,19 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
+import { runCommandLine } from "../src/cli/command-line.ts";
+import { view } from "../src/commands/view/view.ts";
+import type { Context } from "../src/core/context.ts";
 import type { HostId } from "../src/core/hosts.ts";
+import { FileStore, withFiles } from "../src/core/store.ts";
 import type { MasterChat, MasterDriver, MasterEvent, MasterModel, MasterOptions, ModelsOptions } from "../src/master/index.ts";
 import { type ChatShown, type TableChat, tableChat, type TableChatOptions } from "../src/server/table/chat.ts";
 import { readFlow } from "../src/server/table/flow.ts";
 import { readLastChat, writeLastChat } from "../src/server/table/last-chat.ts";
+import { type ResolvedMarks, storyMarks } from "../src/server/table/marks.ts";
 import { tableFile } from "../src/server/table/place.ts";
 import { drivenHelpers } from "./fake-helpers.ts";
-import { makeTempFolder } from "./support.ts";
+import { inPlay, makeTempFolder, testContext } from "./support.ts";
 
 // The table's own chat with the master, against a host the test drives: no process.
 
@@ -1645,5 +1650,125 @@ describe("another model in the open chat", () => {
         const { chat } = opened();
         expect(chat.shown().chat).not.toHaveProperty("changes");
         expect(chat.changeModel("opus")).toBe("Claude Code cannot change its model in an open chat: close the chat, then open it with another model.");
+    });
+});
+
+describe("the engine's marks of clocks and turns in the master's words (D-586)", () => {
+    const clock = { page: "La marcia", name: "Le guardie arrivano", value: 2, max: 4 };
+    const flowFolder = (): string => join(root, "sessions", "table-chats");
+
+    it("resolves the marks of the master's message once it is complete, keeps them in it and in the campaign, and logs a mark that stands for nothing", () => {
+        let value = 2;
+        const asked: string[] = [];
+
+        const marks = (text: string): ResolvedMarks => {
+            asked.push(text);
+            return text.includes("[clock") ? { marks: { clocks: [{ ...clock, value }] }, unresolved: ["[clock Nebbia]"] } : { unresolved: [] };
+        };
+
+        const { chat, master } = opened({ marks });
+        chat.say("I run.");
+        master.emit({ type: "text", block: 0, text: "The bells ring. [clock La marcia] " });
+        // While the master writes, the message has no values yet.
+        expect(chat.shown().messages.at(-1)).toEqual({ id: 2, from: "master", text: "The bells ring. [clock La marcia] " });
+        master.emit({ type: "text", block: 0, text: "[clock Nebbia] Run." });
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(asked).toEqual(["The bells ring. [clock La marcia] [clock Nebbia] Run."]);
+        expect(chat.shown().messages.at(-1)).toEqual({ id: 2, from: "master", text: "The bells ring. [clock La marcia] [clock Nebbia] Run.", marks: { clocks: [clock] } });
+        expect(logged).toContain("The master wrote [clock Nebbia] in the story, which stands for nothing the page can show: it shows nothing there.");
+
+        // An old message keeps the value of then, as the next table reads it back; one with no marks has none.
+        value = 3;
+        chat.say("Again.");
+        master.emit({ type: "text", block: 0, text: "Nothing moves." });
+        master.emit({ type: "turnEnd", reason: "done" });
+        const flow = readLastChat(home, root)?.flow ?? "";
+        expect(readFlow(root, flow, 50).messages.filter((message) => message.from === "master")).toEqual([
+            { id: 2, from: "master", text: "The bells ring. [clock La marcia] [clock Nebbia] Run.", marks: { clocks: [clock] } },
+            { id: 4, from: "master", text: "Nothing moves." },
+        ]);
+    });
+
+    it("keeps the message where its marks cannot be read, and says so", () => {
+        const { chat, master } = opened({
+            marks: () => {
+                throw new Error("campaign.yaml does not read");
+            },
+        });
+        chat.say("I run.");
+        master.emit({ type: "text", block: 0, text: "[turns] Ombra moves." });
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(chat.shown().messages.at(-1)).toEqual({ id: 2, from: "master", text: "[turns] Ombra moves." });
+        expect(logged).toContain("The table could not read the marks of a message of its chat: campaign.yaml does not read");
+    });
+
+    it("reads back from the flow the marks well formed, and drops those that are not, the message kept", () => {
+        mkdirSync(flowFolder(), { recursive: true });
+        const turns = { order: ["Ettore", "creature 1"], turn: "Ettore", round: 2 };
+        const lines = [
+            { id: 1, from: "master", text: "One.", marks: { clocks: [clock], turns } },
+            { id: 2, from: "master", text: "Two.", marks: { turns: { order: ["Ettore"], turn: "Ettore" } } },
+            { id: 3, from: "master", text: "Three.", marks: { clocks: [{ ...clock, max: 0 }] } },
+            { id: 4, from: "master", text: "Four.", marks: { turns: { order: [], turn: "Ettore" } } },
+            { id: 5, from: "master", text: "Five.", marks: "[clock La marcia]" },
+            { id: 6, from: "master", text: "Six.", marks: {} },
+            { id: 7, from: "player", text: "Seven.", marks: { turns } },
+        ];
+        writeFileSync(join(flowFolder(), "chat.jsonl"), lines.map((line) => `${JSON.stringify(line)}\n`).join(""));
+        expect(readFlow(root, "chat.jsonl", 50).messages).toEqual([
+            { id: 1, from: "master", text: "One.", marks: { clocks: [clock], turns } },
+            { id: 2, from: "master", text: "Two.", marks: { turns: { order: ["Ettore"], turn: "Ettore" } } },
+            { id: 3, from: "master", text: "Three." },
+            { id: 4, from: "master", text: "Four." },
+            { id: 5, from: "master", text: "Five." },
+            { id: 6, from: "master", text: "Six." },
+            { id: 7, from: "player", text: "Seven." },
+        ]);
+    });
+});
+
+describe("what the marks of clocks and turns stand for in the campaign (D-586)", () => {
+    let folder: string;
+    let context: Context;
+
+    beforeEach(async () => {
+        folder = makeTempFolder();
+        context = testContext(folder);
+
+        const rpg = async (...args: string[]): Promise<void> => {
+            const result = await runCommandLine(args, context);
+            expect(result.exitCode, result.output).toBe(0);
+        };
+
+        await rpg("init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
+        inPlay(folder);
+        await rpg("write", "Ennio", "--type", "character", "--set", "role=pc");
+        await rpg("write", "Ossario", "--type", "place", "--add", "contains=[[Ennio]]");
+        await rpg("write", "Annegato", "--type", "creature", "--set", "grit=22/22");
+        await rpg("write", "Il piano di Varro", "--type", "event", "--set", "clock=1/4", "--set", "clock-name=Le guardie arrivano");
+        await rpg("write", "La piena", "--type", "event", "--set", "clock=2/6");
+        await rpg("write", "Il pozzo", "--type", "place", "--set", "clock=1/4", "--set", "clock-name=Acqua");
+    });
+
+    const marked = (text: string): ResolvedMarks => withFiles(new FileStore(context.systemFolders), () => storyMarks(folder, context, text));
+
+    it("resolves a clock on the table by its event's page, whatever its spelling, and none behind the screen or of no event", () => {
+        expect(marked("The bells. [Clock:  il PIANO di varro ] \[clock Il piano di Varro\] [clock La piena] [clock Il pozzo] [clock Nessuno] [Fuga 1/4]")).toEqual({
+            marks: { clocks: [{ page: "il PIANO di varro", name: "Le guardie arrivano", value: 1, max: 4 }] },
+            unresolved: ["[clock La piena]", "[clock Il pozzo]", "[clock Nessuno]"],
+        });
+        expect(marked("No marks. [roll 3cb1a2f0]")).toEqual({ unresolved: [] });
+    });
+
+    it("resolves the turns as the player's view names them, and none without an order", async () => {
+        expect(marked("[turns]")).toEqual({ unresolved: ["[turns]"] });
+        await runCommandLine(["scene", "open", "--title", "Ossario", "--type", "combat", "--creatures", "Annegato=1"], context);
+        expect(marked("[turns]")).toEqual({ unresolved: ["[turns]"] });
+        await runCommandLine(["scene", "order", "--order", "Annegato 1", "--order", "Ennio"], context);
+        await runCommandLine(["scene", "next"], context);
+        // The names the player's view gives the turns, never the master's: a copy of a creature the character does not know by what it sees of it.
+        const shown = ((await view.run({}, context)) as { openScene?: { order?: string[]; turn?: string; round?: number; }; }).openScene;
+        expect(marked("Ennio moves. [turns]")).toEqual({ marks: { turns: { order: shown?.order, turn: "Ennio", round: 1 } }, unresolved: [] });
+        expect(shown?.order).toHaveLength(2);
     });
 });

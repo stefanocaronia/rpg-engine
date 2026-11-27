@@ -2,6 +2,7 @@ name: Coins tossed free from the dice button
 covers: [free-toss-tray]
 setup: {}
 steps:
+  - phone: {tapOn: Table}   # on a phone the dice's button is on the Table alone
   - tapOn: {label: Free roll}
   - tapOn: {label: Add a coin}
   - tapOn: {label: "Add a coin: 1 chosen"}

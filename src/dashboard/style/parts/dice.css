@@ -821,14 +821,14 @@
     /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
     @media (max-width: 600px) {
         .dice-fab {
-            bottom: 84px;
+            bottom: calc(84px + var(--safe-bottom));
         }
     }
 
     /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
     @media (max-width: 600px) {
         .dice-tray {
-            bottom: 152px;
+            bottom: calc(152px + var(--safe-bottom));
         }
     }
 
@@ -840,7 +840,7 @@
             inset-inline-start: 12px;
             inset-inline-end: 12px;
             /* Out of the top of the bar of the sections, over the dice button while it is out. */
-            bottom: 68px;
+            bottom: calc(68px + var(--safe-bottom));
             width: auto;
             column-gap: 14px;
             padding: 14px 16px;
@@ -887,11 +887,23 @@
         white-space: nowrap;
     }
 
-    /* A finger needs room (D-282): the buttons at least so big; the sheet's lines a little less, or eighteen skills would grow a third. */
+    /* A finger needs room (D-282): the buttons at least so big. */
     @media (pointer: coarse) {
         .tray-less {
             width: var(--target);
             height: var(--target);
+        }
+
+        /* The modifier's minus and plus as tall as their box and a finger wide, toward the number between them, drawn as they are. */
+        .tray-modifier button::before {
+            content: "";
+            position: absolute;
+            inset-block: -4px;
+            inset-inline: -3px -9px;
+        }
+
+        .tray-modifier button:last-child::before {
+            inset-inline: -9px -3px;
         }
     }
 }

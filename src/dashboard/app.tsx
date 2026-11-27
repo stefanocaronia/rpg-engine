@@ -59,6 +59,7 @@ import { foldTable, PlayTable, tableBeside, TableSection, tableSection, useTable
 import { restoreTheme } from "./shell/theme.ts";
 import { startTooltips } from "./shell/tooltip.ts";
 import { SetupCorner, Top } from "./shell/top.tsx";
+import { noMenuOnHeldLinks } from "./shell/touch.ts";
 import { fitOpenedWindow } from "./shell/window.ts";
 import { browserLanguage, pageDirection, pageLocale, setLanguage, setSystemWords, t } from "./text.ts";
 import { WorldView } from "./world/world.tsx";
@@ -817,6 +818,7 @@ function App()
                                         chat={master.table !== true || dockSide !== undefined ? undefined : words.unseen ? "new" : "there"}
                                         home={homeWay}
                                         table={phone}
+                                        folded={phone && address.section === "chat" && master.table === true && dockSide === undefined}
                                         column={wide
                                             ? {
                                                 shown: table,
@@ -953,6 +955,7 @@ function App()
                                                             several={several}
                                                             party={shown.party}
                                                             turnsBeside={table}
+                                                            {...(phone ? { turnsWay: sectionAddress("table") } : {})}
                                                             onShowCard={(name) => {
                                                                 handed.current = { who: name, turn: turnKey(shown.openScene) };
                                                                 void read();
@@ -1089,11 +1092,12 @@ function App()
 }
 
 // The theme the player picked before, from the start (D-300); the tooltips over everything (T-228); the window the launcher sent here, large and centred; on
-// a phone the whole screen at the first touch.
+// a phone the whole screen at the first touch, and no menu of the browser's over a link of the page's held down.
 fitOpenedWindow("campaign");
 restoreTheme();
 startTooltips();
 fullScreenOnTouch();
+noMenuOnHeldLinks();
 
 const root = document.getElementById("app");
 

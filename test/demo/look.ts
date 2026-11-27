@@ -10,7 +10,7 @@
 // one leads to the demo's campaign, whose page leads back; --query adds what the address asks, as --query "opened=1"; --locale sets the browser's language, which the launcher's page writes in, as --locale it-IT; --page serves a page built apart, in that folder, in place of dist/dashboard.
 // --hosts none or --hosts out starts the AI apps not installed, or not signed in to (test/demo/hosts.ts), which the page installs and signs in to;
 // --hosts key, Claude Code signed in with an API key; --hosts busy, as none, with Claude Code's first install and sign-in under way in another window,
-// which looking again finds done.
+// which looking again finds done. --touch looks under a finger, as a phone does: the page's manners of a touch screen, with --width 375.
 // Without --url it serves the demo campaign of tmp/dashboard-demo on a free port, of free play, or with --system 5e the 5e's of tmp/dashboard-demo-5e, with
 // the 5e's repository beside this one. It uses the Chrome installed. Not part of the tests.
 import { mkdirSync } from "node:fs";
@@ -48,6 +48,7 @@ const { values, tokens } = parseArgs({
         page: { type: "string" },
         section: { type: "string" },
         hosts: { type: "string" },
+        touch: { type: "boolean" },
     },
     tokens: true,
 });
@@ -70,6 +71,7 @@ try {
         colorScheme: values.theme === "light" ? "light" : "dark",
         reducedMotion: values.still ? "reduce" : "no-preference",
         ...(values.locale === undefined ? {} : { locale: values.locale }),
+        ...(values.touch === true ? { hasTouch: true } : {}),
     });
     const said: string[] = [];
     page.on("console", (message) => said.push(`${message.type()}: ${message.text()}`));

@@ -152,13 +152,18 @@
         border-radius: inherit;
     }
 
+    /* Under a finger a name that acts is a finger tall and wide wherever it stands: a chip, a line of a list, a row of what is carried, a name under a
+       token; one under the other, each keeps its own room. */
     @media (pointer: coarse) {
-        .chips.acting .act {
-            min-height: 36px;
+        .act {
+            min-width: var(--target);
+            min-height: var(--target);
+            margin-block: 0;
         }
 
-        .items th .act {
-            min-height: 36px;
+        /* In a bulleted list the bullet stands at the middle of the name, taller now than its line. */
+        .notes .act {
+            vertical-align: middle;
         }
     }
 
@@ -307,8 +312,10 @@
         cursor: pointer;
     }
 
-    .filter-chips :is(button, a):hover {
-        background: color-mix(in srgb, var(--ink) 5%, transparent);
+    @media (hover: hover) {
+        .filter-chips :is(button, a):hover {
+            background: color-mix(in srgb, var(--ink) 5%, transparent);
+        }
     }
 
     .filter-chips :is(button[aria-pressed="true"], a[aria-current="page"]) {

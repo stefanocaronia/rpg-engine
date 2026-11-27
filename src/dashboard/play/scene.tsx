@@ -28,8 +28,9 @@ const bandTime = 250;
  * the scene goes by turns the band of the turns on top, the place closed to a line, the player's character's card beside the map, and on a narrow screen the
  * order of the turns. The map is the same through both, never drawn anew; only the band moves, coming and going. `actor` is the player character whose card
  * is at hand, `foreground` the one the map measures from, with `several` player characters (VIEW-12); `onShowCard` shows the card of another (D-480 (7)).
+ * On a phone the order of the turns is the Table section's (`turnsWay`, its address): the band leads there, and the Scene has no card of it.
  */
-export function SceneView({ place, scene, actor, foreground, several = false, party, own, turnsBeside = false, onShowCard }: {
+export function SceneView({ place, scene, actor, foreground, several = false, party, own, turnsBeside = false, turnsWay, onShowCard }: {
     place?: ShownPlace;
     scene?: ShownScene;
     actor?: Member;
@@ -38,6 +39,7 @@ export function SceneView({ place, scene, actor, foreground, several = false, pa
     party: Member[];
     own: OwnSheet;
     turnsBeside?: boolean;
+    turnsWay?: string;
     onShowCard?: (name: string) => void;
 })
 {
@@ -57,12 +59,12 @@ export function SceneView({ place, scene, actor, foreground, several = false, pa
     return (
         <section class={kinds.filter((kind) => kind !== "").join(" ")} aria-labelledby={turns === undefined ? "place-name" : "turn-title"}>
             <div class="scene-body">
-                {band && <TurnBand key="band" scene={band.scene} several={several} {...(band.motion === undefined ? {} : { motion: band.motion })} />}
+                {band && <TurnBand key="band" scene={band.scene} several={several} {...(band.motion === undefined ? {} : { motion: band.motion })} {...(turnsWay === undefined ? {} : { turnsWay })} />}
                 {place && (turns === undefined ? <PlaceBand key="place" place={place} /> : <PlaceLine key={`line ${turns.title}`} place={place} />)}
                 {scene && turns === undefined && <SceneCard key="scene" scene={scene} />}
                 {turns && (
                     <div key="side" class="turn-side">
-                        {!turnsBeside && <TurnsCard scene={turns} party={party} several={several} />}
+                        {!turnsBeside && turnsWay === undefined && <TurnsCard scene={turns} party={party} several={several} />}
                         <CharacterCard lead={actor} scene={turns} own={own} party={party} {...(several && onShowCard !== undefined ? { onShow: onShowCard } : {})} />
                     </div>
                 )}

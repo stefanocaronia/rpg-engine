@@ -9,9 +9,10 @@
         --top-space: 87px;
     }
 
+    /* On a phone, under what the screen itself keeps at its top where the page reaches it: a notch, the camera. */
     @media (max-width: 600px) {
         :root {
-            --top-space: 52px;
+            --top-space: calc(60px + var(--safe-top));
         }
     }
 
@@ -59,9 +60,9 @@
         align-items: center;
         column-gap: 20px;
         row-gap: 4px;
-        /* To the window's edges, over the page that scrolls under it, out of its flow. */
-        padding-block: var(--gap) 0;
-        padding-inline: var(--gap);
+        /* To the window's edges, over the page that scrolls under it, out of its flow; its parts clear of the screen's own edges, its ground under them. */
+        padding-block: calc(var(--gap) + var(--safe-top)) 0;
+        padding-inline: calc(var(--gap) + var(--safe-side));
         /* The game's texture of the bar under the page's veil, and its line under it (D-528). */
         --top-ground:
             linear-gradient(var(--texture-veil), var(--texture-veil)),
@@ -75,7 +76,7 @@
     /* Down the page, the same top drawn together (D-295): the master and the name smaller, the product folded away, the sections, the chips and the row
        of the world still there, a line under it. */
     .top.compact {
-        padding-block: 8px 0;
+        padding-block: calc(8px + var(--safe-top)) 0;
         --top-edge: 0 1px 0 var(--rule), 0 2px 0 var(--bar-edge), var(--raise);
     }
 
@@ -396,8 +397,10 @@
         text-decoration: none;
     }
 
-    .top-place a:hover {
-        text-decoration: underline;
+    @media (hover: hover) {
+        .top-place a:hover {
+            text-decoration: underline;
+        }
     }
 
     .top-place a::after {
@@ -729,9 +732,14 @@
         text-decoration: none;
     }
 
-    .foot-own a:hover,
     .foot-own a:focus-visible {
         color: var(--ink);
+    }
+
+    @media (hover: hover) {
+        .foot-own a:hover {
+            color: var(--ink);
+        }
     }
 
     .foot-own svg.icon {
@@ -763,6 +771,32 @@
     .foot-system details p {
         max-width: 90ch;
         margin: 8px auto 0;
+    }
+
+    /* Under a finger the campaign's name is a finger tall around its line, its place in the top as it was; the foot's links a finger tall, its two
+       icons a finger wide, and its credits' word with a finger's room around it. */
+    @media (pointer: coarse) {
+        .title-home {
+            margin-block: min(0px, (1lh - var(--target)) / 2);
+            padding-block: max(0px, (var(--target) - 1lh) / 2);
+        }
+
+        .foot-own {
+            gap: 0 4px;
+        }
+
+        .foot-own a {
+            min-height: var(--target);
+        }
+
+        .foot-own a[data-tip] {
+            justify-content: center;
+            min-width: var(--target);
+        }
+
+        .foot-system summary {
+            padding: 13px 6px;
+        }
     }
 
     /* The master: the robot, which blinks and breathes; one mood at a time (D-274). */
@@ -865,6 +899,11 @@
             height: 44px;
         }
 
+        /* Drawn together on a phone the top has no row under the master and the menu: as much room under them as over, clear of its line. */
+        .top.compact {
+            padding-block-end: 8px;
+        }
+
         .top.compact .titles h1 {
             font-size: 1.2rem;
         }
@@ -900,6 +939,26 @@
 
         .menu-pop .menu-theme {
             display: flex;
+        }
+
+        /* The menu's button a finger wide, and the menu a sheet from the window's foot (parts/phone-sheet.tsx): its links the sheet's rows, a finger tall. */
+        .icon-button.tonal.menu-button {
+            width: var(--target);
+            height: var(--target);
+        }
+
+        .menu-sheet .menu-pop {
+            position: static;
+            min-width: 0;
+            padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+            border: 0;
+            border-radius: 0;
+            background: none;
+            box-shadow: none;
+        }
+
+        .menu-sheet .menu-pop > :is(a, button) {
+            height: 48px;
         }
 
         /* The sections in a bar at the bottom (D-309), each its picture over its name; the dice's button and its tray above it. */

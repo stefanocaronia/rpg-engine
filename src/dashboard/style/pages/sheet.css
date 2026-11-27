@@ -322,8 +322,10 @@
         cursor: pointer;
     }
 
-    .items .fold:hover {
-        background: color-mix(in srgb, var(--ink) 7%, transparent);
+    @media (hover: hover) {
+        .items .fold:hover {
+            background: color-mix(in srgb, var(--ink) 7%, transparent);
+        }
     }
 
     .items .fold svg.icon {
@@ -365,8 +367,19 @@
         height: 1rem;
     }
 
-    .items .item-info:hover {
-        color: var(--ink);
+    @media (hover: hover) {
+        .items .item-info:hover {
+            color: var(--ink);
+        }
+    }
+
+    /* Under a finger a container's name is a finger tall, its chevron and its words at the middle. */
+    @media (pointer: coarse) {
+        .items .fold {
+            align-content: center;
+            min-height: var(--target);
+            margin-block: 0;
+        }
     }
 
     /* What is equipped heads the list under its eyebrow, a hairline under it before the rest (D-581 (6)). */
@@ -553,5 +566,32 @@
     .items.carried td {
         padding-block: 5px;
         border-top: 0;
+    }
+
+    /* Under a finger a name that acts is a finger tall by itself: its row keeps the height it had, the room around the name given to the name; a row
+       of words alone is as tall as the others. */
+    @media (pointer: coarse) {
+        .items tbody tr:not(.items-head, .items-rule) > * {
+            height: calc(var(--target) + 8px);
+            padding-block: 4px;
+        }
+
+        .items.carried tbody tr:not(.items-head, .items-rule) > * {
+            height: var(--target);
+            padding-block: 0;
+        }
+
+        /* A container's info icon is a finger wide and as tall as its row, which nothing of the rows beside it covers. */
+        .items .item-info {
+            width: var(--target);
+            height: var(--target);
+            margin-block: 0;
+            vertical-align: top;
+        }
+
+        /* The story's field has no grip to drag: a finger does not use one. */
+        .story-box textarea {
+            resize: none;
+        }
     }
 }

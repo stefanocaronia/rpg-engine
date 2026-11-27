@@ -70,6 +70,25 @@ describe("clocks (EVT-2)", () => {
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "event-due", visibility: "hidden", date: "day 1, 18:00", data: { event: "La marcia", since: "clock 2/2", date: "day 1, 18:00", was: "day 3, 06:00" } });
     });
 
+    it("hands the master the mark of a clock on the table at the table's chat, where it is named for the player, and only there (D-586)", async () => {
+        const atTable = { ...context, chat: { calls: 0, atTable: true } };
+        const table = async (...args: string[]): Promise<string> => (await runCommandLine(args, atTable)).output;
+        const mark = "In the story write [clock La marcia] wherever you show this clock: the page draws it there by its name, so never write its numbers yourself.";
+        // Behind the screen: no clock-name, no mark.
+        expect(await table("write", "La marcia", "--type", "event", "--set", "clock=0/4")).toBe("Created La marcia (event, world/events/La marcia.md): set clock.");
+        expect(await table("change", "La marcia", "clock", "--by", "1")).toBe("La marcia: clock 0/4 → 1/4.");
+        // Named for the player, it is on the table: shown where write puts it there, and where change moves it.
+        expect(await table("write", "La marcia", "--set", "clock-name=Le guardie arrivano")).toBe(`Updated La marcia (event, world/events/La marcia.md): set clock-name.\n${mark}`);
+        expect(await table("change", "La marcia", "clock", "--by", "1")).toBe(`La marcia: clock 1/4 → 2/4.\n${mark}`);
+        expect(await table("change", "La marcia", "clock", "--by", "0")).toBe("Nothing changed: clock on La marcia is 2/4.");
+        expect(await table("write", "La marcia", "--set", "date=day 9")).not.toContain("[clock");
+        // Elsewhere, the outputs stay as they were.
+        expect(await ok("change", "La marcia", "clock", "--by", "1")).toBe("La marcia: clock 2/4 → 3/4.");
+        expect(await ok("write", "La marcia", "--set", "clock-name=Le guardie")).toBe("Updated La marcia (event, world/events/La marcia.md): set clock-name.");
+        // An event written whole at once, its clock with its name.
+        expect(await table("write", "La piena", "--type", "event", "--set", "clock=0/3", "--set", "clock-name=Il fiume sale")).toContain("[clock La piena]");
+    });
+
     it("stays due when the clock goes down after it fired, until its status or a later date says otherwise", async () => {
         await ok("write", "La marcia", "--type", "event", "--set", "clock=1/2");
         await ok("advance", "--to", "day 1, 18:00");

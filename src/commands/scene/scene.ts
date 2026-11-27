@@ -8,6 +8,7 @@ import { sameName } from "../../core/text.ts";
 import { isEmptyField, linkListItems, parsePageReference } from "../../pages/index.ts";
 import { type Scene, sceneTypes } from "../../scene/index.ts";
 import { commitCampaign } from "../shared/campaign/git.ts";
+import { turnsMarkNote } from "../shared/campaign/table-marks.ts";
 import { campaignWorld } from "../shared/campaign/world.ts";
 import { textList } from "../shared/inputs.ts";
 import { openScene, updateScene } from "../shared/scene/scene.ts";
@@ -112,11 +113,11 @@ export const scene = defineCommand({
             case "calm":
                 return markHostile(root, input.who ?? [], input.action === "hostile", context, current);
             case "order":
-                return withActing(root, context, current, setOrder(root, world, input.order ?? [], context, current));
+                return atTable(context, withActing(root, context, current, setOrder(root, world, input.order ?? [], context, current)));
             case "use":
                 return useOfTurn(root, world, input, context, current);
             default:
-                return withActing(root, context, current, passTurn(root, world, context, current));
+                return atTable(context, withActing(root, context, current, passTurn(root, world, context, current)));
         }
     },
 
@@ -147,13 +148,13 @@ export const scene = defineCommand({
 
             case "order": {
                 const noTurn = result.noTurn.length === 0 ? "" : ` No turn: ${result.noTurn.join(", ")}.`;
-                return `Order: ${result.order.join(" · ")}.${noTurn}\n${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}${lineOf(result.part)}`;
+                return `Order: ${result.order.join(" · ")}.${noTurn}\n${turnText(result)}${turnsMark(result)}${actingText(result.acting)}${endedText(result.ended)}${lineOf(result.part)}`;
             }
 
             case "order-ended":
                 return turnsEndedText(result);
             case "next":
-                return `${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
+                return `${turnText(result)}${turnsMark(result)}${actingText(result.acting)}${endedText(result.ended)}`;
             // Who is in it, so that the master sees a scene the story has left (playtest 19): another place or other people make a new one.
             case "now":
                 return `${result.title}, with ${result.members.length === 0 ? "no one" : result.members.join(", ")}: the player's dashboard now shows "${result.now}". `
@@ -279,4 +280,16 @@ function endedText(ended: string[]): string
 function lineOf(note: string | undefined): string
 {
     return note === undefined ? "" : `\n${note}`;
+}
+
+/** At the table, a new order or a turn that passes hands the master the mark of the turns, where the page draws them (D-586). */
+function atTable(context: Context, result: SceneResult): SceneResult
+{
+    return context.chat?.atTable === true && (result.action === "order" || result.action === "next") ? { ...result, atTable: true } : result;
+}
+
+/** The mark of the turns, on a line of its own, for a result handed it at the table. */
+function turnsMark(result: { atTable?: true; }): string
+{
+    return result.atTable === true ? `\n${turnsMarkNote()}` : "";
 }

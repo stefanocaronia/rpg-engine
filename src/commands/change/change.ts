@@ -10,6 +10,7 @@ import { readAmount } from "../../money/index.ts";
 import { declaredKind, isCounterField, kindNamed, type World } from "../../pages/index.ts";
 import { faceValues } from "../roll/roll.ts";
 import { campaignCoins } from "../shared/campaign/money.ts";
+import { clockMarkNote, clockOnTable } from "../shared/campaign/table-marks.ts";
 import { campaignSystem, campaignWorld } from "../shared/campaign/world.ts";
 import { poolExample, restExample } from "../shared/examples.ts";
 import { wholeNumber } from "../shared/inputs.ts";
@@ -96,7 +97,8 @@ export const change = defineCommand({
         const summary = result.changed ? `${result.page}: ${result.field} ${result.before} → ${after}${note}.` : `Nothing changed: ${result.field} on ${result.page} is ${after}${note}.`;
         // A rule's text, of several lines, comes after the lines of the change.
         const notes = stepNotes(result);
-        const lines = [...("rolled" in result && result.rolled !== undefined ? [rolledText(result.rolled, result.hiddenRoll)] : []), summary, ...notes.filter((line) => !line.includes("\n"))];
+        const mark = "clockMark" in result && result.clockMark !== undefined ? [clockMarkNote(result.clockMark)] : [];
+        const lines = [...("rolled" in result && result.rolled !== undefined ? [rolledText(result.rolled, result.hiddenRoll)] : []), summary, ...mark, ...notes.filter((line) => !line.includes("\n"))];
         return [lines.join("\n"), ...notes.filter((line) => line.includes("\n")), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
@@ -154,7 +156,14 @@ function changeField(
     const shield = shieldOf(system, field);
     const shielded = shield === undefined ? 0 : Math.max(readCounter(valueNamed(fields, shield))?.value ?? 0, 0);
     const lost = Number.isFinite(by) && by < 0 ? Math.max(-by - shielded, 0) : 0;
-    return { ...told, ...counterChangeOf({ holder, field, fields }, told, lost), problems: world.problems };
+    return { ...told, ...counterChangeOf({ holder, field, fields }, told, lost), ...clockMarked(context, holder, field, told), problems: world.problems };
+}
+
+/** At the table, the mark of an event's clock on the table that moved, which the master writes in the story (D-586). */
+function clockMarked(context: Context, holder: CounterHolder, field: string, outcome: StepOutcome): { clockMark?: string; }
+{
+    const moved = context.chat?.atTable === true && outcome.changed && holder.kind === "page" && isCounterField(holder.page.type, comparableText(field));
+    return moved && clockOnTable(holder.page) !== undefined ? { clockMark: holder.page.name } : {};
 }
 
 /** The counter a step changed on a page, never a copy, for the game system's code (D-448): before and after, its maximum, and what damage took of it. */

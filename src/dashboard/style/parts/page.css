@@ -5,7 +5,7 @@
         /* Room at the bottom for the dice's button, which stays over the page. */
         padding: var(--gap) var(--gap) 96px;
         /* Beside the chat's panel, where it stands at a side of the window (D-582), the page keeps clear of it: --dock-start or --dock-end is its width. */
-        padding-inline: calc(var(--gap) + var(--dock-start, 0px)) calc(var(--gap) + var(--dock-end, 0px));
+        padding-inline: calc(var(--gap) + var(--safe-side) + var(--dock-start, 0px)) calc(var(--gap) + var(--safe-side) + var(--dock-end, 0px));
     }
 
     .page.stale .sheet,
@@ -63,7 +63,7 @@
     /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
     @media (max-width: 600px) {
         .page {
-            padding-bottom: 160px;
+            padding-bottom: calc(160px + var(--safe-bottom));
         }
     }
 }

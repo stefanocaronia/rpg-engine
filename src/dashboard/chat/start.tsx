@@ -60,7 +60,7 @@ export function ChatStart({ shown, sending, closed = false, onOpen, onWish }: {
             >
                 {/* What this place is, until a chat has been played in it. */}
                 {shown.messages.length === 0 && host !== undefined && <p class="chat-about">{t("The master answers here, in your AI app on this computer: open the chat to play.")}</p>}
-                {closed && <p class="chat-about">{t("The chat is closed.")}</p>}
+                {closed && <p class="chat-about">{t("The chat is closed. The story is saved: take it up when you like.")}</p>}
                 <ChoiceFields shown={shown} choice={choice} onChoice={setChoice} onWish={onWish} />
                 {choice !== undefined && host !== undefined && hostReady(host) && (
                     <div class="chat-buttons">

@@ -352,8 +352,10 @@
         fill: var(--gold);
     }
 
-    .followed-star:hover {
-        background: color-mix(in srgb, var(--ink) calc(var(--state-hover) * 100%), transparent);
+    @media (hover: hover) {
+        .followed-star:hover {
+            background: color-mix(in srgb, var(--ink) calc(var(--state-hover) * 100%), transparent);
+        }
     }
 
     .quest-from {
@@ -592,10 +594,12 @@
         border-radius: var(--radius-s) var(--radius-s) 0 0;
     }
 
-    .note-title:hover,
-    .note-text:hover {
-        border-color: var(--rule);
-        border-bottom-style: solid;
+    @media (hover: hover) {
+        .note-title:hover,
+        .note-text:hover {
+            border-color: var(--rule);
+            border-bottom-style: solid;
+        }
     }
 
     .note-title:focus-visible,
@@ -1378,6 +1382,28 @@
         .book-index li a,
         .book-turn a {
             min-height: var(--target);
+        }
+
+        /* What opens the quests done and failed, and a chapter's facts: a finger tall, the words where they were. */
+        .quest-folded summary {
+            min-height: var(--target);
+        }
+
+        .chapter-facts {
+            margin-top: 0;
+        }
+
+        .chapter-facts summary {
+            padding-block: 12px;
+        }
+
+        .chapter-facts ul {
+            margin-top: 0;
+        }
+
+        /* A note's text has no grip to drag: a finger does not use one. */
+        .note-text {
+            resize: none;
         }
     }
 }

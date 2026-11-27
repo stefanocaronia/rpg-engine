@@ -38,7 +38,7 @@
         .items th > .act + .changed-mark {
             display: inline-flex;
             align-items: center;
-            min-height: 36px;
+            min-height: var(--target);
             vertical-align: top;
         }
     }

@@ -35,7 +35,7 @@ import { shownLayers } from "./layers.ts";
 import { mapText, shownMap } from "./map.ts";
 import { characterNamed, memoryOf, memoryText } from "./memory.ts";
 import { knownNamedPage, knownPage, lineValues, placeLook, shownName, shownPage, valueCoins } from "./page.ts";
-import { isDown, sceneLine, seenEffect, seenInScene, shownPlace, shownScene, strangerImage } from "./place.ts";
+import { isDown, type PlaceSight, sceneLine, seenEffect, seenInScene, shownPlace, type ShownScene, shownScene, strangerImage } from "./place.ts";
 import type { PartyMember, ShownRoll, ViewResult } from "./result.ts";
 import { shownSaves } from "./saves.ts";
 import { diaryCount, diaryLine, diaryLines, isCopyName, rollCount, rollsShown, seenByRoll, shownRoll, storyFact } from "./story.ts";
@@ -217,9 +217,8 @@ export const view = defineCommand({
 
         const open = readJourney(root)?.at !== undefined;
         const companions = companionsOf(world);
-        const language = readSettings(root).language;
-        const memberWords = system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context);
-        const sight = { root, context, world, knowledge, party: [...players, ...companions], ...(memberWords === undefined ? {} : { words: memberWords.words }) };
+        const memberWords = systemWordsHere(root, context);
+        const sight = playerSight(root, context, world, knowledge, players, memberWords);
 
         if (input.as !== undefined) {
             return memoryOf({ ...sight, party: isPartyMember(pc) ? world.pages.filter((page) => page.type === "character" && isPartyMember(page)) : [pc] });
@@ -377,6 +376,28 @@ export const view = defineCommand({
         }
     },
 });
+
+/** The open scene as the player's view gives it, for who shows it elsewhere, as the table's chat; none before a player character, or with no scene open. */
+export function playerScene(root: string, context: Context): ShownScene | undefined
+{
+    const world = campaignWorld(root, context);
+    const knowledge = playerKnowledge(root, world);
+    return knowledge === undefined ? undefined : shownScene(playerSight(root, context, world, knowledge, playerCharacters(world), systemWordsHere(root, context)));
+}
+
+/** What the player's view reads to show the place and the scene: the party of the player characters given and the companions, and the system's words. */
+function playerSight(root: string, context: Context, world: World, knowledge: Knowledge, players: Page[], words: SystemWords | undefined): PlaceSight
+{
+    return { root, context, world, knowledge, party: [...players, ...companionsOf(world)], ...(words === undefined ? {} : { words: words.words }) };
+}
+
+/** The game system's words in the campaign's language, where it has both. */
+function systemWordsHere(root: string, context: Context): SystemWords | undefined
+{
+    const system = campaignSystem(root, context);
+    const language = readSettings(root).language;
+    return system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context);
+}
 
 function companionsOf(world: World): Page[]
 {

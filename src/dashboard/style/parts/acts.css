@@ -118,7 +118,7 @@
     @media (max-width: 600px) {
         .act-strip {
             inset-inline: 12px;
-            bottom: 152px;
+            bottom: calc(152px + var(--safe-bottom));
             max-width: none;
         }
 
@@ -133,6 +133,12 @@
         .act-small {
             order: 1;
             margin-inline-start: 38px;
+        }
+    }
+
+    @media (pointer: coarse) {
+        .act-small {
+            min-height: var(--target);
         }
     }
 

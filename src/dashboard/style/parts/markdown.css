@@ -43,8 +43,10 @@
         border-radius: var(--radius-xs);
     }
 
-    .md-link:hover {
-        text-decoration-color: currentColor;
+    @media (hover: hover) {
+        .md-link:hover {
+            text-decoration-color: currentColor;
+        }
     }
 
     .markdown blockquote {

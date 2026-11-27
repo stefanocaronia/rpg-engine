@@ -18,6 +18,7 @@ import { campaignPageElsewhere, campaignPorts, type Dashboard, type DashboardOpt
 import { type TableChat, tableChat, type TableChatOptions } from "./chat.ts";
 import { type Door, welcome } from "./door.ts";
 import { probeTable } from "./hello.ts";
+import { storyMarks } from "./marks.ts";
 import { knock, makeTablesFolder, newToken, readPlace, removePlace, removeRefusal, removeSocketFile, type TablePlace, tableSocket, writePlace, writeRefusal } from "./place.ts";
 import { type Seat, tableSeat } from "./seat.ts";
 import { programsWait, turnStopWait } from "./stop.ts";
@@ -234,6 +235,8 @@ async function openParts(options: TableOptions, root: string): Promise<Parts | {
         platform: options.platform,
         userHome: homedir(),
         npmProgram: (host) => hostCommand(host, environment),
+        // The marks of the master's words, read through the table's files as its commands read them.
+        marks: (text) => withFiles(session, () => storyMarks(root, context, text)),
         ...options.master,
         // A chat sits that the table's own never gave a token: one opened by hand.
         elsewhere: () => seat?.taken() === true && !chat.gave(seat.environment()),

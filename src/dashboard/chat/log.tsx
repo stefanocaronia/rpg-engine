@@ -1,5 +1,5 @@
 // The messages of the chat with the master, in order: the player's words at the end side, the master's as the text they write, with the engine's marks
-// in them drawn, as a roll where the story tells it, a word of the table's as a notice, a question of the master's where it was asked, with its buttons
+// in them drawn, as a roll, a clock or the turns where the story tells them, a word of the table's as a notice, a question of the master's where it was asked, with its buttons
 // while it waits, and the rolls the player may see, a line each until the master's words tell them. Words out of the game, the master's and the player's, stand apart from the story's, in a quieter look, without
 // their brackets. The list scrolls with no bar in sight, a shade at its top or its foot where there is more; it follows what comes while its end is in
 // sight; farther up the player is reading, and it stays, with a pill that leads back to now. What the chat offers the player, as to take up the story,
@@ -49,7 +49,7 @@ export function ChatLog({ messages, asking, game, app, foot }: {
     const [came, setCame] = useState(false);
     const last = messages.at(-1);
     // The chat's rolls by their id, for the marks the master's words hold of them; and those the words tell already, whose own line goes.
-    const marks = useMemo(() => marksDrawer(new Map(messages.flatMap((message): [string, ShownRoll][] => (message.from === "roll" ? [[message.roll.id.toLowerCase(), message.roll]] : [])))), [messages]);
+    const rolls = useMemo(() => new Map(messages.flatMap((message): [string, ShownRoll][] => (message.from === "roll" ? [[message.roll.id.toLowerCase(), message.roll]] : []))), [messages]);
     const told = useMemo(() => rollsTold(messages), [messages]);
     // How the questions stand, each drawn anew as it is answered or left.
     const questions = messages.map((message) => (message.from === "asked" ? message.state[0] : "")).join("");
@@ -142,7 +142,7 @@ export function ChatLog({ messages, asking, game, app, foot }: {
                             ? <ChatQuestion key={message.id} message={message} asking={message.state === "waiting" ? asking : undefined} answer={answerShown(messages, index)} />
                             : message.from === "roll"
                             ? !told.has(message.roll.id.toLowerCase()) && <ChatRollLine key={message.id} roll={message.roll} party={game.party} several={game.several} />
-                            : <Said key={message.id} message={message} marks={marks} app={app} />
+                            : <Said key={message.id} message={message} rolls={rolls} app={app} />
                     )}
                     {foot}
                 </ol>
@@ -159,12 +159,14 @@ export function ChatLog({ messages, asking, game, app, foot }: {
 }
 
 /**
- * Words: the player's, the master's text in its blocks, with the engine's marks in it drawn by `marks`, or a word of the table's with its icon, quiet and in
- * the page's words where it only says what became of the master's model; what is out of the game apart in each.
+ * Words: the player's, the master's text in its blocks, with the engine's marks in it drawn from the chat's `rolls` and what the message's marks stood for,
+ * or a word of the table's with its icon, quiet and in the page's words where it only says what became of the master's model; what is out of the game apart
+ * in each.
  */
-function Said({ message, marks, app }: { message: ChatSaid; marks: OwnParts; app: string | undefined; })
+function Said({ message, rolls, app }: { message: ChatSaid; rolls: ReadonlyMap<string, ShownRoll>; app: string | undefined; })
 {
     if (message.from === "master") {
+        const marks = marksDrawer(rolls, message.marks);
         return (
             <li class="chat-message from-master">
                 <span class="visually-hidden">{speaker("master")}</span>

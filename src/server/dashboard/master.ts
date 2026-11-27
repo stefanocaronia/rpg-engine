@@ -102,7 +102,7 @@ export interface PageChat
  * master's and how it ended; a roll the player may see.
  */
 export type PageMessage =
-    | ({ id: number; from: "player" | "master" | "table"; text: string; } & ModelMark)
+    | ({ id: number; from: "player" | "master" | "table"; text: string; marks?: StoryMarks; } & ModelMark)
     | { id: number; from: "asked"; text: string; title?: string; options: string[]; state: "waiting" | "answered" | "left"; answer?: string; }
     | { id: number; from: "roll"; text: string; roll: ShownRoll; };
 
@@ -112,6 +112,15 @@ export type PageMessage =
  * a change the app did not take, `asked` the model asked and `model` the one that stays.
  */
 export type ModelMark = { code?: "model" | "model-kept"; model?: string; asked?: string; effort?: string; dropped?: true; };
+
+/**
+ * What the engine's marks in a master's message stood for once it was complete (D-586), kept with it so that it keeps the values of then: each clock on the
+ * table it marks, by the page as the mark names it, with the name written for the player; the turns as the player's view gives them, with no round in a game
+ * without rounds.
+ */
+export type StoryMarks = { clocks?: MarkedClock[]; turns?: MarkedTurns; };
+export type MarkedClock = { page: string; name: string; value: number; max: number; };
+export type MarkedTurns = { order: string[]; turn: string; round?: number; };
 
 // How long the player's words may be, and a body that holds them, every character escaped.
 const mostWords = 20_000;

@@ -24,6 +24,7 @@
 // the master rolls where the player may see, where the demo gives it the means, and its words after hold the engine's mark of that roll, [roll <id>].
 // Not part of the tests.
 import type { ModelMark, PageChat, PageMaster, PageMessage } from "../../src/server/dashboard/index.ts";
+import type { ResolvedMarks } from "../../src/server/table/marks.ts";
 import { type DemoHosts, demoHosts, effortsOnceChosen } from "./hosts.ts";
 
 /** The demo's master, which tells whoever listens that the chat changed. */
@@ -79,6 +80,9 @@ const answer = [
     // The engine's mark of the roll just made, {roll} its id, with bold around it; brackets of the master's own, which stay as written; and the mark of a
     // roll the chat does not have, which shows nothing.
     "Un'ombra scatta verso la porta sul retro, e Lupa le taglia la strada **[roll {roll}]** ma l'ombra è svelta: [Fuga 1/4]. Qui c'è il segno di un tiro che la chat non ha, e non si vede [roll 0badf00d].",
+    // The marks of a clock on the table and of the turns, which the engine resolves once the message is complete (D-586); and the mark of a clock that is
+    // no event's, which shows nothing.
+    "Uno dei briganti fischia verso la finestra [clock I briganti chiamano rinforzi] e i tavoli rovesciati decidono chi muove [turns]. Nessuno guarda il guado [clock Nebbia sul guado].",
     "Tre cose attirano il tuo sguardo:\n\n- un mantello fradicio appeso accanto al fuoco, che nessuno reclama;\n- una mappa inchiodata alla trave, con un segno rosso sulla Torre;\n- la botola della cantina, socchiusa.\n\nChe cosa fai?",
 ];
 
@@ -124,7 +128,9 @@ const flowBefore: (Omit<Words, "id"> | Omit<AskedMessage, "id"> | Omit<Extract<M
  * The demo's master: a chat kept in this process's memory alone; with `takes`, one to take up: cut as the game was closed, whole, or with no flow kept;
  * `hosts`, the apps it opens in, shared with the demo's launcher.
  */
-export function demoMaster({ takes, hosts = demoHosts() }: { takes?: "cut" | "whole" | "empty" | undefined; hosts?: DemoHosts; } = {}): DemoMaster
+export function demoMaster(
+    { takes, hosts = demoHosts(), marks }: { takes?: "cut" | "whole" | "empty" | undefined; hosts?: DemoHosts; marks?: (text: string) => ResolvedMarks; } = {},
+): DemoMaster
 {
     const messages: Message[] = [];
     const timers = new Set<NodeJS.Timeout>();
@@ -159,6 +165,15 @@ export function demoMaster({ takes, hosts = demoHosts() }: { takes?: "cut" | "wh
     };
 
     const isOpen = (): boolean => chat !== undefined && chat.state !== "ended";
+
+    // A message of the master's is complete: what its marks stand for is kept in it, as the table keeps it.
+    const complete = (message: Words): void => {
+        const resolved = marks?.(message.text).marks;
+
+        if (resolved !== undefined) {
+            message.marks = resolved;
+        }
+    };
 
     // The app says the model it runs, and its efforts where it says them only now: an effort the model does not take is left out, as the table does.
     const sessionTold = (open: Chat): void => {
@@ -250,6 +265,7 @@ export function demoMaster({ takes, hosts = demoHosts() }: { takes?: "cut" | "wh
         last = { host: "claudeCode", model: "sonnet", effort: "medium" };
         // Whole, the flow ends with the master's words: the question that was waiting is the cut one's.
         (takes === "empty" ? [] : takes === "whole" ? flowBefore.slice(0, -1) : flowBefore).forEach((message) => messages.push({ ...message, id: ++lastId } as Message));
+        messages.filter((message): message is Words => message.from === "master").forEach(complete);
     }
 
     const later = (delay: number, does: () => void): void => {
@@ -283,6 +299,11 @@ export function demoMaster({ takes, hosts = demoHosts() }: { takes?: "cut" | "wh
             if (index === rollBefore) {
                 later(at += pieceEvery, () => {
                     open.tool = "roll";
+
+                    if (reply !== undefined) {
+                        complete(reply);
+                    }
+
                     reply = undefined;
                     void roller?.();
                 });
@@ -306,7 +327,13 @@ export function demoMaster({ takes, hosts = demoHosts() }: { takes?: "cut" | "wh
             }
         });
 
-        later(at + pieceEvery, () => (open.state = "idle"));
+        later(at + pieceEvery, () => {
+            if (reply !== undefined) {
+                complete(reply);
+            }
+
+            open.state = "idle";
+        });
     };
 
     const heard = (open: Chat, text: string): void => {

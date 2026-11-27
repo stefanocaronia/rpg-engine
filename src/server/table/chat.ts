@@ -25,6 +25,7 @@ import {
 import type { ChatQuestion, HostWish, MasterRefusal, ModelMark, PageChat, PageMaster, PageMessage } from "../dashboard/index.ts";
 import { newFlowName, readFlow, turnEnded, writeFlow } from "./flow.ts";
 import { type LastChat, readLastChat, writeLastChat } from "./last-chat.ts";
+import type { ResolvedMarks } from "./marks.ts";
 
 /** The table's chat with the master, one at a time. */
 export interface TableChat extends PageMaster
@@ -125,6 +126,8 @@ export interface TableChatOptions
     newToken?: () => string;
     now?: () => number;
     log?: (line: string) => void;
+    /** What the engine's marks in a master's message stand for once it is complete, from the campaign as it is then (D-586); none where not given. */
+    marks?: (text: string) => ResolvedMarks;
 }
 
 /** The open chat: the choice, the token its server says hello with, and how its turn stands. */
@@ -274,13 +277,31 @@ export function tableChat(options: TableChatOptions): TableChat
 
     const isOpen = (): boolean => chat !== undefined && chat.state !== "ended";
 
-    // The master's message of this turn is complete: kept in the campaign, and what they write after it starts a new one.
+    // The master's message of this turn is complete: its marks resolved, it is kept in the campaign, and what they write after it starts a new one.
     const replyDone = (opened: OpenChat): void => {
         if (opened.reply !== undefined) {
+            resolveMarks(opened.reply);
             save(opened.reply);
         }
 
         Object.assign(opened, { reply: undefined, block: undefined });
+    };
+
+    // What the marks of a complete message stand for, kept in it; a mark that stands for nothing is logged, and the page shows nothing there.
+    const resolveMarks = (reply: Words): void => {
+        try {
+            const resolved = options.marks?.(reply.text);
+
+            if (resolved?.marks !== undefined) {
+                reply.marks = resolved.marks;
+            }
+
+            for (const mark of resolved?.unresolved ?? []) {
+                options.log?.(`The master wrote ${mark} in the story, which stands for nothing the page can show: it shows nothing there.`);
+            }
+        } catch (error) {
+            options.log?.(`The table could not read the marks of a message of its chat: ${error instanceof Error ? error.message : String(error)}`);
+        }
     };
 
     // What the engine tells comes between the master's words: their reply in course closes, and what they write after it starts a new message.

@@ -1,0 +1,12 @@
+name: On a phone, open the chat, write to the master from the bar at the window's foot, and read the answer
+covers: [chat-say]
+# The chat with the demo's master, closed until the player opens it: no program started, nothing spent.
+setup: {chat: true}
+steps:
+  - phone: {tapOn: Play}
+  - phone: {tapOn: Open the chat}
+  - phone: {inputText: {into: {label: Your words to the master}, text: "I push the inn's door open."}}
+  - phone: {tapOn: {label: Send}}   # on a touch screen Enter goes to a new line: the button sends
+  - phone: {assertVisible: "I push the inn's door open."}
+  - phone: {assertState: {query: reply, contains: Che cosa fai?}}   # the master's answer, once its turn has ended: the demo's master ends on this question
+  - phone: {assertVisible: Che cosa fai?}

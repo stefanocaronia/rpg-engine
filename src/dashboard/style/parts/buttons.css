@@ -41,8 +41,10 @@
         color: var(--low);
     }
 
-    .button.danger:not(:disabled):hover {
-        background: color-mix(in srgb, var(--low) 10%, var(--float));
+    @media (hover: hover) {
+        .button.danger:not(:disabled):hover {
+            background: color-mix(in srgb, var(--low) 10%, var(--float));
+        }
     }
 
     .button:disabled,
@@ -126,5 +128,14 @@
         background: var(--float);
         color: var(--ink);
         box-shadow: var(--overlay);
+    }
+
+    /* Under a finger an icon's button takes --target around its middle, drawn as small as it is: a layer of its own, wider than the button by what it lacks. */
+    @media (pointer: coarse) {
+        .icon-button::before {
+            content: "";
+            position: absolute;
+            inset: min(0px, (100% - var(--target)) / 2);
+        }
     }
 }

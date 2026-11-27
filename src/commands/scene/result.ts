@@ -25,7 +25,7 @@ export type SceneResult =
     | ({ action: "open"; title: string; type: string; opened?: string; place?: string; members: Member[]; around: string; part: string; } & Brought)
     | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; seen?: Record<string, string>; } & Brought)
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; acting?: string; }
-    | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; acting?: string; part?: string; } & Turns)
+    | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; acting?: string; part?: string; atTable?: true; } & Turns)
     | { action: "order-ended"; title: string; hostile: string[]; ended: string[]; }
     | { action: "now"; title: string; now: string; members: string[]; }
     | { action: "use"; line: string; }

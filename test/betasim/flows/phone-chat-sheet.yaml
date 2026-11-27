@@ -1,0 +1,15 @@
+name: On a phone, see what the master plays with in the chat's own sheet, then close the chat from it
+covers: [chat-sheet]
+# A chat already open on a story told, as a campaign's table takes it up.
+setup: {chat: taken-up}
+steps:
+  - phone: {tapOn: Play}
+  - phone: {tapOn: {label: "The chat: model, close"}}
+  - phone: {assertVisible: The master plays with}
+  - phone: {assertVisible: Claude Code}
+  - phone: {assertVisible: Sonnet}
+  - phone: {tapOn: {label: Close}}
+  - phone: {assertNotVisible: The master plays with}
+  - phone: {tapOn: {label: "The chat: model, close"}}
+  - phone: {tapOn: Close the chat}
+  - phone: {assertVisible: Resume the chat}   # where a chat is opened, with the one just closed to take up

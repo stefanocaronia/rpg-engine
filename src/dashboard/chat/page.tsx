@@ -5,8 +5,10 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { MasterShown } from "../data.ts";
+import { useMedia } from "../parts/card.tsx";
 import { Icon } from "../parts/icons.tsx";
 import { PageHead } from "../shell/pages.tsx";
+import { tableSection } from "../shell/table.tsx";
 import { t } from "../text.ts";
 import { chatApp, chatNews, chatOffer, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, effortsOf, endedWords, expiredHost, firstAnswerDue, proposedEffort, turnDoing, turnWords, waitingQuestion } from "./chat.ts";
 import { type ChatGame, ChatLog } from "./log.tsx";
@@ -14,8 +16,9 @@ import { ModelPicker } from "./models.tsx";
 import { ChatOffering } from "./offer.tsx";
 import type { ChatAsking } from "./question.tsx";
 import type { MasterChat } from "./sending.ts";
+import { chatSheetLabel, chatSheetNote } from "./sheet.tsx";
 import { ChatStart } from "./start.tsx";
-import { ChatWords } from "./words.tsx";
+import { ChatWords, touchPhone } from "./words.tsx";
 
 /**
  * The chat in its place; `entering` when the page itself led here, as when the setup ends under an open chat: then the player's words take the focus.
@@ -41,6 +44,10 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
     const view = shown === undefined ? undefined : chatView(shown);
     const state = shown?.chat?.state;
     const viewBefore = useRef<ChatView | undefined>(undefined);
+    // On a phone's width what stands under the player's words is in the chat's own sheet, the model's button as wide as it; a model chosen there closes
+    // the sheet, as what became of the change is a line among the messages.
+    const phone = useMedia(tableSection);
+    const [sheet, setSheet] = useState(false);
     useRoom(root, view === "open" && place !== "dock", place);
 
     // The open chat of the section fills the window from the page's top: reached from a section read far down, the page goes back there. Under the setup's
@@ -78,11 +85,12 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
 
     // What had the focus went away, as the button that opened the chat, Stop at the turn's end, or Open as the table said to sign in first: the focus goes
     // to the words, or to what opens a chat or sets its app up. Looked at after every change, as an app's state changes neither the view nor the chat's.
+    // On a phone it goes to the messages in place of the words, which would call the keyboard over them.
     useEffect(() => {
         const gone = held.current !== null && !held.current.isConnected;
 
         if (gone && (document.activeElement === null || document.activeElement === document.body)) {
-            const next = view === "open" ? "#chat-words" : ".chat-start .button.gold";
+            const next = view !== "open" ? ".chat-start .button.gold" : matchMedia(touchPhone).matches ? ".chat-log" : "#chat-words";
             const taking = root.current?.querySelector<HTMLElement>(next) ?? root.current?.querySelector<HTMLElement>(".chat-log");
             // Into sight by the shortest way, clear of the dice's button: the browser's own way would put it in the window's middle, and why the chat ended out of it.
             taking?.focus({ preventScroll: true });
@@ -105,18 +113,25 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
     const playing = open === undefined ? undefined : shown.hosts.find((one) => one.id === open.host);
     // The model of the open chat changes from under its words, where the app lets it, between two turns: its levels of thinking as the app said them once
     // it was chosen, else as its list says. Another model is asked with its level: the one chosen where that model takes it, else the one proposed for it;
-    // with none where its levels are not known until it is chosen.
+    // with none where its levels are not known until it is chosen. On a phone it changes from the chat's sheet, named and described by the sheet's lines.
     const switcher = open?.changes === true && playing !== undefined && playing.models.length > 0
         ? (
             <ModelPicker
                 host={playing}
                 id="chat-switch"
-                foot
+                foot={!phone}
+                {...(phone ? { labelledBy: chatSheetLabel, describedBy: chatSheetNote } : {})}
                 model={open.model}
                 effort={open.effort}
                 efforts={open.efforts}
                 off={open.state === "turn" ? t("You can change it when the master has answered.") : undefined}
-                onPick={(model) => model !== open.model && void chat.switchModel(model, proposedEffort(effortsOf(playing, model), open.effort))}
+                onPick={(model) => {
+                    setSheet(false);
+
+                    if (model !== open.model) {
+                        void chat.switchModel(model, proposedEffort(effortsOf(playing, model), open.effort));
+                    }
+                }}
                 onEffort={(effort) => effort !== open.effort && void chat.switchModel(open.model, effort)}
             />
         )
@@ -175,11 +190,20 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
                         plays={choiceLine(shown, shown.chat)}
                         app={playing?.name}
                         model={switcher}
+                        sheet={phone ? sheet : undefined}
+                        onSheet={setSheet}
                         onText={chat.setDraft}
                         onSend={async (words) => {
                             if (await chat.say(words)) {
                                 chat.setDraft("");
-                                root.current?.querySelector<HTMLElement>("#chat-words")?.focus();
+                                const field = root.current?.querySelector<HTMLElement>("#chat-words");
+
+                                // The field keeps the focus for the next words; on a phone it lets go of it, so that the keyboard leaves the window to the answer.
+                                if (matchMedia(touchPhone).matches) {
+                                    field?.blur();
+                                } else {
+                                    field?.focus();
+                                }
                             }
                         }}
                         onStop={() => void chat.stop()}
@@ -236,6 +260,8 @@ function useRoom(root: { current: HTMLElement | null; }, open: boolean, place: C
         // Where the page stood before the player started writing, to go back there, and whether the chat took the window for it.
         let before: number | undefined;
         let typed = false;
+        // In its section on a phone the chat is the window's own, down to the bar or the keyboard.
+        const flush = (): boolean => place === "section" && matchMedia(tableSection).matches;
 
         const measure = (): void => {
             asked = 0;
@@ -250,7 +276,7 @@ function useRoom(root: { current: HTMLElement | null; }, open: boolean, place: C
             const clear = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom) || 0;
             // Writing, the chat starts right under the page's top, which stays over the page.
             const under = document.querySelector(".top")?.getBoundingClientRect().bottom ?? 0;
-            box.style.setProperty("--chat-room", `${chatRoom(place, { foot, top: typing ? under : top, title, clear, typing })}px`);
+            box.style.setProperty("--chat-room", `${chatRoom(place, { foot, top: typing ? under : top, title, clear, typing, flush: flush() })}px`);
 
             if (typing) {
                 typed = true;
@@ -272,6 +298,29 @@ function useRoom(root: { current: HTMLElement | null; }, open: boolean, place: C
         // What stands over the chat comes and goes: the master's question, a notice, the top as it is measured.
         const sizes = new ResizeObserver(update);
         sizes.observe(document.body);
+
+        // In its section on a phone the page is as tall as the window whatever it holds, and the body keeps its size: there each part of the page is
+        // watched, as it comes, goes and changes size.
+        const page = root.current?.closest(".page") ?? null;
+
+        const phoneUpdate = (): void => {
+            if (flush()) {
+                update();
+            }
+        };
+
+        const parts = new ResizeObserver(phoneUpdate);
+
+        const coming = new MutationObserver(() => {
+            [...(page?.children ?? [])].forEach((part) => parts.observe(part));
+            phoneUpdate();
+        });
+
+        if (page !== null) {
+            [...page.children].forEach((part) => parts.observe(part));
+            coming.observe(page, { childList: true });
+        }
+
         window.addEventListener("resize", update);
         window.visualViewport?.addEventListener("resize", update);
 
@@ -291,6 +340,8 @@ function useRoom(root: { current: HTMLElement | null; }, open: boolean, place: C
         return () => {
             cancelAnimationFrame(asked);
             sizes.disconnect();
+            parts.disconnect();
+            coming.disconnect();
             window.removeEventListener("resize", update);
             window.visualViewport?.removeEventListener("resize", update);
             document.removeEventListener("focusin", focused);

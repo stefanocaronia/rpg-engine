@@ -29,7 +29,7 @@ import { campaignPorts, type DashboardAt, dashboardAt } from "./ports.ts";
 import { answer } from "./routes.ts";
 import type { PackageAction, PackagePhase } from "./writes.ts";
 
-export type { ChatQuestion, HostWish, MasterRefusal, ModelMark, PageChat, PageMaster, PageMessage } from "./master.ts";
+export type { ChatQuestion, HostWish, MarkedClock, MarkedTurns, MasterRefusal, ModelMark, PageChat, PageMaster, PageMessage, StoryMarks } from "./master.ts";
 export { showPage } from "./opener.ts";
 export { campaignPorts, dashboardAt, dashboardPorts } from "./ports.ts";
 export { pageRoutes } from "./routes.ts";

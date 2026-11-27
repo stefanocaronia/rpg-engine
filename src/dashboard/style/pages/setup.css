@@ -165,8 +165,10 @@
         font-size: 0.85rem;
     }
 
-    .setup-choice:hover {
-        border-color: color-mix(in srgb, var(--gold) 60%, var(--rule));
+    @media (hover: hover) {
+        .setup-choice:hover {
+            border-color: color-mix(in srgb, var(--gold) 60%, var(--rule));
+        }
     }
 
     /* The chosen one: the card's own ground, a gold edge of two pixels and a gold dot at its top right. */
@@ -306,8 +308,10 @@
         cursor: pointer;
     }
 
-    .setup-chip:hover {
-        border-color: color-mix(in srgb, var(--gold) 60%, var(--rule));
+    @media (hover: hover) {
+        .setup-chip:hover {
+            border-color: color-mix(in srgb, var(--gold) 60%, var(--rule));
+        }
     }
 
     /* Each dot is drawn at 12 pixels in a target of 24; where the player is, a wider pill. The dots wrap as words do, balanced: when one row is too narrow

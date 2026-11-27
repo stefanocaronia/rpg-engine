@@ -1,0 +1,10 @@
+name: On a phone, in a fight, go from the Scene's band to the whole order of the turns on the Table
+covers: [phone-turns]
+# The demo's own fight: the brawl at the inn, Ettore's turn.
+setup: {}
+steps:
+  - phone: {tapOn: Scene}
+  - phone: {tapOn: All the turns}
+  - phone: {assertVisible: Turns}
+  - phone: {assertVisible: Lupa}
+  - phone: {assertVisible: {label: Free roll}}   # the dice's button stands on the Table alone

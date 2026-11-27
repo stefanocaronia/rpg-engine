@@ -9,4 +9,5 @@ steps:
     concept: {name: a line of the sheet rolls its dice, difficulty: 2}
   - advance: 2s
   - advance: 2s
+  - phone: {tapOn: Table}   # on a phone the rolls are on the Table
   - assertVisible: {css: ".roll-list .roll.free"}

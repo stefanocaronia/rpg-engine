@@ -86,6 +86,10 @@
         --state-focus: 0.1;
         --state-press: 0.14;
         --target: 44px;
+        /* The screen's own edges where the page reaches them (viewport-fit=cover): a notch, the round corners, the bar of the gestures. Nothing on a computer. */
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-side: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
         /* Motion with a name. */
         --quick: 100ms;
         --short: 250ms;

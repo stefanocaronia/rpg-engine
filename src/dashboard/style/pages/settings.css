@@ -570,4 +570,11 @@
             padding: 0 8px;
         }
     }
+
+    /* Under a finger a field of words has no grip to drag. */
+    @media (pointer: coarse) {
+        .setting-text textarea {
+            resize: none;
+        }
+    }
 }

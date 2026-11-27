@@ -43,6 +43,7 @@ import { campaignCoins } from "../shared/campaign/money.ts";
 import { adventurePart, nextAdventureLead, partyPart, situationPart } from "../shared/campaign/parts.ts";
 import { adventureUnderWay, logQuestChange, newQuestNotes, tickedQuestNotes } from "../shared/campaign/quests.ts";
 import { deathNotes, isPlayerDead, partyDeathNotes } from "../shared/campaign/saves.ts";
+import { clockMarkNote, clockOnTable, isClockField } from "../shared/campaign/table-marks.ts";
 import { campaignSystem, campaignWorld, leftOutNote, missingSystemHint, systemProblems, systemSearchHint } from "../shared/campaign/world.ts";
 import { diaryDueLine } from "../shared/characters/thoughts.ts";
 import { fieldValues } from "../shared/inputs.ts";
@@ -298,6 +299,8 @@ export const write = defineCommand({
         // Or one back from the dead (Elena, 24 October).
         const risen = changed && existing?.fields.status === "dead" && page.fields.status !== "dead";
         const partyInstructions = (joined || risen) && isPlayerCharacter(page) ? partyPart(context, system, now) : "";
+        // At the table, a clock put on the table, or named anew there: its mark, shown at its value (D-586).
+        const clockMark = context.chat?.atTable === true && changed && changedFieldNames(fields).some(isClockField) && clockOnTable(page) !== undefined ? clockMarkNote(page.name) : "";
         return {
             ...result,
             followers: followers.pages.map((follower) => follower.name),
@@ -323,6 +326,7 @@ export const write = defineCommand({
                 ...death,
                 ...moneyNotes,
                 ...(partyInstructions === "" ? [] : [partyInstructions]),
+                ...(clockMark === "" ? [] : [clockMark]),
             ],
             problems: world.problems,
         };

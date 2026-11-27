@@ -96,5 +96,10 @@
             min-height: var(--target);
             min-width: var(--target);
         }
+
+        /* A finger scrolls the tabs that do not fit: no bar under them. */
+        .page-tabs {
+            scrollbar-width: none;
+        }
     }
 }

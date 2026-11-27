@@ -259,6 +259,8 @@ describe("the chat with the master on the page (D-582)", () => {
         expect(sendsWords({ key: "Enter", shiftKey: true, isComposing: false })).toBe(false);
         expect(sendsWords({ key: "Enter", shiftKey: false, isComposing: true })).toBe(false);
         expect(sendsWords({ key: "a", shiftKey: false, isComposing: false })).toBe(false);
+        // On a phone's keyboard Enter starts a new line: the button alone sends.
+        expect(sendsWords({ key: "Enter", shiftKey: false, isComposing: false }, true)).toBe(false);
         expect(wordsToSend("  I open the door.\n", "idle")).toBe("I open the door.");
         expect([wordsToSend(" \n ", "idle"), wordsToSend("Wait.", "turn"), wordsToSend("Wait.", "ended"), wordsToSend("Wait.", undefined)]).toEqual([undefined, undefined, undefined, undefined]);
         // In the master's turn they go only while they answer the question that waits.
@@ -344,6 +346,9 @@ describe("the chat with the master on the page (D-582)", () => {
         // Writing on a phone, the whole window over the keyboard from under the page's top, the chat scrolled there; less than the least if that is all there is.
         expect(chatRoom("section", { foot: 440, top: 52, title: 43, clear: 16, typing: true })).toBe(372);
         expect(chatRoom("section", { foot: 150, top: 52, title: 43, clear: 16, typing: true })).toBe(120);
+        // In its section on a phone the chat is the window's own: down to the bar, or to the keyboard, with no room under it.
+        expect(chatRoom("section", { foot: 672, top: 96, title: 0, clear: 152, flush: true })).toBe(576);
+        expect(chatRoom("section", { foot: 420, top: 52, title: 0, clear: 16, typing: true, flush: true })).toBe(368);
     });
 
     it("marks the chat's tab when the master said something new while the player was in another section, never for the player's own words nor what was there at first", () => {

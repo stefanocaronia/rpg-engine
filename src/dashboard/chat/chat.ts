@@ -539,16 +539,19 @@ export function firstAnswerDue(shown: Pick<MasterShown, "chat" | "messages">): b
  * the room under it. Under the setup's questions it starts wherever they end: the window's height, less its own title and what the page keeps clear at
  * its foot on a phone, where a field that takes the focus is scrolled over the dice's button, so that the chat stands whole over it and stays put. While the
  * player writes in it on a phone (`typing`), the whole window over the keyboard from under the page's top (`top` then), the page scrolled to the chat's top.
+ * In its section on a phone it is the window's own (`flush`): down to the bar of the sections, or to the keyboard, with no room under it.
  * Never less than the least, however little the window leaves.
  */
-export function chatRoom(place: ChatPlace, measures: { foot: number; top: number; title: number; clear: number; typing?: boolean; }): number
+export function chatRoom(place: ChatPlace, measures: { foot: number; top: number; title: number; clear: number; typing?: boolean; flush?: boolean; }): number
 {
+    const under = measures.flush === true ? 0 : footRoom;
+
     if (measures.typing === true) {
-        return Math.max(leastTyping, Math.floor(measures.foot - measures.top - footRoom));
+        return Math.max(leastTyping, Math.floor(measures.foot - measures.top - under));
     }
 
     const top = place === "under" ? measures.title + footRoom + measures.clear : measures.top;
-    return Math.max(leastRoom, Math.floor(measures.foot - top - footRoom));
+    return Math.max(leastRoom, Math.floor(measures.foot - top - under));
 }
 
 /** Whether a list scrolled so shows its end, within a line or so: then it follows what comes; farther up the player is reading, and it stays where it is. */
@@ -557,10 +560,13 @@ export function atEnd(list: { scrollTop: number; clientHeight: number; scrollHei
     return list.scrollHeight - list.scrollTop - list.clientHeight <= slack;
 }
 
-/** Whether a key pressed in the player's words sends them: Enter alone; with Shift it starts a new line, and an input method composing a word keeps it. */
-export function sendsWords(event: { key: string; shiftKey: boolean; isComposing: boolean; }): boolean
+/**
+ * Whether a key pressed in the player's words sends them: Enter alone; with Shift it starts a new line, and an input method composing a word keeps it.
+ * On a phone's keyboard (`touch`) Enter starts a new line too, as it has no Shift to hold: the button alone sends.
+ */
+export function sendsWords(event: { key: string; shiftKey: boolean; isComposing: boolean; }, touch = false): boolean
 {
-    return event.key === "Enter" && !event.shiftKey && !event.isComposing;
+    return !touch && event.key === "Enter" && !event.shiftKey && !event.isComposing;
 }
 
 /**

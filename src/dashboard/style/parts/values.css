@@ -611,9 +611,16 @@
         opacity: 0.7;
     }
 
-    :is(button.row, button.tile):is(:hover, :focus-visible) .roll-mark {
+    :is(button.row, button.tile):focus-visible .roll-mark {
         color: var(--accent);
         opacity: 1;
+    }
+
+    @media (hover: hover) {
+        :is(button.row, button.tile):hover .roll-mark {
+            color: var(--accent);
+            opacity: 1;
+        }
     }
 
     /* A value that just changed: a short colour on the number. */
@@ -679,10 +686,12 @@
         }
     }
 
-    /* A finger needs room (D-282): the buttons at least so big; the sheet's lines a little less, or eighteen skills would grow a third. */
+    /* A finger needs room (D-282): a line of the sheet is a finger tall, as every button, whether it rolls or not, so that the lines of a card keep one
+       height. */
     @media (pointer: coarse) {
-        button.row {
-            min-height: 36px;
+        button.row,
+        .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) {
+            min-height: var(--target);
         }
     }
 }

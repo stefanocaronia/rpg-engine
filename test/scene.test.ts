@@ -122,6 +122,20 @@ describe("rpg scene", () => {
         expect((await rpg("change", "Annegato 1", "grit", "--by=-1")).output).toBe("There is no page named Annegato 1. Look for it with the find command.");
     });
 
+    it("hands the master the mark of the turns at the table's chat as the order is set and the turn passes, and only there (D-586)", async () => {
+        const atTable = { ...context, chat: { calls: 0, atTable: true } };
+        const table = async (...args: string[]): Promise<string> => (await runCommandLine(args, atTable)).output;
+        const mark = "In the story write [turns] where the order matters: the page draws the order there, with who acts now, so never list it yourself.";
+        await ok("scene", "open", "--title", "Ossario", "--type", "combat", "--creatures", "Annegato=1");
+        expect(await table("scene", "order", "--order", "Lena", "--order", "Annegato 1", "--order", "Ennio")).toBe(
+            `Order: Lena · Annegato 1 · Ennio.\nRound 1 · now Lena (then Annegato 1).\n${mark}\n${quietTurn}`,
+        );
+        expect(await table("scene", "next")).toBe(`Round 1 · now Annegato 1 (then Ennio).\n${mark}\n${quietTurn}`);
+        expect(await ok("scene", "next")).not.toContain("[turns]");
+        // The turns ended, nothing to show: no mark.
+        expect(await table("scene", "order", "--order", "")).not.toContain("[turns]");
+    });
+
     it("plays a scene without turns, as in a game without initiative, and status remembers the last scenes", async () => {
         for (const [title, type] of [["Al guado", "social"], ["La palude", "travel"], ["Dal mugnaio", "social"], ["Il lupo", "combat"]]) {
             await ok("scene", "open", "--title", title, "--type", type);

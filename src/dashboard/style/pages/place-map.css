@@ -88,6 +88,27 @@
         }
     }
 
+    /* On a phone and under a finger the map scrolls aside with no bar drawn: it fades at the side where there is more of it (place/view.tsx), and its
+       end is its own, never the browser's way back. */
+    @media (max-width: 600px), (pointer: coarse) {
+        .lm-frame {
+            overscroll-behavior-x: contain;
+            scrollbar-width: none;
+        }
+
+        .lm-frame.more-left {
+            mask-image: linear-gradient(to right, transparent, #000 32px);
+        }
+
+        .lm-frame.more-right {
+            mask-image: linear-gradient(to left, transparent, #000 32px);
+        }
+
+        .lm-frame.more-left.more-right {
+            mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+        }
+    }
+
     .lm.lm-full {
         position: fixed;
         inset: 0;
@@ -666,7 +687,7 @@
         flex-direction: column;
     }
 
-    @media (max-width: 599px) {
+    @media (max-width: 600px) {
         .map-sheet.act-sheet,
         .map-sheet.act-sheet.wide {
             width: 100%;
@@ -674,6 +695,12 @@
             margin: auto 0 0;
             border-width: 1px 0 0;
             border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        }
+
+        /* What closes a sheet, and its way back, a finger wide. */
+        .act-head .icon-button {
+            width: var(--target);
+            height: var(--target);
         }
     }
 
@@ -706,6 +733,7 @@
         flex: 0 1 auto;
         min-height: 0;
         max-height: 50vh;
+        max-height: 50dvh;
         overflow: auto;
         padding: 14px 16px 4px;
         line-height: 1.5;
@@ -774,7 +802,7 @@
     }
 
     /* On a phone the map would be a slit inside a scrolling card: the chips, which name the squares, are enough (desktop first). */
-    @media (max-width: 599px) {
+    @media (max-width: 600px) {
         .act-body .lm {
             display: none;
         }
@@ -959,7 +987,7 @@
         text-align: start;
     }
 
-    @media (max-width: 599px) {
+    @media (max-width: 600px) {
         .act-buttons:has(.says) {
             flex-wrap: wrap;
         }
@@ -992,8 +1020,10 @@
         stroke-width: 3;
     }
 
-    .lm-token.choosable:hover .lm-choice {
-        stroke: color-mix(in srgb, var(--l-gold) 80%, transparent);
+    @media (hover: hover) {
+        .lm-token.choosable:hover .lm-choice {
+            stroke: color-mix(in srgb, var(--l-gold) 80%, transparent);
+        }
     }
 
     .lm-token.chosen .lm-choice {
@@ -1008,9 +1038,11 @@
         cursor: pointer;
     }
 
-    .lm-pick:hover {
-        fill: var(--l-gold);
-        fill-opacity: 0.35;
+    @media (hover: hover) {
+        .lm-pick:hover {
+            fill: var(--l-gold);
+            fill-opacity: 0.35;
+        }
     }
 
     .lm-pick.selected {
@@ -1261,5 +1293,18 @@
         paint-order: stroke;
         stroke: #f6ecd6;
         stroke-width: 3px;
+    }
+
+    /* Under a finger who is where is a finger tall, the name that talks taking its whole height. */
+    @media (pointer: coarse) {
+        .lm-where li {
+            min-height: var(--target);
+            padding-block: 0;
+        }
+
+        /* The player's words in an action's sheet: no grip to drag, which a finger does not use. */
+        .act-words {
+            resize: none;
+        }
     }
 }

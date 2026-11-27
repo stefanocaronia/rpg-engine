@@ -1,5 +1,6 @@
 // The page's one tooltip (T-228): what a control's `data-tip` says, shown in the top layer over every card, list and dialog, so that no box that scrolls or
-// clips cuts it, and placed beside its control inside the window. After a moment under a pointer, at once when the keyboard reaches it, never at a touch;
+// clips cuts it, and placed beside its control inside the window. After a moment under a pointer, at once when the keyboard reaches it; at a touch only
+// for a mark that is no control, as a deadline or a condition's sign, which a finger has no other way to read, never for a control, which a touch works.
 // Escape or a press hides it. It is for the eye: what it says is already the control's name for a screen reader. It reaches into the packages' shadow roots.
 
 // How far from its control, and from the window's edges.
@@ -9,11 +10,13 @@ const margin = 8;
 const followTime = 300;
 
 type Side = "above" | "below" | "start";
+// What a touch works by itself.
+const controls = "a[href], button, summary, label, input, select, textarea, [role=button], [role=tab], [role=radio], [role=option], [role=switch], [role=menuitem]";
 
 let tip: HTMLElement | undefined;
 // Whose tip shows, or waits for its moment, and how it was reached.
 let target: Element | undefined;
-let reachedBy: "pointer" | "focus" | undefined;
+let reachedBy: "pointer" | "focus" | "touch" | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;
 // A control pressed or dismissed with Escape shows no tip until the pointer leaves it.
 let quiet: Element | undefined;
@@ -26,6 +29,7 @@ export function startTooltips(): void
     document.addEventListener("pointerover", onPointerOver, true);
     document.addEventListener("pointerout", onPointerOut, true);
     document.addEventListener("pointerdown", onPress, true);
+    document.addEventListener("pointerup", onTouch, true);
     document.addEventListener("focusin", onFocusIn, true);
     document.addEventListener("focusout", onFocusOut, true);
     document.addEventListener("keydown", onKey, true);
@@ -76,6 +80,16 @@ function onPress(event: PointerEvent): void
     }
 
     hide();
+}
+
+// A finger hovers over nothing: lifted from a mark that is no control and stands in none, it shows what the mark says, until the next touch.
+function onTouch(event: PointerEvent): void
+{
+    const found = event.pointerType === "touch" ? tipped(event.composedPath()) : undefined;
+
+    if (found !== undefined && found.closest(controls) === null) {
+        show(found, "touch");
+    }
 }
 
 function onFocusIn(event: FocusEvent): void
@@ -142,7 +156,7 @@ function wait(element: Element, time: number): void
     timer = setTimeout(() => show(element, "pointer"), time);
 }
 
-function show(element: Element, how: "pointer" | "focus"): void
+function show(element: Element, how: "pointer" | "focus" | "touch"): void
 {
     clearTimeout(timer);
     const shown = tipElement();

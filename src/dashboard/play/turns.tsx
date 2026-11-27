@@ -43,9 +43,10 @@ export function turnWords(name: string | undefined): string
 
 /**
  * The band of the turns (D-315, D-444): the round, who acts, told again as the turn passes, who comes next; the scene's title and its line of now. With
- * `several` player characters each is named, never "you" (D-480 (7)).
+ * `several` player characters each is named, never "you" (D-480 (7)). `turnsWay`, where the whole order of the turns is when the Scene has no card of
+ * it, as on a phone: the band leads there, beside who acts.
  */
-export function TurnBand({ scene, several = false, motion }: { scene: TurnScene; several?: boolean; motion?: "in" | "out"; })
+export function TurnBand({ scene, several = false, motion, turnsWay }: { scene: TurnScene; several?: boolean; motion?: "in" | "out"; turnsWay?: string; })
 {
     const fighters = scene.fighters;
     const acting = actingIndex(fighters, scene.turn);
@@ -68,6 +69,12 @@ export function TurnBand({ scene, several = false, motion }: { scene: TurnScene;
                         <p class="eyebrow">{mine ? (several ? t("It's the turn of") : t("Your turn")) : t("Now acting")}</p>
                         <h2 id="turn-title">{acting < 0 ? scene.title : shownName(fighters[acting])}</h2>
                     </div>
+                    {turnsWay !== undefined && (
+                        <a class="turn-all" href={turnsWay}>
+                            {t("All the turns")}
+                            <Icon name="fold" />
+                        </a>
+                    )}
                     {scene.marks && <TurnMarks marks={scene.marks} />}
                 </div>
             </div>
